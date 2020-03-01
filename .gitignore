@@ -1,0 +1,7 @@
+# Visual Studio Code
+.vscode
+
+# Text html files
+*.html
+
+./a.out
