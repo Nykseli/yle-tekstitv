@@ -21,7 +21,7 @@
 # SOURCE_DIR   Directory where source files and headers are found.
 
 NAME=tekstitv
-CFLAGS := -Wall -Wextra -Werror -Wno-unused-parameter -lncurses
+CFLAGS := -Wall -Wextra -Werror -Wno-unused-parameter
 SOURCE_DIR = src
 
 # Mode configuration.
@@ -36,13 +36,16 @@ endif
 # static or so build
 ifeq ($(LINK),shared)
 	LINK_PATHS := -Lthird_party/tidy-html5/build/cmake/ \
-					-Wl,-Rthird_party/tidy-html5/build/cmake/
-	LINKS := -ltidy
+					-Wl,-Rthird_party/tidy-html5/build/cmake/ \
+					-Lthird_party/ncurses/lib \
+					-Wl,-Rthird_party/ncurses/lib
+	LINKS := -ltidy -lncurses
 else
-	LINKS := third_party/tidy-html5/build/cmake/libtidys.a
+	LINKS := third_party/tidy-html5/build/cmake/libtidys.a \
+				third_party/ncurses/lib/libncursesw.a
 endif
 # Files.
-INCLUDES := third_party/tidy-html5/include
+INCLUDES := -Ithird_party/tidy-html5/include -Ithird_party/ncurses/include
 HEADERS := $(wildcard $(SOURCE_DIR)/*.h)
 SOURCES := $(wildcard $(SOURCE_DIR)/*.c)
 OBJECTS := $(addprefix $(BUILD_DIR)/$(NAME)/, $(notdir $(SOURCES:.c=.o)))
@@ -53,12 +56,12 @@ OBJECTS := $(addprefix $(BUILD_DIR)/$(NAME)/, $(notdir $(SOURCES:.c=.o)))
 build/$(NAME): $(OBJECTS)
 	@ printf "%8s %-40s %s\n" $(CC) $@ "$(CFLAGS)"
 	@ mkdir -p build
-	@ $(CC) -I$(INCLUDES) $(LINK_PATHS) $(CFLAGS) $^ -o $@ $(LINKS)
+	@ $(CC) $(INCLUDES) $(LINK_PATHS) $(CFLAGS) $^ -o $@ $(LINKS)
 
 # Compile object files.
 $(BUILD_DIR)/$(NAME)/%.o: $(SOURCE_DIR)/%.c $(HEADERS)
 	@ printf "%8s %-40s %s\n" $(CC) $< "$(CFLAGS)"
 	@ mkdir -p $(BUILD_DIR)/$(NAME)
-	@ $(CC) -I$(INCLUDES) -c $(CFLAGS) -o $@ $<
+	@ $(CC) $(INCLUDES) -c $(CFLAGS) -o $@ $<
 
 .PHONY: default
