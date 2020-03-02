@@ -44,10 +44,25 @@ typedef struct {
 #define html_item_as_text(_item) ((_item).item.text)
 #define html_item_as_link(_item) ((_item).item.link)
 
-#define html_text_string(_text) ((_text).text)
+#define html_link_text(_link) ((_link).inner_text.text)
+#define html_link_text_size(_link) ((_link).inner_text.size)
+#define html_text_text(_text) ((_text).text)
+#define html_text_text_size(_text) ((_text).size)
 
 void init_html_parser(html_parser* parser);
 void free_html_parser(html_parser* parser);
 int parse_html(html_parser* parser, const char* html_text);
+
+inline size_t html_item_text_size(html_item item)
+{
+    switch (item.type) {
+    case HTML_TEXT:
+        return html_text_text_size(html_item_as_text(item));
+    case HTML_LINK:
+        return html_link_text_size(html_item_as_link(item));
+    default:
+        return 0;
+    }
+}
 
 #endif

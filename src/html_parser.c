@@ -107,19 +107,6 @@ static void parse_bottom_navigation(TidyDoc doc, TidyNode tnod, html_parser* par
             if (!name)
                 continue;
 
-            // parse a tag
-            // every child tag with a name is an a tag
-
-            // a tag only has href attribute
-            TidyAttr atag = tidyAttrFirst(child);
-            printf("Nav link: %s\n", tidyAttrValue(atag));
-            // a tag always has the link text
-            TidyNode text = tidyGetChild(child);
-            TidyBuffer buf;
-            tidyBufInit(&buf);
-            tidyNodeGetText(doc, text, &buf);
-            printf("Nav text: %s\n", buf.bp ? (char*)buf.bp : "");
-            tidyBufFree(&buf);
             // Set the navigations links
             parser->bottom_navigation[node_index] = html_item_as_link(node_to_html_link_item(doc, child, no));
             node_index++;
