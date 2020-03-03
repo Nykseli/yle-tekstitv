@@ -131,8 +131,7 @@ static void parse_middle(TidyDoc doc, TidyNode tnod, html_parser* parser)
             continue;
 
         // Get links and fonts
-        // Stucture is <font><a></a></font> or <a><font></font></a>
-
+        // Stucture is <font><a></a></font> or <a><font></font></a> or <big><a><a>text</big>
         // Link <a><font></font></a>
         if (strncmp(name, "a", 1) == 0) {
             item_buffer[item_buffer_size] = node_to_html_link_item(doc, child, yes);
@@ -141,24 +140,26 @@ static void parse_middle(TidyDoc doc, TidyNode tnod, html_parser* parser)
             continue;
         }
 
-        // Font <font><a></a></font>
-        TidyNode font = tidyGetChild(child);
-        name = tidyNodeGetName(font);
-        // Some times there are one or two links befre the actual text
-        if (name && strncmp(name, "a", 1) == 0) {
-            item_buffer[item_buffer_size] = node_to_html_link_item(doc, font, no);
+        // <big><a><a>text</big>
+        if (strncmp(name, "big", 3) == 0) {
+            TidyNode atmp = tidyGetChild(child);
+            item_buffer[item_buffer_size] = node_to_html_link_item(doc, atmp, no);
             item_buffer_size++;
+            atmp = tidyGetNext(atmp);
+            item_buffer[item_buffer_size] = node_to_html_text_item(doc, atmp);
+            item_buffer_size++;
+            // There is nothing left after big
+            continue;
+        }
 
-            for (TidyNode link = tidyGetNext(font); link; link = tidyGetNext(link)) {
-                name = tidyNodeGetName(link);
-                if (!name) // name is noise
-                    continue;
+        // Font <font><a></a></font>
+        for (TidyNode font = tidyGetChild(child); font; font = tidyGetNext(font)) {
+            name = tidyNodeGetName(font);
+            if (!name) // text after font
+                item_buffer[item_buffer_size] = node_to_html_text_item(doc, font);
+            else
+                item_buffer[item_buffer_size] = node_to_html_link_item(doc, font, no);
 
-                item_buffer[item_buffer_size] = node_to_html_link_item(doc, link, no);
-                item_buffer_size++;
-            }
-        } else { // Just text
-            item_buffer[item_buffer_size] = node_to_html_text_item(doc, font);
             item_buffer_size++;
         }
     }
@@ -198,12 +199,29 @@ static void parse_nodes(TidyDoc doc, TidyNode tnod, html_parser* parser)
     }
 }
 
+// Clean all the wonky stuff that the buffer contains
+static void clean_parser_buffer(html_parser* parser)
+{
+    TidyBuffer* buf = &parser->_curl_buffer;
+    for (size_t i = 0; i < buf->size; i++) {
+        // 'Ä' is not supported so make it 'ä'
+        if (buf->bp[i] == '&') {
+            i++;
+            if (buf->bp[i] == 'A') {
+                buf->bp[i] = 'a';
+            }
+        }
+    }
+}
+
 int parse_html(html_parser* parser)
 {
     TidyBuffer output = { 0 };
     TidyBuffer errbuf = { 0 };
     int rc = -1;
     Bool ok;
+
+    clean_parser_buffer(parser);
 
     TidyDoc tdoc = tidyCreate(); // Initialize "document"
     //printf( "Tidying:\t%s\n", input );
