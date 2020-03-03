@@ -2,6 +2,7 @@
 #define _HTML_PARSER_H_
 
 #include <stddef.h>
+#include <tidybuffio.h>
 
 #define HTML_TEXT_MAX 64
 #define TOP_NAVIGATION_SIZE 4
@@ -39,6 +40,8 @@ typedef struct {
     // Middle part of the teksti tv seems to be only dynamic one
     html_item* middle;
     size_t middle_size;
+
+    TidyBuffer _curl_buffer;
 } html_parser;
 
 #define html_item_as_text(_item) ((_item).item.text)
@@ -51,7 +54,7 @@ typedef struct {
 
 void init_html_parser(html_parser* parser);
 void free_html_parser(html_parser* parser);
-int parse_html(html_parser* parser, const char* html_text);
+int parse_html(html_parser* parser);
 
 inline size_t html_item_text_size(html_item item)
 {

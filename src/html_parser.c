@@ -196,7 +196,7 @@ static void parse_nodes(TidyDoc doc, TidyNode tnod, html_parser* parser)
     }
 }
 
-int parse_html(html_parser* parser, const char* html_text)
+int parse_html(html_parser* parser)
 {
     TidyBuffer output = { 0 };
     TidyBuffer errbuf = { 0 };
@@ -210,7 +210,7 @@ int parse_html(html_parser* parser, const char* html_text)
     if (ok)
         rc = tidySetErrorBuffer(tdoc, &errbuf); // Capture diagnostics
     if (rc >= 0)
-        rc = tidyParseString(tdoc, html_text); // Parse the input
+        rc = tidyParseBuffer(tdoc, &parser->_curl_buffer); // Parse the buffer
     if (rc >= 0)
         rc = tidyCleanAndRepair(tdoc); // Tidy it up!
     if (rc >= 0)
@@ -230,6 +230,7 @@ int parse_html(html_parser* parser, const char* html_text)
 
     tidyBufFree(&output);
     tidyBufFree(&errbuf);
+    tidyBufFree(&parser->_curl_buffer);
     tidyRelease(tdoc);
     return rc;
 }

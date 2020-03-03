@@ -9,33 +9,14 @@
 
 #include "drawer.h"
 #include "html_parser.h"
-
-static char* open_html(char* file)
-{
-    int fd = open(file, O_RDONLY);
-    if (fd < 0)
-        printf("Cannot open %s\n", file);
-
-    struct stat fs;
-    fstat(fd, &fs);
-
-    char* buff = malloc(fs.st_size);
-    read(fd, buff, fs.st_size);
-
-    return buff;
-}
+#include "page_loader.h"
 
 int main(int argc, char** argv)
 {
-    if (argc != 2) {
-        printf("Usage: %s <html file>\n", argv[0]);
-        return 1;
-    }
-
     html_parser parser;
     init_html_parser(&parser);
-    const char* input = open_html(argv[1]);
-    parse_html(&parser, input);
+    load_page(&parser, "https://yle.fi/tekstitv/txt/P200_01.html");
+    parse_html(&parser);
 
     drawer drawer;
     init_drawer(&drawer);

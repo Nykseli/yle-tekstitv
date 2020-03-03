@@ -21,7 +21,8 @@
 # SOURCE_DIR   Directory where source files and headers are found.
 
 NAME=tekstitv
-CFLAGS := -Wall -Wextra -Werror -Wno-unused-parameter
+# CFLAGS := -Wall -Wextra -Werror -Wno-unused-parameter
+CFLAGS := -Wall -Wextra -Wno-unused-parameter
 SOURCE_DIR = src
 
 # Mode configuration.
@@ -39,7 +40,7 @@ ifeq ($(LINK),shared)
 					-Wl,-Rthird_party/tidy-html5/build/cmake/ \
 					-Lthird_party/ncurses/lib \
 					-Wl,-Rthird_party/ncurses/lib
-	LINKS := -ltidy -lncurses
+	LINKS := -ltidy -lncurses -lcurl
 else
 	LINKS := third_party/tidy-html5/build/cmake/libtidys.a \
 				third_party/ncurses/lib/libncursesw.a
