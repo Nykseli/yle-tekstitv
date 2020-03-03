@@ -22,7 +22,7 @@
 
 NAME=tekstitv
 # CFLAGS := -Wall -Wextra -Werror -Wno-unused-parameter
-CFLAGS := -Wall -Wextra -Wno-unused-parameter
+CFLAGS := -std=c99 -Wall -Wextra -Wno-unused-parameter -Wno-unused-result -pedantic
 SOURCE_DIR = src
 
 # Mode configuration.
@@ -58,14 +58,17 @@ OBJECTS := $(addprefix $(BUILD_DIR)/$(NAME)/, $(notdir $(SOURCES:.c=.o)))
 
 # Link the interpreter.
 build/$(NAME): $(OBJECTS)
-	@ printf "%8s %-40s %s\n" $(CC) $@ "$(CFLAGS)"
+	@ printf "%8s %-40s %s\n" $(CC) $@
 	@ mkdir -p build
 	@ $(CC) $(INCLUDES) $(LINK_PATHS) $(CFLAGS) $^ -o $@ $(LINKS)
 
 # Compile object files.
 $(BUILD_DIR)/$(NAME)/%.o: $(SOURCE_DIR)/%.c $(HEADERS)
-	@ printf "%8s %-40s %s\n" $(CC) $< "$(CFLAGS)"
+	@ printf "%8s %-40s %s\n" $(CC) $<
 	@ mkdir -p $(BUILD_DIR)/$(NAME)
 	@ $(CC) $(INCLUDES) -c $(CFLAGS) -o $@ $<
 
-.PHONY: default
+clean:
+	rm -rf build
+
+.PHONY: default clean
