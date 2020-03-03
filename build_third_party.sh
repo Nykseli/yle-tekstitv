@@ -26,3 +26,19 @@ make -j$JOBS
 cd include/
 ln -s curses.h ncurses.h
 cd ../../..
+
+# Build static curl
+cd third_party/curl
+./buildconf
+./configure --disable-ipv6 \
+            --disable-debug \
+            --disable-shared \
+            --disable-thread \
+            --disable-cookies \
+            --enable-optimize \
+            --disable-verbose \
+            --disable-pthreads \
+            --enable-hidden-symbols \
+            --disable-threaded-resolver
+make -j$JOBS
+cd ../..
