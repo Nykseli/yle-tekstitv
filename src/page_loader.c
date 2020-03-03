@@ -1,3 +1,4 @@
+#include "tidy_std99.h"
 
 #include <curl/curl.h>
 #include <stdint.h>

@@ -1,11 +1,4 @@
 
-#include <errno.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <string.h>
-#include <tidy.h>
-#include <tidybuffio.h>
-#include <unistd.h>
 
 #include "drawer.h"
 #include "html_parser.h"

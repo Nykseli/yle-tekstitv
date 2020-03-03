@@ -1,5 +1,6 @@
 #ifndef _HTML_PARSER_H_
 #define _HTML_PARSER_H_
+#include "tidy_std99.h"
 
 #include <stddef.h>
 #include <tidybuffio.h>
