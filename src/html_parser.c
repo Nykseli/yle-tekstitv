@@ -35,6 +35,11 @@ static size_t node_text_to_buffer(TidyDoc doc, TidyNode tnod, char* target)
 
 static html_item node_to_html_text_item(TidyDoc doc, TidyNode tnod)
 {
+    // Go down tree until there is no tags
+    while (tidyNodeGetName(tnod)) {
+        tnod = tidyGetChild(tnod);
+    }
+
     html_item item;
     item.type = HTML_TEXT;
     item.item.text.size = node_text_to_buffer(doc, tnod, item.item.text.text);
@@ -140,25 +145,16 @@ static void parse_middle(TidyDoc doc, TidyNode tnod, html_parser* parser)
             continue;
         }
 
-        // <big><a><a>text</big>
-        if (strncmp(name, "big", 3) == 0) {
-            TidyNode atmp = tidyGetChild(child);
-            item_buffer[item_buffer_size] = node_to_html_link_item(doc, atmp, no);
-            item_buffer_size++;
-            atmp = tidyGetNext(atmp);
-            item_buffer[item_buffer_size] = node_to_html_text_item(doc, atmp);
-            item_buffer_size++;
-            // There is nothing left after big
-            continue;
-        }
-
         // Font <font><a></a></font>
         for (TidyNode font = tidyGetChild(child); font; font = tidyGetNext(font)) {
             name = tidyNodeGetName(font);
-            if (!name) // text after font
+            if (!name) { // text after font
                 item_buffer[item_buffer_size] = node_to_html_text_item(doc, font);
-            else
+            } else if (strncmp(name, "a", 1) == 0) {
                 item_buffer[item_buffer_size] = node_to_html_link_item(doc, font, no);
+            } else if (strncmp(name, "big", 3) == 0) {
+                item_buffer[item_buffer_size] = node_to_html_text_item(doc, font);
+            }
 
             item_buffer_size++;
         }

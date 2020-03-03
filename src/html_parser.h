@@ -57,7 +57,7 @@ void init_html_parser(html_parser* parser);
 void free_html_parser(html_parser* parser);
 int parse_html(html_parser* parser);
 
-inline size_t html_item_text_size(html_item item)
+static inline size_t html_item_text_size(html_item item)
 {
     switch (item.type) {
     case HTML_TEXT:
