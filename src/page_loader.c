@@ -9,11 +9,11 @@
 #include "html_parser.h"
 
 /* curl write callback, to fill tidy's input buffer...  */
-size_t write_to_buffer(char* in, size_t size, size_t nmemb, TidyBuffer* out)
+size_t write_to_buffer(char* in, size_t size, size_t nmemb, void* out)
 {
     size_t r;
     r = size * nmemb;
-    tidyBufAppend(out, in, r);
+    tidyBufAppend((TidyBuffer*)out, in, r);
     return r;
 }
 
