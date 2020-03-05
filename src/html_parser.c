@@ -3,10 +3,11 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <tidy.h>
-#include <tidybuffio.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "html_parser.h"
@@ -14,247 +15,376 @@
 // What field of the teksti tv are we parsing
 static int centers = 0;
 
-// Copy text to target buffer and return amount of bytes written
-static size_t node_text_to_buffer(TidyDoc doc, TidyNode tnod, char* target)
-{
-    size_t buffer_size;
-    // Get the text from node
-    TidyBuffer buf;
-    tidyBufInit(&buf);
-    tidyNodeGetText(doc, tnod, &buf);
-    buffer_size = strlen((char*)buf.bp);
-    buffer_size = buffer_size <= HTML_TEXT_MAX ? buffer_size : HTML_TEXT_MAX;
-    // copy the node
-    strncpy(target, (const char*)buf.bp, HTML_TEXT_MAX);
-    target[buffer_size] = '\0';
-    // Free text buffer
-    tidyBufFree(&buf);
+typedef enum {
+    UNKNOWN,
+    P,
+    BIG,
+    PRE,
+    LINK,
+    FONT,
+    CENTER
+} tag_type;
 
-    return buffer_size;
-}
-
-static html_item node_to_html_text_item(TidyDoc doc, TidyNode tnod)
+static inline void skip_next_str(html_buffer* buffer, char* str, size_t len)
 {
-    // Go down tree until there is no tags
-    while (tidyNodeGetName(tnod)) {
-        tnod = tidyGetChild(tnod);
+    // find the string
+    for (; buffer->current < buffer->size; buffer->current++) {
+        if (strncmp(buffer->html + buffer->current, str, len) == 0)
+            break;
     }
 
+    // actually skip the str
+    buffer->current += len;
+}
+
+static inline void skip_next_char(html_buffer* buffer, char c)
+{
+    // find the char
+    for (; buffer->current < buffer->size; buffer->current++) {
+        if (buffer->html[buffer->current] == c)
+            break;
+    }
+
+    // actually skip the char
+    buffer->current++;
+}
+
+static inline void skip_next_tag(html_buffer* buffer, char* name, size_t name_len, bool closing)
+{
+    skip_next_char(buffer, '<');
+    if (closing)
+        skip_next_char(buffer, '/');
+
+    skip_next_str(buffer, name, name_len);
+    skip_next_char(buffer, '>');
+}
+
+tag_type get_tag_type(html_buffer* buffer)
+{
+    char c;
+    size_t tag_len = 0;
+    char* html = buffer->html + buffer->current;
+
+    // Skip the possible tag opener
+    if (*html == '<')
+        html++;
+
+    while ((c = html[tag_len]) != EOF && c != '>' && c != ' ')
+        tag_len++;
+
+    if (tag_len == 1) {
+        if (strncmp(html, "p", 1) == 0)
+            return P;
+        if (strncmp(html, "a", 1) == 0)
+            return LINK;
+    } else if (tag_len == 3) {
+        if (strncmp(html, "big", 3) == 0)
+            return BIG;
+        if (strncmp(html, "pre", 3) == 0)
+            return PRE;
+    } else if (tag_len == 4) {
+        if (strncmp(html, "font", 4) == 0)
+            return FONT;
+    } else if (tag_len == 6) {
+        if (strncmp(html, "center", 6) == 0)
+            return CENTER;
+    }
+
+    return UNKNOWN;
+}
+
+// move buffer->current to next <center>
+void center_start(html_buffer* buffer)
+{
+    for (; buffer->current < buffer->size; buffer->current++) {
+        char c = buffer->html[buffer->current];
+        if (c != '<')
+            continue;
+
+        buffer->current++;
+        tag_type type = get_tag_type(buffer);
+        if (type != CENTER)
+            continue;
+
+        // Go to end of the tag
+        for (; buffer->html[buffer->current] != '>'; buffer->current++) {
+        }
+
+        // skip the >
+        buffer->current++;
+        break;
+    }
+}
+
+// parse next link in buffer to html_link
+// inner_pre appends spaces before inner_text
+void parse_next_link(html_buffer* buffer, html_link* linkbuf, size_t inner_pre_space)
+{
+    // find next a tag
+    for (; buffer->current < buffer->size; buffer->current++) {
+        if (get_tag_type(buffer) == LINK)
+            break;
+    }
+
+    // find the start of the link string
+    skip_next_str(buffer, "href", 4);
+    skip_next_char(buffer, '=');
+    skip_next_char(buffer, '"');
+
+    // copy the link. currently all the links are exactly 34 characters
+    strncpy(linkbuf->url.text, buffer->html + buffer->current, HTML_LINK_SIZE);
+    linkbuf->url.size = HTML_LINK_SIZE;
+    linkbuf->url.text[HTML_LINK_SIZE] = '\0';
+
+    // go to end of the opening a tag
+    skip_next_char(buffer, '>');
+
+    // find the length of the text
+    size_t text_len = 0;
+    for (;; text_len++) {
+        if (buffer->html[buffer->current + text_len] == '<')
+            break;
+    }
+
+    // copy the inner text
+    // First add the possible pre_spaces
+    for (size_t i = 0; i < inner_pre_space; i++)
+        *(linkbuf->inner_text.text + i) = ' ';
+
+    // Then copy the actual text
+    strncpy(linkbuf->inner_text.text + inner_pre_space, buffer->html + buffer->current, text_len);
+    linkbuf->inner_text.size = text_len + inner_pre_space;
+    linkbuf->inner_text.text[text_len + inner_pre_space] = '\0';
+
+    // go to end of the closing a tag
+    skip_next_tag(buffer, "a", 1, true);
+}
+
+void parse_title(html_parser* parser, html_buffer* buffer)
+{
+    // find end of big tag after pre
+    for (size_t i = 0; i < 2; i++) {
+        skip_next_char(buffer, '>');
+    }
+
+    size_t title_len = 0;
+    for (;; title_len++) {
+        if (buffer->html[buffer->current + title_len] == '<')
+            break;
+    }
+
+    // Copy the title string
+    strncpy(html_text_text(parser->title), buffer->html + buffer->current, title_len);
+    parser->title.size = title_len;
+    buffer->current += title_len;
+}
+
+void parse_top_navigation(html_parser* parser, html_buffer* buffer)
+{
+    for (size_t i = 0; i < TOP_NAVIGATION_SIZE; i++) {
+        // TODO: do memset in init_html_buffer
+        memset(parser->top_navigation + i, 0, HTML_TEXT_MAX * 4);
+        parse_next_link(buffer, parser->top_navigation + i, 0);
+    }
+}
+
+void parse_bottom_navigation(html_parser* parser, html_buffer* buffer)
+{
+    // TODO: memset in html_parser init
+    memset(parser->bottom_navigation, 0, sizeof(html_row) * BOTTOM_NAVIGATION_SIZE);
+
+    // Parse the two navigation rows
+    skip_next_tag(buffer, "p", 1, false);
+    // First line is 4 links
+    for (size_t i = 0; i < 4; i++) {
+        parse_next_link(buffer, &html_item_as_link(parser->bottom_navigation[0].items[i]), 0);
+        parser->bottom_navigation[0].size++;
+    }
+
+    skip_next_tag(buffer, "p", 1, false);
+    // Second line is 6 links
+    for (size_t i = 0; i < 6; i++) {
+        parse_next_link(buffer, &html_item_as_link(parser->bottom_navigation[1].items[i]), 0);
+        parser->bottom_navigation[1].size++;
+    }
+}
+void parse_middle_link(html_parser* parser, html_buffer* buffer, size_t spaces)
+{
+    // create new item
+    html_item item;
+    item.type = HTML_LINK;
+    parse_next_link(buffer, &html_item_as_link(item), spaces);
+
+    // append item to row
+    size_t row_index = parser->middle[parser->middle_rows].size;
+    parser->middle[parser->middle_rows].items[row_index] = item;
+    parser->middle[parser->middle_rows].size++;
+}
+
+void parse_middle_text(html_parser* parser, html_buffer* buffer, size_t spaces)
+{
+    // Sometimes <big> is lost in font
+    if (strncmp(buffer->html + buffer->current, " <big>", 6) == 0) {
+        buffer->current += 6;
+        spaces += 2;
+    }
+
+    size_t text_len = 0;
+    for (;; text_len++) {
+        if (buffer->html[buffer->current + text_len] == '<')
+            break;
+    }
+
+    // create new item
     html_item item;
     item.type = HTML_TEXT;
-    item.item.text.size = node_text_to_buffer(doc, tnod, item.item.text.text);
-    return item;
+
+    // copy the text
+    // First add the possible pre_spaces
+    for (size_t i = 0; i < spaces; i++)
+        item.item.text.text[i] = ' ';
+
+    // Then copy the actual text
+    strncpy(item.item.text.text + spaces, buffer->html + buffer->current, text_len);
+    item.item.text.size = text_len + spaces;
+    item.item.text.text[text_len] = '\0';
+    buffer->current += text_len - 1;
+
+    // append item to row
+    size_t row_index = parser->middle[parser->middle_rows].size;
+    parser->middle[parser->middle_rows].items[row_index] = item;
+    parser->middle[parser->middle_rows].size++;
 }
 
-// inFont = is text under font node
-static html_item node_to_html_link_item(TidyDoc doc, TidyNode tnod, Bool inFont)
+void parse_middle_font(html_parser* parser, html_buffer* line_buf, size_t spaces)
 {
-    html_item item;
-    html_link link;
-    item.type = HTML_LINK;
+    skip_next_tag(line_buf, "font", 4, false);
 
-    // Get the href and it's size
-    TidyAttr atag = tidyAttrFirst(tnod);
-    char* tag_text = (char*)tidyAttrValue(atag);
-    size_t tag_size = strlen(tag_text);
+    /* parse_middle_next_item(parser, line_buf, spaces); */
+    for (; line_buf->current < line_buf->size && strncmp(line_buf->html + line_buf->current, "</font>", 7) != 0; line_buf->current++) {
 
-    // Set href and size to link item url
-    strncpy(link.url.text, tag_text, HTML_TEXT_MAX);
-    link.url.size = tag_size;
-    link.url.text[tag_size] = '\0';
-
-    // Get the inner text and size of the link
-    TidyNode atext = tidyGetChild(tnod);
-    if (inFont)
-        atext = tidyGetChild(atext);
-
-    // Set inner text and size to link item inner text
-    link.inner_text.size = node_text_to_buffer(doc, atext, link.inner_text.text);
-
-    item.item.link = link;
-    return item;
-}
-
-static void parse_title(TidyDoc doc, TidyNode tnod, html_parser* parser)
-{
-    // Title node is <pre><big>title</big></pre>
-    TidyNode pre = tidyGetChild(tnod);
-    TidyNode big = tidyGetChild(pre);
-    TidyNode title_text = tidyGetChild(big);
-    parser->title = html_item_as_text(node_to_html_text_item(doc, title_text));
-}
-
-static void parse_top_navigation(TidyDoc doc, TidyNode tnod, html_parser* parser)
-{
-    int node_index = 0;
-    // First tag is is always p tag that contains the navigation information
-    TidyNode ptag = tidyGetChild(tnod);
-    for (TidyNode child = tidyGetChild(ptag); child; child = tidyGetNext(child)) {
-        ctmbstr name = tidyNodeGetName(child);
-        // Ignore non a tags
-        if (!name)
-            continue;
-
-        // Set the navigations links
-        parser->top_navigation[node_index] = html_item_as_link(node_to_html_link_item(doc, child, no));
-        node_index++;
-    }
-}
-
-static void parse_bottom_navigation(TidyDoc doc, TidyNode tnod, html_parser* parser)
-{
-    int node_index = 0;
-    // First tag is is always p tag that contains the navigation information
-    TidyNode ptag = tidyGetChild(tnod);
-    // Get first 2 tags that contain the navigation information
-    for (int i = 0; i < 2; i++, ptag = tidyGetNext(ptag)) {
-        for (TidyNode child = tidyGetChild(ptag); child; child = tidyGetNext(child)) {
-            ctmbstr name = tidyNodeGetName(child);
-            // Ignore non a tags
-            if (!name)
-                continue;
-
-            // Set the navigations links
-            parser->bottom_navigation[node_index] = html_item_as_link(node_to_html_link_item(doc, child, no));
-            node_index++;
+        switch (get_tag_type(line_buf)) {
+        case LINK:
+            parse_middle_link(parser, line_buf, spaces);
+            line_buf->current--;
+            break;
+        case UNKNOWN: // No tag found means there is text to be found
+            parse_middle_text(parser, line_buf, spaces);
+            break;
+        default:
+            break;
         }
+        spaces = 0;
+    }
+    skip_next_tag(line_buf, "font", 4, true);
+    // Sometimes </big> is lost after font
+    if (strncmp(line_buf->html + line_buf->current, " </big>", 7) == 0) {
+        line_buf->current += 7;
     }
 }
 
-static void parse_middle(TidyDoc doc, TidyNode tnod, html_parser* parser)
+void parse_middle_big(html_parser* parser, html_buffer* line_buf, size_t spaces)
 {
-    html_item item_buffer[128];
-    size_t item_buffer_size = 0;
+    skip_next_tag(line_buf, "big", 3, false);
+    /* parse_middle_next_item(parser, line_buf, spaces); */
+    for (; line_buf->current < line_buf->size && strncmp(line_buf->html + line_buf->current, "</big>", 6) != 0; line_buf->current++) {
 
-    // Infos are under pre tag
-    TidyNode pre = tidyGetChild(tnod);
+        switch (get_tag_type(line_buf)) {
+        case LINK:
+            parse_middle_link(parser, line_buf, spaces);
+            line_buf->current--;
+            break;
+        case FONT:
+            parse_middle_font(parser, line_buf, spaces);
+            break;
+        case UNKNOWN: // No tag found means there is text to be found
+            parse_middle_text(parser, line_buf, spaces);
+            break;
+        default:
+            break;
+        }
+        spaces = 0;
+    }
+    skip_next_tag(line_buf, "big", 3, true);
+}
 
-    for (TidyNode child = tidyGetChild(pre); child; child = tidyGetNext(child)) {
-        ctmbstr name = tidyNodeGetName(child);
-        // No names are probably just noise?
-        if (!name)
-            continue;
+void parse_middle(html_parser* parser, html_buffer* buffer)
+{
 
-        // Get links and fonts
-        // Stucture is <font><a></a></font> or <a><font></font></a> or <big><a><a>text</big>
-        // Link <a><font></font></a>
-        if (strncmp(name, "a", 1) == 0) {
-            item_buffer[item_buffer_size] = node_to_html_link_item(doc, child, yes);
-            item_buffer_size++;
-            // There is nothing left after single link
+    skip_next_tag(buffer, "pre", 3, false);
+    // Loop until the closing pre tag is found
+    for (; strncmp(buffer->html + buffer->current, "</pre>", 6) != 0; buffer->current++) {
+        html_buffer line_buf;
+        line_buf.current = 0;
+        line_buf.size = 0;
+        memset(line_buf.html, 0, 1028);
+
+        for (; buffer->html[buffer->current] != '\n'; buffer->current++) {
+            line_buf.html[line_buf.size] = buffer->html[buffer->current];
+            line_buf.size++;
+        }
+        line_buf.html[line_buf.size] = '\0';
+
+        if (line_buf.size == 0) {
+            parser->middle_rows++;
             continue;
         }
 
-        // Font <font><a></a></font>
-        for (TidyNode font = tidyGetChild(child); font; font = tidyGetNext(font)) {
-            name = tidyNodeGetName(font);
-            if (!name) { // text after font
-                item_buffer[item_buffer_size] = node_to_html_text_item(doc, font);
-            } else if (strncmp(name, "a", 1) == 0) {
-                item_buffer[item_buffer_size] = node_to_html_link_item(doc, font, no);
-            } else if (strncmp(name, "big", 3) == 0) {
-                item_buffer[item_buffer_size] = node_to_html_text_item(doc, font);
-            }
-
-            item_buffer_size++;
+        size_t pre_space = 0;
+        for (; line_buf.current < line_buf.size && line_buf.html[line_buf.current] == ' '; line_buf.current++) {
+            pre_space++;
         }
-    }
 
-    // Set items list from item_buffer
-    parser->middle = malloc(sizeof(html_item) * item_buffer_size);
-    memcpy(parser->middle, item_buffer, sizeof(html_item) * item_buffer_size);
-    parser->middle_size = item_buffer_size;
-}
-
-static void parse_nodes(TidyDoc doc, TidyNode tnod, html_parser* parser)
-{
-    for (TidyNode child = tidyGetChild(tnod); child; child = tidyGetNext(child)) {
-        ctmbstr name = tidyNodeGetName(child);
-        //printf("name: %s\n", name);
-        if (name && !strcmp(name, "center")) {
-            centers++;
-            switch (centers) {
-            case 1:
-                parse_title(doc, child, parser);
-                break;
-            case 2:
-                parse_top_navigation(doc, child, parser);
-                break;
-            case 3:
-                parse_middle(doc, child, parser);
-                break;
-            case 4:
-                parse_bottom_navigation(doc, child, parser);
-                break;
-            default:
-                break;
+        for (; line_buf.current < line_buf.size; line_buf.current++) {
+            tag_type type = get_tag_type(&line_buf);
+            if (type == FONT) {
+                parse_middle_font(parser, &line_buf, pre_space);
+            } else if (type == BIG) {
+                parse_middle_big(parser, &line_buf, pre_space);
             }
         }
 
-        parse_nodes(doc, child, parser); /* recursive */
+        parser->middle_rows++;
     }
 }
 
-// Clean all the wonky stuff that the buffer contains
-static void clean_parser_buffer(html_parser* parser)
+void parse_html(html_parser* parser)
 {
-    TidyBuffer* buf = &parser->_curl_buffer;
-    for (size_t i = 0; i < buf->size; i++) {
-        // 'Ä' is not supported so make it 'ä'
-        if (buf->bp[i] == '&') {
-            i++;
-            if (buf->bp[i] == 'A') {
-                buf->bp[i] = 'a';
-            }
+    html_buffer* buffer = &parser->_curl_buffer;
+    buffer->current = 0;
+    for (; buffer->current < buffer->size; buffer->current++) {
+
+        // Go to next center tag
+        skip_next_tag(buffer, "center", 6, false);
+        if (centers == 0) {
+            parse_title(parser, buffer);
+        } else if (centers == 1) {
+            parse_top_navigation(parser, buffer);
+        } else if (centers == 2) {
+            parse_middle(parser, buffer);
+        } else if (centers == 3) {
+            parse_bottom_navigation(parser, buffer);
         }
+        // Go to </center>
+        skip_next_tag(buffer, "center", 6, true);
+        centers++;
     }
-}
-
-int parse_html(html_parser* parser)
-{
-    TidyBuffer output = { 0 };
-    TidyBuffer errbuf = { 0 };
-    int rc = -1;
-    Bool ok;
-
-    clean_parser_buffer(parser);
-
-    TidyDoc tdoc = tidyCreate(); // Initialize "document"
-    //printf( "Tidying:\t%s\n", input );
-
-    ok = tidyOptSetBool(tdoc, TidyXhtmlOut, yes); // Convert to XHTML
-    if (ok)
-        rc = tidySetErrorBuffer(tdoc, &errbuf); // Capture diagnostics
-    if (rc >= 0)
-        rc = tidyParseBuffer(tdoc, &parser->_curl_buffer); // Parse the buffer
-    if (rc >= 0)
-        rc = tidyCleanAndRepair(tdoc); // Tidy it up!
-    if (rc >= 0)
-        rc = tidyRunDiagnostics(tdoc); // Kvetch
-    if (rc > 1) // If error, force output.
-        rc = (tidyOptSetBool(tdoc, TidyForceOutput, yes) ? rc : -1);
-    if (rc >= 0) {
-        parse_nodes(tdoc, tidyGetRoot(tdoc), parser);
-        rc = tidySaveBuffer(tdoc, &output); // Pretty Print
-    }
-    if (rc >= 0) {
-        if (rc > 0)
-            printf("\nDiagnostics:\n\n%s", errbuf.bp);
-        //printf("\nAnd here is the result:\n\n%s", output.bp);
-    } else
-        printf("A severe error (%d) occurred.\n", rc);
-
-    tidyBufFree(&output);
-    tidyBufFree(&errbuf);
-    tidyBufFree(&parser->_curl_buffer);
-    tidyRelease(tdoc);
-    return rc;
 }
 
 void init_html_parser(html_parser* parser)
 {
-    parser->middle = NULL;
-    parser->middle_size = 0;
+
+    //parser->middle = malloc(MIDDLE_HTML_ROWS_MAX * sizeof(html_row));
+    parser->middle = calloc(MIDDLE_HTML_ROWS_MAX, sizeof(html_row));
+    for (size_t i = 0; i < MIDDLE_HTML_ROWS_MAX; i++) {
+        parser->middle[i].size = 0;
+    }
+    //open_html("P100_01.html", &parser->_curl_buffer);
+
+    parser->middle_rows = 0;
+    memset(parser->title.text, 0, HTML_TEXT_MAX);
+    memset(parser->bottom_navigation, 0, sizeof(html_row) * BOTTOM_NAVIGATION_SIZE);
+    memset(parser->top_navigation, 0, sizeof(html_link) * TOP_NAVIGATION_SIZE);
 }
 
 void free_html_parser(html_parser* parser)

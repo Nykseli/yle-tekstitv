@@ -6,8 +6,15 @@
 #include <tidybuffio.h>
 
 #define HTML_TEXT_MAX 64
+// How many html_items can be on html_row
+#define HTML_ROW_MAX 16
+// How many html_rows the can be in the middle
+#define MIDDLE_HTML_ROWS_MAX 32
 #define TOP_NAVIGATION_SIZE 4
-#define BOTTOM_NAVIGATION_SIZE 12
+//#define BOTTOM_NAVIGATION_SIZE 12
+#define BOTTOM_NAVIGATION_SIZE 2
+// All links parsed from html document are 34 characters
+#define HTML_LINK_SIZE 34
 
 typedef enum {
     HTML_TEXT,
@@ -33,16 +40,28 @@ typedef struct {
 } html_item;
 
 typedef struct {
+    html_item items[HTML_ROW_MAX];
+    size_t size;
+} html_row;
+
+typedef struct {
+    char html[1024 * 32];
+    size_t size;
+    size_t current;
+} html_buffer;
+
+typedef struct {
     // title seems to always be 1 string
     html_text title;
     html_link top_navigation[TOP_NAVIGATION_SIZE];
-    html_link bottom_navigation[BOTTOM_NAVIGATION_SIZE];
+    //html_link bottom_navigation[BOTTOM_NAVIGATION_SIZE];
+    html_row bottom_navigation[BOTTOM_NAVIGATION_SIZE];
 
     // Middle part of the teksti tv seems to be only dynamic one
-    html_item* middle;
-    size_t middle_size;
+    html_row* middle;
+    size_t middle_rows;
 
-    TidyBuffer _curl_buffer;
+    html_buffer _curl_buffer;
 } html_parser;
 
 #define html_item_as_text(_item) ((_item).item.text)
@@ -55,7 +74,7 @@ typedef struct {
 
 void init_html_parser(html_parser* parser);
 void free_html_parser(html_parser* parser);
-int parse_html(html_parser* parser);
+void parse_html(html_parser* parser);
 
 static inline size_t html_item_text_size(html_item item)
 {
