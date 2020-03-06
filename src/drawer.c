@@ -1,4 +1,7 @@
+#include <string.h>
+
 #include "drawer.h"
+#include "html_parser.h"
 
 #define MAX_WINDOW_WIDTH 80
 #define MAX_MIDDLE_WIDTH (MAX_WINDOW_WIDTH / 2)
@@ -17,13 +20,38 @@ static void draw_to_drawer(drawer* drawer, char* text)
 
 static void draw_link_item(drawer* drawer, html_link link)
 {
-    if (drawer->color_support)
+    bool highlight = false;
+    if (!drawer->init_highlight_rows) {
+        link_highlight hlight = drawer->highlight_rows[drawer->highlight_row].links[drawer->highlight_col];
+        highlight = hlight.start_x == drawer->current_x && hlight.start_y == drawer->current_y;
+    }
+
+    if (drawer->color_support) {
         wattron(drawer->window, LINK_COLOR);
+        if (highlight)
+            wattron(drawer->window, A_REVERSE);
+    }
 
     draw_to_drawer(drawer, html_link_text(link));
 
-    if (drawer->color_support)
+    if (drawer->color_support) {
         wattroff(drawer->window, LINK_COLOR);
+        if (highlight)
+            wattroff(drawer->window, A_REVERSE);
+    }
+}
+
+static void add_link_highlight(drawer* drawer, html_link link)
+{
+    if (!drawer->init_highlight_rows)
+        return;
+
+    link_highlight h;
+    h.start_x = drawer->current_x;
+    h.start_y = drawer->current_y;
+    link_highlight_row* row = &drawer->highlight_rows[drawer->highlight_row_size];
+    row->links[row->size] = h;
+    row->size++;
 }
 
 static void draw_title(drawer* drawer, html_parser* parser)
@@ -47,6 +75,7 @@ static void draw_top_navigation(drawer* drawer, html_parser* parser)
     drawer->current_x = (int)centerx(links_len);
     for (size_t i = 0; i < TOP_NAVIGATION_SIZE; i++) {
         draw_link_item(drawer, links[i]);
+        add_link_highlight(drawer, links[i]);
         drawer->current_x += html_link_text_size(links[i]);
         if (i < TOP_NAVIGATION_SIZE - 1) {
             draw_to_drawer(drawer, " |");
@@ -55,6 +84,9 @@ static void draw_top_navigation(drawer* drawer, html_parser* parser)
     }
 
     drawer->current_y += 1;
+    if (drawer->init_highlight_rows) {
+        drawer->highlight_row_size++;
+    }
 }
 
 static void draw_bottom_navigation(drawer* drawer, html_parser* parser)
@@ -77,12 +109,16 @@ static void draw_bottom_navigation(drawer* drawer, html_parser* parser)
     drawer->current_x = (int)centerx(links_len);
     for (size_t i = 0; i < links.size; i++) {
         draw_link_item(drawer, html_item_as_link(links.items[i]));
+        add_link_highlight(drawer, html_item_as_link(links.items[i]));
         drawer->current_x += html_link_text_size(html_item_as_link(links.items[i]));
         if (i < links.size - 1) {
             draw_to_drawer(drawer, " |");
             drawer->current_x += 3;
         }
     }
+
+    if (drawer->init_highlight_rows)
+        drawer->highlight_row_size++;
 }
 
 static void draw_middle(drawer* drawer, html_parser* parser)
@@ -92,6 +128,7 @@ static void draw_middle(drawer* drawer, html_parser* parser)
     for (size_t i = 0; i < parser->middle_rows; i++) {
         drawer->current_x = MIDDLE_STARTX;
         drawer->current_y++;
+        bool link_on_row = false;
         for (size_t j = 0; j < parser->middle[i].size; j++) {
             html_item item = parser->middle[i].items[j];
             if (item.type == HTML_LINK) {
@@ -101,6 +138,8 @@ static void draw_middle(drawer* drawer, html_parser* parser)
                     drawer->current_x += 1;
                 }
                 draw_link_item(drawer, html_item_as_link(item));
+                add_link_highlight(drawer, html_item_as_link(item));
+                link_on_row = true;
                 drawer->current_x += html_link_text_size(html_item_as_link(item));
                 last_type = HTML_LINK;
             } else if (item.type == HTML_TEXT) {
@@ -109,19 +148,109 @@ static void draw_middle(drawer* drawer, html_parser* parser)
                 last_type = HTML_TEXT;
             }
         }
+
+        if (drawer->init_highlight_rows && link_on_row)
+            drawer->highlight_row_size++;
     }
 }
 
-void draw_parser(drawer* drawer, html_parser* parser)
+void redraw_parser(drawer* drawer, html_parser* parser)
 {
+    drawer->current_x = 0;
+    drawer->current_y = 0;
+    drawer->init_highlight_rows = false;
+
     draw_title(drawer, parser);
     draw_top_navigation(drawer, parser);
     draw_middle(drawer, parser);
     draw_bottom_navigation(drawer, parser);
     box(drawer->window, 0, 0);
     wrefresh(drawer->window);
-    while (getch() != 'q')
-        ;
+}
+
+// Go round and round
+static void next_col(drawer* drawer)
+{
+    link_highlight_row current = drawer->highlight_rows[drawer->highlight_row];
+    drawer->highlight_col++;
+    if (drawer->highlight_col >= current.size)
+        drawer->highlight_col = 0;
+}
+
+static void prev_col(drawer* drawer)
+{
+    link_highlight_row current = drawer->highlight_rows[drawer->highlight_row];
+    drawer->highlight_col--;
+    if (drawer->highlight_col < 0)
+        drawer->highlight_col = current.size - 1;
+}
+
+// Go round and round
+static void next_row(drawer* drawer)
+{
+    drawer->highlight_row++;
+    if (drawer->highlight_row >= drawer->highlight_row_size)
+        drawer->highlight_row = 0;
+
+    link_highlight_row next = drawer->highlight_rows[drawer->highlight_row];
+    bool gotoend = drawer->highlight_col >= next.size;
+
+    if (gotoend)
+        drawer->highlight_col = next.size - 1;
+}
+
+static void prev_row(drawer* drawer)
+{
+    drawer->highlight_row--;
+    if (drawer->highlight_row < 0)
+        drawer->highlight_row = drawer->highlight_row_size - 1;
+
+    link_highlight_row next = drawer->highlight_rows[drawer->highlight_row];
+    bool gotoend = drawer->highlight_col >= next.size;
+
+    if (gotoend)
+        drawer->highlight_col = next.size - 1;
+}
+
+void draw_parser(drawer* drawer, html_parser* parser)
+{
+    drawer->init_highlight_rows = true;
+    memset(drawer->highlight_rows, 0, sizeof(link_highlight_row) * 32);
+
+    draw_title(drawer, parser);
+    draw_top_navigation(drawer, parser);
+    draw_middle(drawer, parser);
+    draw_bottom_navigation(drawer, parser);
+    box(drawer->window, 0, 0);
+    wrefresh(drawer->window);
+    drawer->highlight_col = -1;
+    drawer->highlight_row = -1;
+    while (true) {
+        char c = getch();
+        if (c == 'q') {
+            break;
+        } else if (c == 'a') {
+            if (drawer->highlight_row == -1)
+                drawer->highlight_row = 0;
+            prev_col(drawer);
+            redraw_parser(drawer, parser);
+        } else if (c == 'w') {
+            if (drawer->highlight_col == -1)
+                drawer->highlight_col = 0;
+            prev_row(drawer);
+            redraw_parser(drawer, parser);
+        } else if (c == 's') {
+            if (drawer->highlight_col == -1)
+                drawer->highlight_col = 0;
+            next_row(drawer);
+            redraw_parser(drawer, parser);
+        } else if (c == 'd') {
+            if (drawer->highlight_row == -1)
+                drawer->highlight_row = 0;
+            next_col(drawer);
+            redraw_parser(drawer, parser);
+        }
+    }
     endwin();
 }
 
@@ -131,6 +260,8 @@ void init_drawer(drawer* drawer)
     initscr();
     // Line buffering disabled, Pass on everty thing to me
     cbreak();
+    // Don't show keypresses
+    noecho();
     // All those F and arrow keys
     keypad(stdscr, TRUE);
     printw("Press q to exit");
@@ -147,6 +278,9 @@ void init_drawer(drawer* drawer)
     drawer->text_color = COLOR_WHITE;
     drawer->link_color = COLOR_BLUE;
     drawer->background_color = COLOR_BLACK;
+    drawer->highlight_row = 0;
+    drawer->highlight_col = 0;
+    drawer->highlight_row_size = 0;
     drawer->window = newwin(drawer->w_height, drawer->w_width, window_start_y, window_start_x);
 
     if (drawer->color_support) {
