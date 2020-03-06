@@ -1,6 +1,3 @@
-[submodule "third_party/tidy-html5"]
-	path = third_party/tidy-html5
-	url = https://github.com/htacg/tidy-html5
 [submodule "third_party/ncurses"]
 	path = third_party/ncurses
 	url = https://github.com/mirror/ncurses

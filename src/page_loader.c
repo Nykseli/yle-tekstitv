@@ -2,6 +2,7 @@
 #include <curl/curl.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "html_parser.h"
 
@@ -39,5 +40,4 @@ void load_page(html_parser* parser, char* page)
 
     /* clean-up */
     curl_easy_cleanup(curl);
-
 }

@@ -35,20 +35,17 @@ endif
 
 # static or so build
 ifeq ($(LINK),shared)
-	LINK_PATHS := -Lthird_party/tidy-html5/build/cmake/ \
-					-Wl,-Rthird_party/tidy-html5/build/cmake/ \
-					-Lthird_party/ncurses/lib \
+	LINK_PATHS := -Lthird_party/ncurses/lib \
 					-Wl,-Rthird_party/ncurses/lib \
 					-Lthird_party/curl/lib/.libs \
 					-Wl,-Rthird_party/curl/lib/.libs
-	LINKS := -ltidy -lncurses -lcurl -lcrypto -lssl -lz
+	LINKS := -lncurses -lcurl -lcrypto -lssl -lz
 else
-	LINKS := third_party/tidy-html5/build/cmake/libtidys.a \
-				third_party/ncurses/lib/libncursesw.a \
+	LINKS := third_party/ncurses/lib/libncursesw.a \
 				third_party/curl/lib/.libs/libcurl.a -lcrypto -lssl -lz
 endif
 # Files.
-INCLUDES := -Ithird_party/tidy-html5/include -Ithird_party/ncurses/include -Ithird_party/curl/include
+INCLUDES := -Ithird_party/ncurses/include -Ithird_party/curl/include
 HEADERS := $(wildcard $(SOURCE_DIR)/*.h)
 SOURCES := $(wildcard $(SOURCE_DIR)/*.c)
 OBJECTS := $(addprefix $(BUILD_DIR)/$(NAME)/, $(notdir $(SOURCES:.c=.o)))
