@@ -5,9 +5,25 @@
 #define MIDDLE_STARTX (MAX_MIDDLE_WIDTH / 2)
 #define centerx(str_len) ((MAX_WINDOW_WIDTH - (str_len)) / 2)
 
+#define TEXT_COLOR_ID 1
+#define TEXT_COLOR COLOR_PAIR(TEXT_COLOR_ID)
+#define LINK_COLOR_ID 2
+#define LINK_COLOR COLOR_PAIR(LINK_COLOR_ID)
+
 static void draw_to_drawer(drawer* drawer, char* text)
 {
     mvwprintw(drawer->window, drawer->current_y, drawer->current_x, text);
+}
+
+static void draw_link_item(drawer* drawer, html_link link)
+{
+    if (drawer->color_support)
+        wattron(drawer->window, LINK_COLOR);
+
+    draw_to_drawer(drawer, html_link_text(link));
+
+    if (drawer->color_support)
+        wattroff(drawer->window, LINK_COLOR);
 }
 
 static void draw_title(drawer* drawer, html_parser* parser)
@@ -30,7 +46,7 @@ static void draw_top_navigation(drawer* drawer, html_parser* parser)
     drawer->current_y += 2;
     drawer->current_x = (int)centerx(links_len);
     for (size_t i = 0; i < TOP_NAVIGATION_SIZE; i++) {
-        draw_to_drawer(drawer, html_link_text(links[i]));
+        draw_link_item(drawer, links[i]);
         drawer->current_x += html_link_text_size(links[i]);
         if (i < TOP_NAVIGATION_SIZE - 1) {
             draw_to_drawer(drawer, " |");
@@ -60,7 +76,7 @@ static void draw_bottom_navigation(drawer* drawer, html_parser* parser)
     drawer->current_y += 1;
     drawer->current_x = (int)centerx(links_len);
     for (size_t i = 0; i < links.size; i++) {
-        draw_to_drawer(drawer, html_link_text(html_item_as_link(links.items[i])));
+        draw_link_item(drawer, html_item_as_link(links.items[i]));
         drawer->current_x += html_link_text_size(html_item_as_link(links.items[i]));
         if (i < links.size - 1) {
             draw_to_drawer(drawer, " |");
@@ -84,7 +100,7 @@ static void draw_middle(drawer* drawer, html_parser* parser)
                     draw_to_drawer(drawer, "-");
                     drawer->current_x += 1;
                 }
-                draw_to_drawer(drawer, html_link_text(html_item_as_link(item)));
+                draw_link_item(drawer, html_item_as_link(item));
                 drawer->current_x += html_link_text_size(html_item_as_link(item));
                 last_type = HTML_LINK;
             } else if (item.type == HTML_TEXT) {
@@ -118,7 +134,8 @@ void init_drawer(drawer* drawer)
     // All those F and arrow keys
     keypad(stdscr, TRUE);
     printw("Press q to exit");
-    refresh();
+    // Hide cursor
+    curs_set(0);
     int window_start_x = (COLS - MAX_WINDOW_WIDTH) / 2;
     int window_start_y = 1;
 
@@ -126,7 +143,21 @@ void init_drawer(drawer* drawer)
     drawer->w_height = LINES - window_start_y;
     drawer->current_x = 0;
     drawer->current_y = 0;
+    drawer->color_support = has_colors();
+    drawer->text_color = COLOR_WHITE;
+    drawer->link_color = COLOR_BLUE;
+    drawer->background_color = COLOR_BLACK;
     drawer->window = newwin(drawer->w_height, drawer->w_width, window_start_y, window_start_x);
+
+    if (drawer->color_support) {
+        start_color();
+        init_pair(TEXT_COLOR_ID, drawer->text_color, drawer->background_color);
+        init_pair(LINK_COLOR_ID, drawer->link_color, drawer->background_color);
+        bkgd(TEXT_COLOR);
+        wbkgd(drawer->window, TEXT_COLOR);
+    }
+
+    refresh();
 }
 
 void free_drawer(drawer* drawer)

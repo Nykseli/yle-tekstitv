@@ -3,6 +3,7 @@
 
 #include "html_parser.h"
 #include <ncurses.h>
+#include <stdbool.h>
 
 typedef struct
 {
@@ -11,6 +12,10 @@ typedef struct
     int w_height;
     int current_x;
     int current_y;
+    bool color_support;
+    short text_color;
+    short link_color;
+    short background_color;
 } drawer;
 
 void init_drawer(drawer* drawer);
