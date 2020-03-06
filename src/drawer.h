@@ -5,6 +5,7 @@
 #include <stdbool.h>
 
 typedef struct{
+    char link[64];
     int start_x;
     int start_y;
 } link_highlight;

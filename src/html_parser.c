@@ -390,6 +390,8 @@ void parse_middle(html_parser* parser, html_buffer* buffer)
 
 void parse_html(html_parser* parser)
 {
+    centers = 0;
+
     html_buffer* buffer = &parser->_curl_buffer;
     buffer->current = 0;
     for (; buffer->current < buffer->size; buffer->current++) {
@@ -425,6 +427,7 @@ void init_html_parser(html_parser* parser)
     memset(parser->title.text, 0, HTML_TEXT_MAX);
     memset(parser->bottom_navigation, 0, sizeof(html_row) * BOTTOM_NAVIGATION_SIZE);
     memset(parser->top_navigation, 0, sizeof(html_link) * TOP_NAVIGATION_SIZE);
+    memset(parser->_curl_buffer.html, 0, 1024 * 32);
 }
 
 void free_html_parser(html_parser* parser)

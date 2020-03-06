@@ -2,6 +2,7 @@
 
 #include "drawer.h"
 #include "html_parser.h"
+#include "page_loader.h"
 
 #define MAX_WINDOW_WIDTH 80
 #define MAX_MIDDLE_WIDTH (MAX_WINDOW_WIDTH / 2)
@@ -47,6 +48,7 @@ static void add_link_highlight(drawer* drawer, html_link link)
         return;
 
     link_highlight h;
+    strncpy(h.link, link.url.text, HTML_LINK_SIZE);
     h.start_x = drawer->current_x;
     h.start_y = drawer->current_y;
     link_highlight_row* row = &drawer->highlight_rows[drawer->highlight_row_size];
@@ -154,11 +156,21 @@ static void draw_middle(drawer* drawer, html_parser* parser)
     }
 }
 
-void redraw_parser(drawer* drawer, html_parser* parser)
+static void redraw_parser(drawer* drawer, html_parser* parser, bool init)
 {
     drawer->current_x = 0;
     drawer->current_y = 0;
-    drawer->init_highlight_rows = false;
+    drawer->init_highlight_rows = init;
+    if (init) {
+        int window_start_x = (COLS - MAX_WINDOW_WIDTH) / 2;
+        int window_start_y = 1;
+        drawer->highlight_row = 0;
+        drawer->highlight_col = 0;
+        drawer->highlight_row_size = 0;
+        delwin(drawer->window);
+        drawer->window = newwin(drawer->w_height, drawer->w_width, window_start_y, window_start_x);
+        memset(drawer->highlight_rows, 0, sizeof(link_highlight_row) * 32);
+    }
 
     draw_title(drawer, parser);
     draw_top_navigation(drawer, parser);
@@ -212,6 +224,22 @@ static void prev_row(drawer* drawer)
         drawer->highlight_col = next.size - 1;
 }
 
+static void load_link(drawer* drawer, html_parser* parser)
+{
+    link_highlight link = drawer->highlight_rows[drawer->highlight_row].links[drawer->highlight_col];
+    // Link + https: + null
+    char https_link[HTML_LINK_SIZE + 7] = { 'h', 't', 't', 'p', 's', ':' };
+    strncpy(https_link + 6, link.link, HTML_LINK_SIZE);
+    https_link[HTML_LINK_SIZE + 6] = '\0';
+
+    free_html_parser(parser);
+    init_html_parser(parser);
+
+    load_page(parser, https_link);
+    parse_html(parser);
+    redraw_parser(drawer, parser, true);
+}
+
 void draw_parser(drawer* drawer, html_parser* parser)
 {
     drawer->init_highlight_rows = true;
@@ -233,22 +261,24 @@ void draw_parser(drawer* drawer, html_parser* parser)
             if (drawer->highlight_row == -1)
                 drawer->highlight_row = 0;
             prev_col(drawer);
-            redraw_parser(drawer, parser);
+            redraw_parser(drawer, parser, false);
         } else if (c == 'w') {
             if (drawer->highlight_col == -1)
                 drawer->highlight_col = 0;
             prev_row(drawer);
-            redraw_parser(drawer, parser);
+            redraw_parser(drawer, parser, false);
         } else if (c == 's') {
             if (drawer->highlight_col == -1)
                 drawer->highlight_col = 0;
             next_row(drawer);
-            redraw_parser(drawer, parser);
+            redraw_parser(drawer, parser, false);
         } else if (c == 'd') {
             if (drawer->highlight_row == -1)
                 drawer->highlight_row = 0;
             next_col(drawer);
-            redraw_parser(drawer, parser);
+            redraw_parser(drawer, parser, false);
+        } else if (c == 'g') {
+            load_link(drawer, parser);
         }
     }
     endwin();
