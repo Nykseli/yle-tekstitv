@@ -33,8 +33,8 @@ else
 	BUILD_DIR := build/release
 endif
 
-# static or so build
-ifeq ($(LINK),shared)
+# static or linked build
+ifneq ($(LINK),static)
 	LINK_PATHS := -Lthird_party/ncurses/lib \
 					-Wl,-Rthird_party/ncurses/lib \
 					-Lthird_party/curl/lib/.libs \
@@ -43,9 +43,10 @@ ifeq ($(LINK),shared)
 else
 	LINKS := third_party/ncurses/lib/libncursesw.a \
 				third_party/curl/lib/.libs/libcurl.a -lcrypto -lssl -lz
+	# Files.
+	INCLUDES := -Ithird_party/ncurses/include -Ithird_party/curl/include
 endif
-# Files.
-INCLUDES := -Ithird_party/ncurses/include -Ithird_party/curl/include
+
 HEADERS := $(wildcard $(SOURCE_DIR)/*.h)
 SOURCES := $(wildcard $(SOURCE_DIR)/*.c)
 OBJECTS := $(addprefix $(BUILD_DIR)/$(NAME)/, $(notdir $(SOURCES:.c=.o)))
