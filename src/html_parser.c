@@ -221,6 +221,47 @@ void parse_middle_link(html_parser* parser, html_buffer* buffer, size_t spaces)
     parser->middle[parser->middle_rows].size++;
 }
 
+// Copy and filter html encoded ä and ö characters
+size_t copy_middle_text(char* target, char* src, size_t len)
+{
+    // filtered text
+    unsigned char filter_buf[1024] = { 0 };
+    size_t filter_len = 0;
+
+    for (size_t i = 0; i < len; i++) {
+        //    printf("%c\n", src[i]);
+        if (src[i] != '&') {
+            filter_buf[filter_len] = src[i];
+            filter_len++;
+            continue;
+        }
+
+        i++;
+        switch (src[i]) {
+        // ä chacter utf-8 ncurses doesn't like Ä
+        case 'a':
+        case 'A':
+            filter_buf[filter_len] = 0xc3;
+            filter_buf[filter_len + 1] = 0xa4;
+            break;
+        // ö chacter utf-8 ncurses doesn't like Ö
+        case 'o':
+        case 'O':
+            filter_buf[filter_len] = 0xc3;
+            filter_buf[filter_len + 1] = 0xb6;
+            break;
+        default:
+            // error?
+            break;
+        }
+        filter_len += 2;
+        i += 4;
+    }
+
+    strncpy(target, (char*)filter_buf, filter_len);
+    return filter_len;
+}
+
 void parse_middle_text(html_parser* parser, html_buffer* buffer, size_t spaces)
 {
     // Sometimes <big> is lost in font
@@ -245,9 +286,10 @@ void parse_middle_text(html_parser* parser, html_buffer* buffer, size_t spaces)
         item.item.text.text[i] = ' ';
 
     // Then copy the actual text
-    strncpy(item.item.text.text + spaces, buffer->html + buffer->current, text_len);
-    item.item.text.size = text_len + spaces;
-    item.item.text.text[text_len] = '\0';
+    //strncpy(item.item.text.text + spaces, buffer->html + buffer->current, text_len);
+    size_t filter_len = copy_middle_text(item.item.text.text + spaces, buffer->html + buffer->current, text_len);
+    item.item.text.size = filter_len + spaces;
+    item.item.text.text[filter_len] = '\0';
     buffer->current += text_len - 1;
 
     // append item to row
