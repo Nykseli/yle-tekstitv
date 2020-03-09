@@ -4,15 +4,32 @@
 #include "html_parser.h"
 #include "page_loader.h"
 
-#define MAX_WINDOW_WIDTH 80
-#define MAX_MIDDLE_WIDTH (MAX_WINDOW_WIDTH / 2)
+#define MAX_MIDDLE_WIDTH (max_window_width() / 2)
 #define MIDDLE_STARTX (MAX_MIDDLE_WIDTH / 2)
-#define centerx(str_len) ((MAX_WINDOW_WIDTH - (str_len)) / 2)
+#define centerx(str_len) ((max_window_width() - (str_len)) / 2)
 
 #define TEXT_COLOR_ID 1
 #define TEXT_COLOR COLOR_PAIR(TEXT_COLOR_ID)
 #define LINK_COLOR_ID 2
 #define LINK_COLOR COLOR_PAIR(LINK_COLOR_ID)
+
+static int max_window_width()
+{
+    if (COLS > 80) {
+        return 80;
+    }
+
+    return COLS;
+}
+
+static int middle_startx()
+{
+    if (COLS > 80) {
+        return MIDDLE_STARTX;
+    }
+
+    return COLS / 5;
+}
 
 static void draw_to_drawer(drawer* drawer, char* text)
 {
@@ -65,6 +82,10 @@ static void draw_title(drawer* drawer, html_parser* parser)
 
 static void draw_top_navigation(drawer* drawer, html_parser* parser)
 {
+    // Only draw navigation on "big" terminals
+    if (max_window_width() < 80)
+        return;
+
     html_link* links = parser->top_navigation;
     // Start length with adding sizes of " | " separators
     size_t links_len = (TOP_NAVIGATION_SIZE - 1) * 3;
@@ -93,6 +114,10 @@ static void draw_top_navigation(drawer* drawer, html_parser* parser)
 
 static void draw_bottom_navigation(drawer* drawer, html_parser* parser)
 {
+    // Only draw navigation on "big" terminals
+    if (max_window_width() < 80)
+        return;
+
     // first row is identical to top navigation
     draw_top_navigation(drawer, parser);
 
@@ -128,7 +153,7 @@ static void draw_middle(drawer* drawer, html_parser* parser)
     html_item_type last_type = HTML_TEXT;
 
     for (size_t i = 0; i < parser->middle_rows; i++) {
-        drawer->current_x = MIDDLE_STARTX;
+        drawer->current_x = middle_startx();
         drawer->current_y++;
         bool link_on_row = false;
         for (size_t j = 0; j < parser->middle[i].size; j++) {
@@ -162,7 +187,7 @@ static void redraw_parser(drawer* drawer, html_parser* parser, bool init)
     drawer->current_y = 0;
     drawer->init_highlight_rows = init;
     if (init) {
-        int window_start_x = (COLS - MAX_WINDOW_WIDTH) / 2;
+        int window_start_x = (COLS - max_window_width()) / 2;
         int window_start_y = 1;
         drawer->highlight_row = 0;
         drawer->highlight_col = 0;
@@ -176,7 +201,6 @@ static void redraw_parser(drawer* drawer, html_parser* parser, bool init)
     draw_top_navigation(drawer, parser);
     draw_middle(drawer, parser);
     draw_bottom_navigation(drawer, parser);
-    box(drawer->window, 0, 0);
     wrefresh(drawer->window);
 }
 
@@ -249,7 +273,6 @@ void draw_parser(drawer* drawer, html_parser* parser)
     draw_top_navigation(drawer, parser);
     draw_middle(drawer, parser);
     draw_bottom_navigation(drawer, parser);
-    box(drawer->window, 0, 0);
     wrefresh(drawer->window);
     drawer->highlight_col = -1;
     drawer->highlight_row = -1;
@@ -297,10 +320,10 @@ void init_drawer(drawer* drawer)
     printw("Press q to exit");
     // Hide cursor
     curs_set(0);
-    int window_start_x = (COLS - MAX_WINDOW_WIDTH) / 2;
+    int window_start_x = (COLS - max_window_width()) / 2;
     int window_start_y = 1;
 
-    drawer->w_width = MAX_WINDOW_WIDTH;
+    drawer->w_width = max_window_width();
     drawer->w_height = LINES - window_start_y;
     drawer->current_x = 0;
     drawer->current_y = 0;
