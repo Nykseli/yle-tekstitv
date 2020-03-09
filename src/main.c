@@ -6,65 +6,10 @@
 #include "drawer.h"
 #include "html_parser.h"
 #include "page_loader.h"
-
-static int page_number(const char* page)
-{
-    assert(page);
-
-    size_t len = strlen(page);
-    if (strlen(page) > 3)
-        return -1;
-
-    for (size_t i = 0; i < len; i++) {
-        if (page[i] < '0' || page[i] > '9')
-            return -1;
-    }
-
-    int result = atoi(page);
-    return result >= 100 && result < 1000 ? result : -1;
-}
-
-static int subpage_number(const char* subpage)
-{
-    assert(subpage);
-
-    size_t len = strlen(subpage);
-    if (len > 2)
-        return -1;
-
-    for (size_t i = 0; i < len; i++) {
-        if (subpage[i] < '0' || subpage[i] > '9')
-            return -1;
-    }
-
-    int result = atoi(subpage);
-    return result >= 1 && result < 100 ? result : -1;
-}
-
-static void add_page(int page, char* url)
-{
-    assert(url);
-    assert(page >= 100 && page <= 999);
-
-    // Pxxx part
-    url[29] = (page / 100) + '0';
-    url[30] = (page % 100 / 10) + '0';
-    url[31] = (page % 10) + '0';
-}
-
-static void add_subpage(int subpage, char* url)
-{
-    assert(url);
-    assert(subpage >= 1 && subpage <= 99);
-
-    // _xx part
-    url[33] = subpage > 9 ? (subpage % 100 / 10) + '0' : '0';
-    url[34] = (subpage % 10) + '0';
-}
+#include "page_number.h"
 
 int main(int argc, char** argv)
 {
-    static char url_template[] = "https://yle.fi/tekstitv/txt/Pxxx_xx.html";
 
     if (argc > 3) {
         printf("Usage: %s [page] [sub page]\n", argv[0]);
@@ -93,12 +38,12 @@ int main(int argc, char** argv)
         }
     }
 
-    add_page(page, url_template);
-    add_subpage(subpage, url_template);
+    add_page(page);
+    add_subpage(subpage);
 
     html_parser parser;
     init_html_parser(&parser);
-    load_page(&parser, url_template);
+    load_page(&parser, https_page_url);
     parse_html(&parser);
 
     drawer drawer;

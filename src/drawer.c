@@ -3,6 +3,7 @@
 #include "drawer.h"
 #include "html_parser.h"
 #include "page_loader.h"
+#include "page_number.h"
 
 #define MAX_MIDDLE_WIDTH (max_window_width() / 2)
 #define MIDDLE_STARTX (MAX_MIDDLE_WIDTH / 2)
@@ -312,6 +313,62 @@ static void load_nav_link(drawer* drawer, html_parser* parser, nav_type type)
     load_link(drawer, parser, link);
 }
 
+void search_mode(drawer* drawer, html_parser* parser)
+{
+
+    mvprintw(0, 0, "                                            ");
+    mvprintw(0, 0, "Search page:");
+    int currentx = 13;
+    int page_i = 0;
+    char page[4] = { 0, 0, 0, 0 };
+
+    // Show cursor and inputs
+    curs_set(2);
+    refresh();
+    while (true) {
+        int c = getch();
+        if (c == '\n') {
+            int num = page_number(page);
+            if (num == -1) {
+
+                mvprintw(0, 0, "                                            ");
+                mvprintw(0, 0, "Page needs to bee value between 100 and 999");
+                refresh();
+                getch();
+                break;
+            } else {
+                add_page(num);
+                add_subpage(1);
+                load_link(drawer, parser, relative_page_url);
+                break;
+            }
+        } else if (c == KEY_BACKSPACE) {
+            if (page_i == 0)
+                continue;
+            page_i--;
+            currentx--;
+            mvaddch(0, currentx, ' ');
+            page[page_i] = 0;
+        } else if (c == 27) { //esc
+            break;
+        } else {
+            if (page_i + 1 >= 4)
+                continue;
+            mvaddch(0, currentx, (char)c);
+            page[page_i] = (char)c;
+            page_i++;
+            currentx++;
+        }
+        refresh();
+    }
+
+    // hide cursor and inputs
+    curs_set(0);
+    mvprintw(0, 0, "                                            ");
+    mvprintw(0, 0, "Press q to exit, s to search");
+    refresh();
+}
+
 void draw_parser(drawer* drawer, html_parser* parser)
 {
     drawer->init_highlight_rows = true;
@@ -358,6 +415,8 @@ void draw_parser(drawer* drawer, html_parser* parser)
             load_nav_link(drawer, parser, NEXT_SUB_PAGE);
         } else if (c == 'm') {
             load_nav_link(drawer, parser, NEXT_PAGE);
+        } else if (c == 's') {
+            search_mode(drawer, parser);
         }
     }
     endwin();
@@ -373,7 +432,7 @@ void init_drawer(drawer* drawer)
     noecho();
     // All those F and arrow keys
     keypad(stdscr, TRUE);
-    printw("Press q to exit");
+    printw("Press q to exit, s to search");
     // Hide cursor
     curs_set(0);
     int window_start_x = (COLS - max_window_width()) / 2;
