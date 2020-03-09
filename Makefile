@@ -35,7 +35,7 @@ endif
 
 # static or linked build
 ifneq ($(LINK),static)
-	LINK_PATHS := -Lthird_party/ncurses/lib \
+	# LINK_PATHS := -Lthird_party/ncurses/lib \
 					-Wl,-Rthird_party/ncurses/lib \
 					-Lthird_party/curl/lib/.libs \
 					-Wl,-Rthird_party/curl/lib/.libs

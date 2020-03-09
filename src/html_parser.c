@@ -67,7 +67,7 @@ tag_type get_tag_type(html_buffer* buffer)
     if (*html == '<')
         html++;
 
-    while ((c = html[tag_len]) != EOF && c != '>' && c != ' ')
+    while ((c = html[tag_len]) != '\0' && c != '>' && c != ' ')
         tag_len++;
 
     if (tag_len == 1) {
