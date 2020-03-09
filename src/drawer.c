@@ -210,16 +210,13 @@ static void redraw_parser(drawer* drawer, html_parser* parser, bool init)
     drawer->current_y = 0;
     drawer->init_highlight_rows = init;
     if (init) {
-        int window_start_x = (COLS - max_window_width()) / 2;
-        int window_start_y = 1;
         drawer->highlight_row = 0;
         drawer->highlight_col = 0;
         drawer->highlight_row_size = 0;
-        delwin(drawer->window);
-        drawer->window = newwin(drawer->w_height, drawer->w_width, window_start_y, window_start_x);
         memset(drawer->highlight_rows, 0, sizeof(link_highlight_row) * 32);
     }
 
+    wclear(drawer->window);
     draw_title(drawer, parser);
     draw_top_navigation(drawer, parser);
     draw_middle(drawer, parser);
