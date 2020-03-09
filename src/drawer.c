@@ -13,6 +13,22 @@
 #define LINK_COLOR_ID 2
 #define LINK_COLOR COLOR_PAIR(LINK_COLOR_ID)
 
+typedef struct {
+    char prev_page[HTML_LINK_SIZE];
+    char next_page[HTML_LINK_SIZE];
+    char prev_sub_page[HTML_LINK_SIZE];
+    char next_sub_page[HTML_LINK_SIZE];
+} navigation;
+
+typedef enum {
+    PREV_PAGE = 0,
+    NEXT_PAGE,
+    PREV_SUB_PAGE,
+    NEXT_SUB_PAGE
+} nav_type;
+
+static navigation nav_links;
+
 static int max_window_width()
 {
     if (COLS > 80) {
@@ -82,11 +98,18 @@ static void draw_title(drawer* drawer, html_parser* parser)
 
 static void draw_top_navigation(drawer* drawer, html_parser* parser)
 {
+    html_link* links = parser->top_navigation;
+
+    // Always collect navigation links for hotkeys
+    strncpy(nav_links.prev_page, html_link_link(links[0]), HTML_LINK_SIZE);
+    strncpy(nav_links.prev_sub_page, html_link_link(links[1]), HTML_LINK_SIZE);
+    strncpy(nav_links.next_sub_page, html_link_link(links[2]), HTML_LINK_SIZE);
+    strncpy(nav_links.next_page, html_link_link(links[3]), HTML_LINK_SIZE);
+
     // Only draw navigation on "big" terminals
     if (max_window_width() < 80)
         return;
 
-    html_link* links = parser->top_navigation;
     // Start length with adding sizes of " | " separators
     size_t links_len = (TOP_NAVIGATION_SIZE - 1) * 3;
     for (size_t i = 0; i < TOP_NAVIGATION_SIZE; i++) {
@@ -248,12 +271,11 @@ static void prev_row(drawer* drawer)
         drawer->highlight_col = next.size - 1;
 }
 
-static void load_link(drawer* drawer, html_parser* parser)
+static void load_link(drawer* drawer, html_parser* parser, char* link)
 {
-    link_highlight link = drawer->highlight_rows[drawer->highlight_row].links[drawer->highlight_col];
     // Link + https: + null
     char https_link[HTML_LINK_SIZE + 7] = { 'h', 't', 't', 'p', 's', ':' };
-    strncpy(https_link + 6, link.link, HTML_LINK_SIZE);
+    strncpy(https_link + 6, link, HTML_LINK_SIZE);
     https_link[HTML_LINK_SIZE + 6] = '\0';
 
     free_html_parser(parser);
@@ -262,6 +284,35 @@ static void load_link(drawer* drawer, html_parser* parser)
     load_page(parser, https_link);
     parse_html(parser);
     redraw_parser(drawer, parser, true);
+}
+
+static void load_highlight_link(drawer* drawer, html_parser* parser)
+{
+    link_highlight link = drawer->highlight_rows[drawer->highlight_row].links[drawer->highlight_col];
+    load_link(drawer, parser, link.link);
+}
+
+static void load_nav_link(drawer* drawer, html_parser* parser, nav_type type)
+{
+    char* link = NULL;
+    switch (type) {
+    case NEXT_PAGE:
+        link = nav_links.next_page;
+        break;
+    case PREV_PAGE:
+        link = nav_links.prev_page;
+        break;
+    case NEXT_SUB_PAGE:
+        link = nav_links.next_sub_page;
+        break;
+    case PREV_SUB_PAGE:
+        link = nav_links.prev_sub_page;
+        break;
+    default:
+        break;
+    }
+
+    load_link(drawer, parser, link);
 }
 
 void draw_parser(drawer* drawer, html_parser* parser)
@@ -301,7 +352,15 @@ void draw_parser(drawer* drawer, html_parser* parser)
             next_col(drawer);
             redraw_parser(drawer, parser, false);
         } else if (c == 'g') {
-            load_link(drawer, parser);
+            load_highlight_link(drawer, parser);
+        } else if (c == 'v') {
+            load_nav_link(drawer, parser, PREV_PAGE);
+        } else if (c == 'b') {
+            load_nav_link(drawer, parser, PREV_SUB_PAGE);
+        } else if (c == 'n') {
+            load_nav_link(drawer, parser, NEXT_SUB_PAGE);
+        } else if (c == 'm') {
+            load_nav_link(drawer, parser, NEXT_PAGE);
         }
     }
     endwin();

@@ -65,6 +65,7 @@ typedef struct {
 #define html_item_as_text(_item) ((_item).item.text)
 #define html_item_as_link(_item) ((_item).item.link)
 
+#define html_link_link(_link) ((_link).url.text)
 #define html_link_text(_link) ((_link).inner_text.text)
 #define html_link_text_size(_link) ((_link).inner_text.size)
 #define html_text_text(_text) ((_text).text)
