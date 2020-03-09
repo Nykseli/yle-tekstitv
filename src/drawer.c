@@ -325,30 +325,30 @@ void draw_parser(drawer* drawer, html_parser* parser)
     drawer->highlight_col = -1;
     drawer->highlight_row = -1;
     while (true) {
-        char c = getch();
+        int c = getch();
         if (c == 'q') {
             break;
-        } else if (c == 'a') {
+        } else if (c == 'h' || c == KEY_LEFT) {
             if (drawer->highlight_row == -1)
                 drawer->highlight_row = 0;
             prev_col(drawer);
             redraw_parser(drawer, parser, false);
-        } else if (c == 'w') {
+        } else if (c == 'k' || c == KEY_UP) {
             if (drawer->highlight_col == -1)
                 drawer->highlight_col = 0;
             prev_row(drawer);
             redraw_parser(drawer, parser, false);
-        } else if (c == 's') {
+        } else if (c == 'j' || c == KEY_DOWN) {
             if (drawer->highlight_col == -1)
                 drawer->highlight_col = 0;
             next_row(drawer);
             redraw_parser(drawer, parser, false);
-        } else if (c == 'd') {
+        } else if (c == 'l' || c == KEY_RIGHT) {
             if (drawer->highlight_row == -1)
                 drawer->highlight_row = 0;
             next_col(drawer);
             redraw_parser(drawer, parser, false);
-        } else if (c == 'g') {
+        } else if (c == 'g' || c == '\n') { // g or enter
             load_highlight_link(drawer, parser);
         } else if (c == 'v') {
             load_nav_link(drawer, parser, PREV_PAGE);
