@@ -68,4 +68,10 @@ $(BUILD_DIR)/$(NAME)/%.o: $(SOURCE_DIR)/%.c $(HEADERS)
 clean:
 	rm -rf build
 
+install:
+	cp build/$(NAME) /usr/bin/$(NAME)
+
+uninstall:
+	rm /usr/bin/$(NAME)
+
 .PHONY: default clean
