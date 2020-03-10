@@ -23,11 +23,13 @@ void load_page(html_parser* parser, char* page)
     char curl_errbuf[CURL_ERROR_SIZE];
     parser->_curl_buffer.current = 0;
     parser->_curl_buffer.size = 0;
+    parser->curl_load_error = false;
     int err;
 
     curl = curl_easy_init();
     curl_easy_setopt(curl, CURLOPT_URL, page);
     curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, curl_errbuf);
+    curl_easy_setopt(curl, CURLOPT_FAILONERROR, 1L);
     // TODO: uncomment for verbose mode
     /* curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L); */
     /* curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L); */
@@ -36,7 +38,8 @@ void load_page(html_parser* parser, char* page)
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &parser->_curl_buffer);
     err = curl_easy_perform(curl);
     if (err)
-        fprintf(stderr, "%s\n", curl_errbuf);
+        //fprintf(stderr, "%s\n", curl_errbuf);
+        parser->curl_load_error = true;
 
     /* clean-up */
     curl_easy_cleanup(curl);

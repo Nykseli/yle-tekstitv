@@ -35,6 +35,11 @@ void print_middle(html_parser* parser)
 
 void print_parser(html_parser* parser)
 {
+    if (parser->curl_load_error) {
+        printf("Couldn't load the page. Try another one\n");
+        return;
+    }
+
     print_title(parser);
     print_middle(parser);
 }

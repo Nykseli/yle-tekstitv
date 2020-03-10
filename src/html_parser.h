@@ -1,6 +1,7 @@
 #ifndef _HTML_PARSER_H_
 #define _HTML_PARSER_H_
 
+#include <stdbool.h>
 #include <stddef.h>
 
 #define HTML_TEXT_MAX 64
@@ -60,6 +61,8 @@ typedef struct {
     size_t middle_rows;
 
     html_buffer _curl_buffer;
+    // Couldn't load the page
+    bool curl_load_error;
 } html_parser;
 
 #define html_item_as_text(_item) ((_item).item.text)

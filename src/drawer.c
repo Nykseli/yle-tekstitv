@@ -30,6 +30,8 @@ typedef enum {
 
 static navigation nav_links;
 
+static void search_mode(drawer* drawer, html_parser* parser);
+
 static int max_window_width()
 {
     if (COLS > 80) {
@@ -46,6 +48,15 @@ static int middle_startx()
     }
 
     return COLS / 5;
+}
+
+static void curl_load_error(drawer* drawer, html_parser* parser)
+{
+    clear();
+    printw("Couldn't load the page, press any key to continue\n");
+    refresh();
+    getch();
+    search_mode(drawer, parser);
 }
 
 static void draw_to_drawer(drawer* drawer, char* text)
@@ -207,6 +218,11 @@ static void draw_middle(drawer* drawer, html_parser* parser)
 
 static void redraw_parser(drawer* drawer, html_parser* parser, bool init)
 {
+    if (parser->curl_load_error) {
+        curl_load_error(drawer, parser);
+        return;
+    }
+
     drawer->current_x = 0;
     drawer->current_y = 0;
     drawer->init_highlight_rows = init;
@@ -316,7 +332,7 @@ static void load_nav_link(drawer* drawer, html_parser* parser, nav_type type)
 void search_mode(drawer* drawer, html_parser* parser)
 {
 
-    mvprintw(0, 0, "                                            ");
+    mvprintw(0, 0, "                                                        ");
     mvprintw(0, 0, "Search page:");
     int currentx = 13;
     int page_i = 0;
@@ -369,16 +385,8 @@ void search_mode(drawer* drawer, html_parser* parser)
     refresh();
 }
 
-void draw_parser(drawer* drawer, html_parser* parser)
+void main_draw_loop(drawer* drawer, html_parser* parser)
 {
-    drawer->init_highlight_rows = true;
-    memset(drawer->highlight_rows, 0, sizeof(link_highlight_row) * 32);
-
-    draw_title(drawer, parser);
-    draw_top_navigation(drawer, parser);
-    draw_middle(drawer, parser);
-    draw_bottom_navigation(drawer, parser);
-    wrefresh(drawer->window);
     drawer->highlight_col = -1;
     drawer->highlight_row = -1;
     while (true) {
@@ -419,6 +427,24 @@ void draw_parser(drawer* drawer, html_parser* parser)
             search_mode(drawer, parser);
         }
     }
+}
+
+void draw_parser(drawer* drawer, html_parser* parser)
+{
+    if (parser->curl_load_error) {
+        curl_load_error(drawer, parser);
+    } else {
+        drawer->init_highlight_rows = true;
+        memset(drawer->highlight_rows, 0, sizeof(link_highlight_row) * 32);
+
+        draw_title(drawer, parser);
+        draw_top_navigation(drawer, parser);
+        draw_middle(drawer, parser);
+        draw_bottom_navigation(drawer, parser);
+        wrefresh(drawer->window);
+    }
+
+    main_draw_loop(drawer, parser);
     endwin();
 }
 
