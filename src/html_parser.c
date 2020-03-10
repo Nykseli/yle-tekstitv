@@ -287,7 +287,7 @@ void parse_middle_text(html_parser* parser, html_buffer* buffer, size_t spaces)
     //strncpy(item.item.text.text + spaces, buffer->html + buffer->current, text_len);
     size_t filter_len = copy_middle_text(item.item.text.text + spaces, buffer->html + buffer->current, text_len);
     item.item.text.size = filter_len + spaces;
-    item.item.text.text[filter_len] = '\0';
+    item.item.text.text[item.item.text.size] = '\0';
     buffer->current += text_len - 1;
 
     // append item to row
