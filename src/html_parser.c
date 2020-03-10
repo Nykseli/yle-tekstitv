@@ -219,7 +219,7 @@ void parse_middle_link(html_parser* parser, html_buffer* buffer, size_t spaces)
     parser->middle[parser->middle_rows].size++;
 }
 
-// Copy and filter html encoded ä and ö characters
+// Copy and filter html encoded ", ä and ö characters
 size_t copy_middle_text(char* target, char* src, size_t len)
 {
     // filtered text
@@ -227,7 +227,7 @@ size_t copy_middle_text(char* target, char* src, size_t len)
     size_t filter_len = 0;
 
     for (size_t i = 0; i < len; i++) {
-        //    printf("%c\n", src[i]);
+
         if (src[i] != '&') {
             filter_buf[filter_len] = src[i];
             filter_len++;
@@ -241,18 +241,23 @@ size_t copy_middle_text(char* target, char* src, size_t len)
         case 'A':
             filter_buf[filter_len] = 0xc3;
             filter_buf[filter_len + 1] = 0xa4;
+            filter_len += 2;
             break;
         // ö chacter utf-8 ncurses doesn't like Ö
         case 'o':
         case 'O':
             filter_buf[filter_len] = 0xc3;
             filter_buf[filter_len + 1] = 0xb6;
+            filter_len += 2;
             break;
+        // " character is quote
+        case 'q':
+            filter_buf[filter_len] = '"';
+            filter_len++;
         default:
             // error?
             break;
         }
-        filter_len += 2;
         i += 4;
     }
 
