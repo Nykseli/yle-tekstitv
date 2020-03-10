@@ -27,10 +27,10 @@ void print_middle(html_parser* parser)
                 if (last_type == HTML_LINK)
                     printf("-");
 
-                printf(html_link_text(html_item_as_link(item)));
+                printf("%s", html_link_text(html_item_as_link(item)));
                 last_type = HTML_LINK;
             } else if (item.type == HTML_TEXT) {
-                printf(html_text_text(html_item_as_text(item)));
+                printf("%s", html_text_text(html_item_as_text(item)));
                 last_type = HTML_TEXT;
             }
         }

@@ -21,7 +21,7 @@
 # SOURCE_DIR   Directory where source files and headers are found.
 
 NAME=tekstitv
-CFLAGS := -std=c99 -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-result -pedantic
+CFLAGS := -std=c99 -Wall -Wextra -Werror -Wno-unused-parameter -Wformat-security -Wno-unused-result -pedantic
 SOURCE_DIR = src
 
 # Mode configuration.
