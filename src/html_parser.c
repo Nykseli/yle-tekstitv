@@ -242,6 +242,7 @@ size_t copy_middle_text(char* target, char* src, size_t len)
             filter_buf[filter_len] = 0xc3;
             filter_buf[filter_len + 1] = 0xa4;
             filter_len += 2;
+            i += 4;
             break;
         // ö chacter utf-8 ncurses doesn't like Ö
         case 'o':
@@ -249,16 +250,23 @@ size_t copy_middle_text(char* target, char* src, size_t len)
             filter_buf[filter_len] = 0xc3;
             filter_buf[filter_len + 1] = 0xb6;
             filter_len += 2;
+            i += 4;
             break;
         // " character is quote
         case 'q':
             filter_buf[filter_len] = '"';
             filter_len++;
+            i += 4;
+            break;
+        // > is gt
+        case 'g':
+            filter_buf[filter_len] = '>';
+            filter_len++;
+            i += 2;
         default:
             // error?
             break;
         }
-        i += 4;
     }
 
     strncpy(target, (char*)filter_buf, filter_len);
