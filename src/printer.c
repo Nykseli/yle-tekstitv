@@ -1,15 +1,21 @@
 
 #include <stdio.h>
 
+#include "config.h"
 #include "printer.h"
 
 void print_title(html_parser* parser)
 {
+    if (global_config.no_title)
+        return;
+
     printf("  %s\n", parser->title.text);
 }
 
 void print_middle(html_parser* parser)
 {
+    if (global_config.no_middle)
+        return;
 
     html_item_type last_type = HTML_TEXT;
 

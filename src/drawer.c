@@ -1,5 +1,6 @@
 #include <string.h>
 
+#include "config.h"
 #include "drawer.h"
 #include "html_parser.h"
 #include "page_loader.h"
@@ -103,6 +104,9 @@ static void add_link_highlight(drawer* drawer, html_link link)
 
 static void draw_title(drawer* drawer, html_parser* parser)
 {
+    if (global_config.no_title)
+        return;
+
     drawer->current_x = centerx(parser->title.size);
     drawer->current_y++;
     draw_to_drawer(drawer, parser->title.text);
@@ -110,6 +114,9 @@ static void draw_title(drawer* drawer, html_parser* parser)
 
 static void draw_top_navigation(drawer* drawer, html_parser* parser)
 {
+    if (global_config.no_nav || global_config.no_top_nav)
+        return;
+
     html_link* links = parser->top_navigation;
 
     // Always collect navigation links for hotkeys
@@ -149,6 +156,9 @@ static void draw_top_navigation(drawer* drawer, html_parser* parser)
 
 static void draw_bottom_navigation(drawer* drawer, html_parser* parser)
 {
+    if (global_config.no_nav || global_config.no_bottom_nav)
+        return;
+
     // Only draw navigation on "big" terminals
     if (max_window_width() < 80)
         return;
@@ -185,6 +195,9 @@ static void draw_bottom_navigation(drawer* drawer, html_parser* parser)
 
 static void draw_middle(drawer* drawer, html_parser* parser)
 {
+    if (global_config.no_middle)
+        return;
+
     html_item_type last_type = HTML_TEXT;
 
     for (size_t i = 0; i < parser->middle_rows; i++) {

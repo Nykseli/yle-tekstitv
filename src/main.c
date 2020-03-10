@@ -15,6 +15,11 @@ static void print_usage(char* name)
     printf("Options:\n");
     printf("\t-h,--help\t\tPrint this\n");
     printf("\t-t,--text-only\t\tPrint teletext to stdout instead using ncurses\n");
+    printf("\t--no-nav\t\tDisable all navigations\n");
+    printf("\t--no-top-nav\t\tDisable top navigation\n");
+    printf("\t--no-bottom-nav\t\tDisable bottom navigation\n");
+    printf("\t--no-title\t\tDisable title\n");
+    printf("\t--no-middle\t\tDisable middle\n");
     exit(0);
 }
 
