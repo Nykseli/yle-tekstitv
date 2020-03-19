@@ -10,9 +10,6 @@
 
 #include "html_parser.h"
 
-// What field of the teksti tv are we parsing
-static int centers = 0;
-
 typedef enum {
     UNKNOWN,
     P,
@@ -23,7 +20,7 @@ typedef enum {
     CENTER
 } tag_type;
 
-static inline void skip_next_str(html_buffer* buffer, char* str, size_t len)
+static inline void skip_next_str(html_buffer* buffer, const char* str, size_t len)
 {
     // find the string
     for (; buffer->current < buffer->size; buffer->current++) {
@@ -35,7 +32,7 @@ static inline void skip_next_str(html_buffer* buffer, char* str, size_t len)
     buffer->current += len;
 }
 
-static inline void skip_next_char(html_buffer* buffer, char c)
+static inline void skip_next_char(html_buffer* buffer, const char c)
 {
     // find the char
     for (; buffer->current < buffer->size; buffer->current++) {
@@ -47,17 +44,30 @@ static inline void skip_next_char(html_buffer* buffer, char c)
     buffer->current++;
 }
 
-static inline void skip_next_tag(html_buffer* buffer, char* name, size_t name_len, bool closing)
+static inline void skip_next_tag(html_buffer* buffer, const char* name, size_t name_len, bool closing)
 {
-    skip_next_char(buffer, '<');
-    if (closing)
-        skip_next_char(buffer, '/');
+    char tag_buff[64] = { '<' };
+    int buf_len = 1;
 
-    skip_next_str(buffer, name, name_len);
+    if (closing) {
+        tag_buff[1] = '/';
+        buf_len++;
+    }
+
+    strncpy(tag_buff + buf_len, name, name_len);
+    buf_len += name_len;
+
+    for (; buffer->current < buffer->size; buffer->current++) {
+        if (strncmp(buffer->html + buffer->current, tag_buff, buf_len) == 0) {
+            buffer->current += buf_len;
+            break;
+        }
+    }
+
     skip_next_char(buffer, '>');
 }
 
-tag_type get_tag_type(html_buffer* buffer)
+static tag_type get_tag_type(html_buffer* buffer)
 {
     char c;
     size_t tag_len = 0;
@@ -91,39 +101,10 @@ tag_type get_tag_type(html_buffer* buffer)
     return UNKNOWN;
 }
 
-// move buffer->current to next <center>
-void center_start(html_buffer* buffer)
-{
-    for (; buffer->current < buffer->size; buffer->current++) {
-        char c = buffer->html[buffer->current];
-        if (c != '<')
-            continue;
-
-        buffer->current++;
-        tag_type type = get_tag_type(buffer);
-        if (type != CENTER)
-            continue;
-
-        // Go to end of the tag
-        for (; buffer->html[buffer->current] != '>'; buffer->current++) {
-        }
-
-        // skip the >
-        buffer->current++;
-        break;
-    }
-}
-
-// parse next link in buffer to html_link
+// parse current link in buffer to html_link
 // inner_pre appends spaces before inner_text
-void parse_next_link(html_buffer* buffer, html_link* linkbuf, size_t inner_pre_space)
+static void parse_current_link(html_buffer* buffer, html_link* linkbuf, size_t inner_pre_space)
 {
-    // find next a tag
-    for (; buffer->current < buffer->size; buffer->current++) {
-        if (get_tag_type(buffer) == LINK)
-            break;
-    }
-
     // find the start of the link string
     skip_next_str(buffer, "href", 4);
     skip_next_char(buffer, '=');
@@ -158,13 +139,9 @@ void parse_next_link(html_buffer* buffer, html_link* linkbuf, size_t inner_pre_s
     skip_next_tag(buffer, "a", 1, true);
 }
 
-void parse_title(html_parser* parser, html_buffer* buffer)
+static void parse_title(html_parser* parser, html_buffer* buffer)
 {
-    // find end of big tag after pre
-    for (size_t i = 0; i < 2; i++) {
-        skip_next_char(buffer, '>');
-    }
-
+    skip_next_tag(buffer, "big", 3, false);
     size_t title_len = 0;
     for (;; title_len++) {
         if (buffer->html[buffer->current + title_len] == '<')
@@ -175,43 +152,59 @@ void parse_title(html_parser* parser, html_buffer* buffer)
     strncpy(html_text_text(parser->title), buffer->html + buffer->current, title_len);
     parser->title.size = title_len;
     buffer->current += title_len;
+    skip_next_tag(buffer, "big", 3, true);
 }
 
-void parse_top_navigation(html_parser* parser, html_buffer* buffer)
+static void parse_navigation_text(html_buffer* buffer, html_text* text, bool last_link)
+{
+    char endchar = last_link ? '<' : '&';
+    size_t text_len = 0;
+    for (;; text_len++) {
+        if (buffer->html[buffer->current + text_len] == endchar)
+            break;
+    }
+
+    strncpy(text->text, buffer->html + buffer->current, text_len);
+    text->text[text_len] = '\0';
+    text->size = text_len;
+    buffer->current += text_len;
+}
+
+// Parse navigations for between next and previous (sub)pages
+static void parse_top_navigation(html_parser* parser, html_buffer* buffer)
 {
     for (size_t i = 0; i < TOP_NAVIGATION_SIZE; i++) {
-        // TODO: do memset in init_html_buffer
-        memset(parser->top_navigation + i, 0, HTML_TEXT_MAX * 4);
-        parse_next_link(buffer, parser->top_navigation + i, 0);
+        bool last_link = i == TOP_NAVIGATION_SIZE - 1;
+        if (i != 0)
+            skip_next_str(buffer, "&nbsp;", 6);
+
+        tag_type tag = get_tag_type(buffer);
+        if (tag == LINK) {
+            parser->top_navigation[i].type = HTML_LINK;
+            parse_current_link(buffer, &html_item_as_link(parser->top_navigation[i]), 0);
+        } else {
+            parser->top_navigation[i].type = HTML_TEXT;
+            parse_navigation_text(buffer, &html_item_as_text(parser->top_navigation[i]), last_link);
+        }
+
+        if (!last_link)
+            skip_next_str(buffer, "&nbsp;|", 7);
     }
 }
 
-void parse_bottom_navigation(html_parser* parser, html_buffer* buffer)
+static void parse_bottom_navigation(html_parser* parser, html_buffer* buffer)
 {
-    // TODO: memset in html_parser init
-    memset(parser->bottom_navigation, 0, sizeof(html_row) * BOTTOM_NAVIGATION_SIZE);
-
-    // Parse the two navigation rows
     skip_next_tag(buffer, "p", 1, false);
-    // First line is 4 links
-    for (size_t i = 0; i < 4; i++) {
-        parse_next_link(buffer, &html_item_as_link(parser->bottom_navigation[0].items[i]), 0);
-        parser->bottom_navigation[0].size++;
-    }
-
-    skip_next_tag(buffer, "p", 1, false);
-    // Second line is 6 links
-    for (size_t i = 0; i < 6; i++) {
-        parse_next_link(buffer, &html_item_as_link(parser->bottom_navigation[1].items[i]), 0);
-        parser->bottom_navigation[1].size++;
+    for (size_t i = 0; i < BOTTOM_NAVIGATION_SIZE; i++) {
+        parse_current_link(buffer, &parser->bottom_navigation[i], 0);
     }
 }
-void parse_middle_link(html_parser* parser, html_buffer* buffer, size_t spaces)
+static void parse_middle_link(html_parser* parser, html_buffer* buffer, size_t spaces)
 {
     // create new item
     html_item item;
     item.type = HTML_LINK;
-    parse_next_link(buffer, &html_item_as_link(item), spaces);
+    parse_current_link(buffer, &html_item_as_link(item), spaces);
 
     // append item to row
     size_t row_index = parser->middle[parser->middle_rows].size;
@@ -220,7 +213,7 @@ void parse_middle_link(html_parser* parser, html_buffer* buffer, size_t spaces)
 }
 
 // Copy and filter html encoded ", ä and ö characters
-size_t copy_middle_text(char* target, char* src, size_t len)
+static size_t copy_middle_text(char* target, char* src, size_t len)
 {
     // filtered text
     unsigned char filter_buf[1024] = { 0 };
@@ -273,17 +266,13 @@ size_t copy_middle_text(char* target, char* src, size_t len)
     return filter_len;
 }
 
-void parse_middle_text(html_parser* parser, html_buffer* buffer, size_t spaces)
+static void parse_middle_text(html_parser* parser, html_buffer* buffer, size_t spaces)
 {
-    // Sometimes <big> is lost in font
-    if (strncmp(buffer->html + buffer->current, " <big>", 6) == 0) {
-        buffer->current += 6;
-        spaces += 2;
-    }
 
     size_t text_len = 0;
     for (;; text_len++) {
-        if (buffer->html[buffer->current + text_len] == '<')
+        char c = buffer->html[buffer->current + text_len];
+        if (c == '<' || c == '\r')
             break;
     }
 
@@ -301,7 +290,7 @@ void parse_middle_text(html_parser* parser, html_buffer* buffer, size_t spaces)
     size_t filter_len = copy_middle_text(item.item.text.text + spaces, buffer->html + buffer->current, text_len);
     item.item.text.size = filter_len + spaces;
     item.item.text.text[item.item.text.size] = '\0';
-    buffer->current += text_len - 1;
+    buffer->current += text_len;
 
     // append item to row
     size_t row_index = parser->middle[parser->middle_rows].size;
@@ -309,59 +298,7 @@ void parse_middle_text(html_parser* parser, html_buffer* buffer, size_t spaces)
     parser->middle[parser->middle_rows].size++;
 }
 
-void parse_middle_font(html_parser* parser, html_buffer* line_buf, size_t spaces)
-{
-    skip_next_tag(line_buf, "font", 4, false);
-
-    /* parse_middle_next_item(parser, line_buf, spaces); */
-    for (; line_buf->current < line_buf->size && strncmp(line_buf->html + line_buf->current, "</font>", 7) != 0; line_buf->current++) {
-
-        switch (get_tag_type(line_buf)) {
-        case LINK:
-            parse_middle_link(parser, line_buf, spaces);
-            line_buf->current--;
-            break;
-        case UNKNOWN: // No tag found means there is text to be found
-            parse_middle_text(parser, line_buf, spaces);
-            break;
-        default:
-            break;
-        }
-        spaces = 0;
-    }
-    skip_next_tag(line_buf, "font", 4, true);
-    // Sometimes </big> is lost after font
-    if (strncmp(line_buf->html + line_buf->current, " </big>", 7) == 0) {
-        line_buf->current += 7;
-    }
-}
-
-void parse_middle_big(html_parser* parser, html_buffer* line_buf, size_t spaces)
-{
-    skip_next_tag(line_buf, "big", 3, false);
-    /* parse_middle_next_item(parser, line_buf, spaces); */
-    for (; line_buf->current < line_buf->size && strncmp(line_buf->html + line_buf->current, "</big>", 6) != 0; line_buf->current++) {
-
-        switch (get_tag_type(line_buf)) {
-        case LINK:
-            parse_middle_link(parser, line_buf, spaces);
-            line_buf->current--;
-            break;
-        case FONT:
-            parse_middle_font(parser, line_buf, spaces);
-            break;
-        case UNKNOWN: // No tag found means there is text to be found
-            parse_middle_text(parser, line_buf, spaces);
-            break;
-        default:
-            break;
-        }
-        spaces = 0;
-    }
-    skip_next_tag(line_buf, "big", 3, true);
-}
-
-void parse_middle(html_parser* parser, html_buffer* buffer)
+static void parse_middle(html_parser* parser, html_buffer* buffer)
 {
 
     skip_next_tag(buffer, "pre", 3, false);
@@ -378,7 +315,7 @@ void parse_middle(html_parser* parser, html_buffer* buffer)
         }
         line_buf.html[line_buf.size] = '\0';
 
-        if (line_buf.size == 0) {
+        if (line_buf.size == 0 || line_buf.html[0] == '&') {
             parser->middle_rows++;
             continue;
         }
@@ -388,13 +325,16 @@ void parse_middle(html_parser* parser, html_buffer* buffer)
             pre_space++;
         }
 
-        for (; line_buf.current < line_buf.size; line_buf.current++) {
+        line_buf.current--;
+        for (int i = 0; line_buf.current < line_buf.size; line_buf.current++, i++) {
             tag_type type = get_tag_type(&line_buf);
-            if (type == FONT) {
-                parse_middle_font(parser, &line_buf, pre_space);
-            } else if (type == BIG) {
-                parse_middle_big(parser, &line_buf, pre_space);
+            if (type == LINK) {
+                parse_middle_link(parser, &line_buf, pre_space);
+                line_buf.current--; // Don't miss the next starting character
+            } else {
+                parse_middle_text(parser, &line_buf, pre_space);
             }
+            pre_space = 0;
         }
 
         parser->middle_rows++;
@@ -403,43 +343,36 @@ void parse_middle(html_parser* parser, html_buffer* buffer)
 
 void parse_html(html_parser* parser)
 {
-    centers = 0;
-
     html_buffer* buffer = &parser->_curl_buffer;
     buffer->current = 0;
-    for (; buffer->current < buffer->size; buffer->current++) {
 
-        // Go to next center tag
-        skip_next_tag(buffer, "center", 6, false);
-        if (centers == 0) {
-            parse_title(parser, buffer);
-        } else if (centers == 1) {
-            parse_top_navigation(parser, buffer);
-        } else if (centers == 2) {
-            parse_middle(parser, buffer);
-        } else if (centers == 3) {
-            parse_bottom_navigation(parser, buffer);
-        }
-        // Go to </center>
-        skip_next_tag(buffer, "center", 6, true);
-        centers++;
-    }
+    // Title
+    skip_next_tag(buffer, "p", 1, false);
+    parse_title(parser, buffer);
+    skip_next_tag(buffer, "p", 1, true);
+
+    // Top nav
+    skip_next_tag(buffer, "SPAN", 4, false);
+    parse_top_navigation(parser, buffer);
+    skip_next_tag(buffer, "SPAN", 4, true);
+
+    // Middle
+    skip_next_tag(buffer, "DIV", 3, false);
+    parse_middle(parser, buffer);
+    skip_next_tag(buffer, "DIV", 3, true);
+
+    // Bottom nav
+    skip_next_tag(buffer, "DIV", 3, true);
+    parse_bottom_navigation(parser, buffer);
 }
 
 void init_html_parser(html_parser* parser)
 {
-
-    //parser->middle = malloc(MIDDLE_HTML_ROWS_MAX * sizeof(html_row));
-    parser->middle = calloc(MIDDLE_HTML_ROWS_MAX, sizeof(html_row));
-    for (size_t i = 0; i < MIDDLE_HTML_ROWS_MAX; i++) {
-        parser->middle[i].size = 0;
-    }
-    //open_html("P100_01.html", &parser->_curl_buffer);
-
     parser->middle_rows = 0;
+    parser->middle = calloc(MIDDLE_HTML_ROWS_MAX, sizeof(html_row));
     memset(parser->title.text, 0, HTML_TEXT_MAX);
-    memset(parser->bottom_navigation, 0, sizeof(html_row) * BOTTOM_NAVIGATION_SIZE);
-    memset(parser->top_navigation, 0, sizeof(html_link) * TOP_NAVIGATION_SIZE);
+    memset(parser->bottom_navigation, 0, sizeof(html_link) * BOTTOM_NAVIGATION_SIZE);
+    memset(parser->top_navigation, 0, sizeof(html_item) * TOP_NAVIGATION_SIZE);
     memset(parser->_curl_buffer.html, 0, 1024 * 32);
 }
 

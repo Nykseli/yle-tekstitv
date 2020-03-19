@@ -10,10 +10,9 @@
 // How many html_rows the can be in the middle
 #define MIDDLE_HTML_ROWS_MAX 32
 #define TOP_NAVIGATION_SIZE 4
-//#define BOTTOM_NAVIGATION_SIZE 12
-#define BOTTOM_NAVIGATION_SIZE 2
-// All links parsed from html document are 34 characters
-#define HTML_LINK_SIZE 34
+#define BOTTOM_NAVIGATION_SIZE 6
+// All links parsed from html document are 12 characters
+#define HTML_LINK_SIZE 12
 
 typedef enum {
     HTML_TEXT,
@@ -52,9 +51,9 @@ typedef struct {
 typedef struct {
     // title seems to always be 1 string
     html_text title;
-    html_link top_navigation[TOP_NAVIGATION_SIZE];
+    html_item top_navigation[TOP_NAVIGATION_SIZE];
     //html_link bottom_navigation[BOTTOM_NAVIGATION_SIZE];
-    html_row bottom_navigation[BOTTOM_NAVIGATION_SIZE];
+    html_link bottom_navigation[BOTTOM_NAVIGATION_SIZE];
 
     // Middle part of the teksti tv seems to be only dynamic one
     html_row* middle;
