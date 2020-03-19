@@ -117,13 +117,35 @@ static void draw_top_navigation(drawer* drawer, html_parser* parser)
     if (global_config.no_nav || global_config.no_top_nav)
         return;
 
-    html_link* links = parser->top_navigation;
+    html_item* items = parser->top_navigation;
 
     // Always collect navigation links for hotkeys
-    strncpy(nav_links.prev_page, html_link_link(links[0]), HTML_LINK_SIZE);
-    strncpy(nav_links.prev_sub_page, html_link_link(links[1]), HTML_LINK_SIZE);
-    strncpy(nav_links.next_sub_page, html_link_link(links[2]), HTML_LINK_SIZE);
-    strncpy(nav_links.next_page, html_link_link(links[3]), HTML_LINK_SIZE);
+    for (size_t i = 0; i < TOP_NAVIGATION_SIZE; i++) {
+        if (items[i].type != HTML_LINK)
+            continue;
+
+        switch (i) {
+        case 0:
+            strncpy(nav_links.prev_page, html_link_link(html_item_as_link(items[i])), HTML_LINK_SIZE);
+            break;
+        case 1:
+            strncpy(nav_links.prev_sub_page, html_link_link(html_item_as_link(items[i])), HTML_LINK_SIZE);
+            break;
+        case 2:
+            strncpy(nav_links.next_sub_page, html_link_link(html_item_as_link(items[i])), HTML_LINK_SIZE);
+            break;
+        case 3:
+            strncpy(nav_links.next_page, html_link_link(html_item_as_link(items[i])), HTML_LINK_SIZE);
+            break;
+        default:
+            break;
+        }
+
+        // strncpy(nav_links.prev_page, html_link_link(links[0]), HTML_LINK_SIZE);
+        // strncpy(nav_links.prev_sub_page, html_link_link(links[1]), HTML_LINK_SIZE);
+        // strncpy(nav_links.next_sub_page, html_link_link(links[2]), HTML_LINK_SIZE);
+        // strncpy(nav_links.next_page, html_link_link(links[3]), HTML_LINK_SIZE);
+    }
 
     // Only draw navigation on "big" terminals
     if (max_window_width() < 80)
@@ -132,16 +154,21 @@ static void draw_top_navigation(drawer* drawer, html_parser* parser)
     // Start length with adding sizes of " | " separators
     size_t links_len = (TOP_NAVIGATION_SIZE - 1) * 3;
     for (size_t i = 0; i < TOP_NAVIGATION_SIZE; i++) {
-        links_len += links[i].inner_text.size;
+        links_len += html_item_text_size(items[i]);
     }
 
     // Draw navigation
     drawer->current_y += 2;
     drawer->current_x = (int)centerx(links_len);
     for (size_t i = 0; i < TOP_NAVIGATION_SIZE; i++) {
-        draw_link_item(drawer, links[i]);
-        add_link_highlight(drawer, links[i]);
-        drawer->current_x += html_link_text_size(links[i]);
+        if (items[i].type == HTML_LINK) {
+            draw_link_item(drawer, html_item_as_link(items[i]));
+            add_link_highlight(drawer, html_item_as_link(items[i]));
+        } else {
+            draw_to_drawer(drawer, html_text_text(html_item_as_text(items[i])));
+        }
+
+        drawer->current_x += html_item_text_size(items[i]);
         if (i < TOP_NAVIGATION_SIZE - 1) {
             draw_to_drawer(drawer, " |");
             drawer->current_x += 3;
@@ -166,24 +193,24 @@ static void draw_bottom_navigation(drawer* drawer, html_parser* parser)
     // first row is identical to top navigation
     draw_top_navigation(drawer, parser);
 
-    html_row links = parser->bottom_navigation[1];
+    html_link* links = parser->bottom_navigation;
 
     // int second_row_len = BOTTOM_NAVIGATION_SIZE - TOP_NAVIGATION_SIZE - 3;
     // int second_row_start = TOP_NAVIGATION_SIZE;
     // Start length with adding sizes of " | " separators
-    size_t links_len = (links.size - 1) * 3;
-    for (size_t i = 0; i < links.size; i++) {
-        links_len += html_link_text_size(html_item_as_link(links.items[i]));
+    size_t links_len = (BOTTOM_NAVIGATION_SIZE - 1) * 3;
+    for (size_t i = 0; i < BOTTOM_NAVIGATION_SIZE; i++) {
+        links_len += html_link_text_size(links[i]);
     }
 
     // Draw second navigation row
     drawer->current_y += 1;
     drawer->current_x = (int)centerx(links_len);
-    for (size_t i = 0; i < links.size; i++) {
-        draw_link_item(drawer, html_item_as_link(links.items[i]));
-        add_link_highlight(drawer, html_item_as_link(links.items[i]));
-        drawer->current_x += html_link_text_size(html_item_as_link(links.items[i]));
-        if (i < links.size - 1) {
+    for (size_t i = 0; i < BOTTOM_NAVIGATION_SIZE; i++) {
+        draw_link_item(drawer, links[i]);
+        add_link_highlight(drawer, links[i]);
+        drawer->current_x += html_link_text_size(links[i]);
+        if (i < BOTTOM_NAVIGATION_SIZE - 1) {
             draw_to_drawer(drawer, " |");
             drawer->current_x += 3;
         }
@@ -208,7 +235,7 @@ static void draw_middle(drawer* drawer, html_parser* parser)
             html_item item = parser->middle[i].items[j];
             if (item.type == HTML_LINK) {
                 if (last_type == HTML_LINK) {
-                    drawer->current_x -= 1;
+                    //drawer->current_x -= 1;
                     draw_to_drawer(drawer, "-");
                     drawer->current_x += 1;
                 }
@@ -298,17 +325,15 @@ static void prev_row(drawer* drawer)
         drawer->highlight_col = next.size - 1;
 }
 
-static void load_link(drawer* drawer, html_parser* parser, char* link)
+static void load_link(drawer* drawer, html_parser* parser, char* link, bool short_link)
 {
-    // Link + https: + null
-    char https_link[HTML_LINK_SIZE + 7] = { 'h', 't', 't', 'p', 's', ':' };
-    strncpy(https_link + 6, link, HTML_LINK_SIZE);
-    https_link[HTML_LINK_SIZE + 6] = '\0';
+    if (short_link)
+        replace_link_part(link);
 
     free_html_parser(parser);
     init_html_parser(parser);
 
-    load_page(parser, https_link);
+    load_page(parser, https_page_url);
     parse_html(parser);
     redraw_parser(drawer, parser, true);
 }
@@ -316,7 +341,7 @@ static void load_link(drawer* drawer, html_parser* parser, char* link)
 static void load_highlight_link(drawer* drawer, html_parser* parser)
 {
     link_highlight link = drawer->highlight_rows[drawer->highlight_row].links[drawer->highlight_col];
-    load_link(drawer, parser, link.link);
+    load_link(drawer, parser, link.link, true);
 }
 
 static void load_nav_link(drawer* drawer, html_parser* parser, nav_type type)
@@ -339,7 +364,7 @@ static void load_nav_link(drawer* drawer, html_parser* parser, nav_type type)
         break;
     }
 
-    load_link(drawer, parser, link);
+    load_link(drawer, parser, link, true);
 }
 
 void search_mode(drawer* drawer, html_parser* parser)
@@ -368,7 +393,7 @@ void search_mode(drawer* drawer, html_parser* parser)
             } else {
                 add_page(num);
                 add_subpage(1);
-                load_link(drawer, parser, relative_page_url);
+                load_link(drawer, parser, NULL, false);
                 break;
             }
         } else if (c == KEY_BACKSPACE) {

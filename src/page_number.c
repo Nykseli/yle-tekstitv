@@ -2,10 +2,10 @@
 #include <assert.h>
 #include <stddef.h>
 
+#include "html_parser.h"
 #include "page_number.h"
 
-char https_page_url[] = "https://yle.fi/tekstitv/txt/Pxxx_xx.html";
-char relative_page_url[] = "//yle.fi/tekstitv/txt/Pxxx_01.html";
+char https_page_url[] = "https://yle.fi/tekstitv/txt/xxx_00xx.htm";
 
 int page_number(const char* page)
 {
@@ -49,12 +49,9 @@ void add_page(int page)
     char c1 = (page / 100) + '0';
     char c2 = (page % 100 / 10) + '0';
     char c3 = (page % 10) + '0';
-    https_page_url[29] = c1;
-    https_page_url[30] = c2;
-    https_page_url[31] = c3;
-    relative_page_url[23] = c1;
-    relative_page_url[24] = c2;
-    relative_page_url[25] = c3;
+    https_page_url[28] = c1;
+    https_page_url[29] = c2;
+    https_page_url[30] = c3;
 }
 
 void add_subpage(int subpage)
@@ -64,8 +61,11 @@ void add_subpage(int subpage)
     // _xx part
     char c1 = subpage > 9 ? (subpage % 100 / 10) + '0' : '0';
     char c2 = (subpage % 10) + '0';
-    https_page_url[33] = c1;
-    https_page_url[34] = c2;
-    relative_page_url[27] = c1;
-    relative_page_url[28] = c2;
+    https_page_url[34] = c1;
+    https_page_url[35] = c2;
+}
+
+void replace_link_part(char* link)
+{
+    strncpy(https_page_url + (41 - HTML_LINK_SIZE - 1), link, HTML_LINK_SIZE);
 }
