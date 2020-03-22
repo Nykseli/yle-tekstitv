@@ -101,119 +101,8 @@ static tag_type get_tag_type(html_buffer* buffer)
     return UNKNOWN;
 }
 
-// parse current link in buffer to html_link
-// inner_pre appends spaces before inner_text
-static void parse_current_link(html_buffer* buffer, html_link* linkbuf, size_t inner_pre_space)
-{
-    // find the start of the link string
-    skip_next_str(buffer, "href", 4);
-    skip_next_char(buffer, '=');
-    skip_next_char(buffer, '"');
-
-    // copy the link. currently all the links are exactly 34 characters
-    strncpy(linkbuf->url.text, buffer->html + buffer->current, HTML_LINK_SIZE);
-    linkbuf->url.size = HTML_LINK_SIZE;
-    linkbuf->url.text[HTML_LINK_SIZE] = '\0';
-
-    // go to end of the opening a tag
-    skip_next_char(buffer, '>');
-
-    // find the length of the text
-    size_t text_len = 0;
-    for (;; text_len++) {
-        if (buffer->html[buffer->current + text_len] == '<')
-            break;
-    }
-
-    // copy the inner text
-    // First add the possible pre_spaces
-    for (size_t i = 0; i < inner_pre_space; i++)
-        *(linkbuf->inner_text.text + i) = ' ';
-
-    // Then copy the actual text
-    strncpy(linkbuf->inner_text.text + inner_pre_space, buffer->html + buffer->current, text_len);
-    linkbuf->inner_text.size = text_len + inner_pre_space;
-    linkbuf->inner_text.text[text_len + inner_pre_space] = '\0';
-
-    // go to end of the closing a tag
-    skip_next_tag(buffer, "a", 1, true);
-}
-
-static void parse_title(html_parser* parser, html_buffer* buffer)
-{
-    skip_next_tag(buffer, "big", 3, false);
-    size_t title_len = 0;
-    for (;; title_len++) {
-        if (buffer->html[buffer->current + title_len] == '<')
-            break;
-    }
-
-    // Copy the title string
-    strncpy(html_text_text(parser->title), buffer->html + buffer->current, title_len);
-    parser->title.size = title_len;
-    buffer->current += title_len;
-    skip_next_tag(buffer, "big", 3, true);
-}
-
-static void parse_navigation_text(html_buffer* buffer, html_text* text, bool last_link)
-{
-    char endchar = last_link ? '<' : '&';
-    size_t text_len = 0;
-    for (;; text_len++) {
-        if (buffer->html[buffer->current + text_len] == endchar)
-            break;
-    }
-
-    strncpy(text->text, buffer->html + buffer->current, text_len);
-    text->text[text_len] = '\0';
-    text->size = text_len;
-    buffer->current += text_len;
-}
-
-// Parse navigations for between next and previous (sub)pages
-static void parse_top_navigation(html_parser* parser, html_buffer* buffer)
-{
-    for (size_t i = 0; i < TOP_NAVIGATION_SIZE; i++) {
-        bool last_link = i == TOP_NAVIGATION_SIZE - 1;
-        if (i != 0)
-            skip_next_str(buffer, "&nbsp;", 6);
-
-        tag_type tag = get_tag_type(buffer);
-        if (tag == LINK) {
-            parser->top_navigation[i].type = HTML_LINK;
-            parse_current_link(buffer, &html_item_as_link(parser->top_navigation[i]), 0);
-        } else {
-            parser->top_navigation[i].type = HTML_TEXT;
-            parse_navigation_text(buffer, &html_item_as_text(parser->top_navigation[i]), last_link);
-        }
-
-        if (!last_link)
-            skip_next_str(buffer, "&nbsp;|", 7);
-    }
-}
-
-static void parse_bottom_navigation(html_parser* parser, html_buffer* buffer)
-{
-    skip_next_tag(buffer, "p", 1, false);
-    for (size_t i = 0; i < BOTTOM_NAVIGATION_SIZE; i++) {
-        parse_current_link(buffer, &parser->bottom_navigation[i], 0);
-    }
-}
-static void parse_middle_link(html_parser* parser, html_buffer* buffer, size_t spaces)
-{
-    // create new item
-    html_item item;
-    item.type = HTML_LINK;
-    parse_current_link(buffer, &html_item_as_link(item), spaces);
-
-    // append item to row
-    size_t row_index = parser->middle[parser->middle_rows].size;
-    parser->middle[parser->middle_rows].items[row_index] = item;
-    parser->middle[parser->middle_rows].size++;
-}
-
-// Copy and filter html encoded ", ä and ö characters
-static size_t copy_middle_text(char* target, char* src, size_t len)
+// Copy and filter html encoded characters
+static size_t copy_html_text(char* target, char* src, size_t len)
 {
     // filtered text
     unsigned char filter_buf[1024] = { 0 };
@@ -326,6 +215,117 @@ static size_t copy_middle_text(char* target, char* src, size_t len)
     return filter_len;
 }
 
+// parse current link in buffer to html_link
+// inner_pre appends spaces before inner_text
+static void parse_current_link(html_buffer* buffer, html_link* linkbuf, size_t inner_pre_space)
+{
+    // find the start of the link string
+    skip_next_str(buffer, "href", 4);
+    skip_next_char(buffer, '=');
+    skip_next_char(buffer, '"');
+
+    // copy the link. currently all the links are exactly 34 characters
+    strncpy(linkbuf->url.text, buffer->html + buffer->current, HTML_LINK_SIZE);
+    linkbuf->url.size = HTML_LINK_SIZE;
+    linkbuf->url.text[HTML_LINK_SIZE] = '\0';
+
+    // go to end of the opening a tag
+    skip_next_char(buffer, '>');
+
+    // find the length of the text
+    size_t text_len = 0;
+    for (;; text_len++) {
+        if (buffer->html[buffer->current + text_len] == '<')
+            break;
+    }
+
+    // copy the inner text
+    // First add the possible pre_spaces
+    for (size_t i = 0; i < inner_pre_space; i++)
+        *(linkbuf->inner_text.text + i) = ' ';
+
+    // Then copy the actual text
+    size_t filter_len = copy_html_text(linkbuf->inner_text.text + inner_pre_space, buffer->html + buffer->current, text_len);
+    linkbuf->inner_text.size = filter_len + inner_pre_space;
+    linkbuf->inner_text.text[filter_len + inner_pre_space] = '\0';
+
+    // go to end of the closing a tag
+    skip_next_tag(buffer, "a", 1, true);
+}
+
+static void parse_title(html_parser* parser, html_buffer* buffer)
+{
+    skip_next_tag(buffer, "big", 3, false);
+    size_t title_len = 0;
+    for (;; title_len++) {
+        if (buffer->html[buffer->current + title_len] == '<')
+            break;
+    }
+
+    // Copy the title string
+    strncpy(html_text_text(parser->title), buffer->html + buffer->current, title_len);
+    parser->title.size = title_len;
+    buffer->current += title_len;
+    skip_next_tag(buffer, "big", 3, true);
+}
+
+static void parse_navigation_text(html_buffer* buffer, html_text* text, bool last_link)
+{
+    char endchar = last_link ? '<' : '&';
+    size_t text_len = 0;
+    for (;; text_len++) {
+        if (buffer->html[buffer->current + text_len] == endchar)
+            break;
+    }
+
+    strncpy(text->text, buffer->html + buffer->current, text_len);
+    text->text[text_len] = '\0';
+    text->size = text_len;
+    buffer->current += text_len;
+}
+
+// Parse navigations for between next and previous (sub)pages
+static void parse_top_navigation(html_parser* parser, html_buffer* buffer)
+{
+    for (size_t i = 0; i < TOP_NAVIGATION_SIZE; i++) {
+        bool last_link = i == TOP_NAVIGATION_SIZE - 1;
+        if (i != 0)
+            skip_next_str(buffer, "&nbsp;", 6);
+
+        tag_type tag = get_tag_type(buffer);
+        if (tag == LINK) {
+            parser->top_navigation[i].type = HTML_LINK;
+            parse_current_link(buffer, &html_item_as_link(parser->top_navigation[i]), 0);
+        } else {
+            parser->top_navigation[i].type = HTML_TEXT;
+            parse_navigation_text(buffer, &html_item_as_text(parser->top_navigation[i]), last_link);
+        }
+
+        if (!last_link)
+            skip_next_str(buffer, "&nbsp;|", 7);
+    }
+}
+
+static void parse_bottom_navigation(html_parser* parser, html_buffer* buffer)
+{
+    skip_next_tag(buffer, "p", 1, false);
+    for (size_t i = 0; i < BOTTOM_NAVIGATION_SIZE; i++) {
+        parse_current_link(buffer, &parser->bottom_navigation[i], 0);
+    }
+}
+static void parse_middle_link(html_parser* parser, html_buffer* buffer, size_t spaces)
+{
+    // create new item
+    html_item item;
+    item.type = HTML_LINK;
+    parse_current_link(buffer, &html_item_as_link(item), spaces);
+
+    // append item to row
+    size_t row_index = parser->middle[parser->middle_rows].size;
+    parser->middle[parser->middle_rows].items[row_index] = item;
+    parser->middle[parser->middle_rows].size++;
+}
+
 static void parse_middle_text(html_parser* parser, html_buffer* buffer, size_t spaces)
 {
 
@@ -347,7 +347,7 @@ static void parse_middle_text(html_parser* parser, html_buffer* buffer, size_t s
 
     // Then copy the actual text
     //strncpy(item.item.text.text + spaces, buffer->html + buffer->current, text_len);
-    size_t filter_len = copy_middle_text(item.item.text.text + spaces, buffer->html + buffer->current, text_len);
+    size_t filter_len = copy_html_text(item.item.text.text + spaces, buffer->html + buffer->current, text_len);
     item.item.text.size = filter_len + spaces;
     item.item.text.text[item.item.text.size] = '\0';
     buffer->current += text_len;
