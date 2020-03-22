@@ -3,6 +3,7 @@
 
 # Text html files
 *.html
+*.htm
 
 # Build folder
 build/
