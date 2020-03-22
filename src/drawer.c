@@ -1,3 +1,4 @@
+#include <locale.h>
 #include <string.h>
 
 #include "config.h"
@@ -488,6 +489,8 @@ void draw_parser(drawer* drawer, html_parser* parser)
 
 void init_drawer(drawer* drawer)
 {
+    // Makes ncurses a utf-8 if host locale is utf-8
+    setlocale(LC_ALL, "");
     // Start curses mode
     initscr();
     // Line buffering disabled, Pass on everty thing to me

@@ -39,7 +39,7 @@ ifneq ($(LINK),static)
 					-Wl,-Rthird_party/ncurses/lib \
 					-Lthird_party/curl/lib/.libs \
 					-Wl,-Rthird_party/curl/lib/.libs
-	LINKS := -lncurses -lcurl
+	LINKS := -lncursesw -lcurl
 else
 	LINKS := third_party/ncurses/lib/libncursesw.a \
 				third_party/curl/lib/.libs/libcurl.a -lcrypto -lssl -lz
