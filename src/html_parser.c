@@ -228,37 +228,97 @@ static size_t copy_middle_text(char* target, char* src, size_t len)
         }
 
         i++;
-        switch (src[i]) {
-        // ä chacter utf-8 ncurses doesn't like Ä
-        case 'a':
-        case 'A':
+        if (strncmp(src + i, "Auml;", 5) == 0) {
+            // LATIN CAPITAL LETTER A WITH DIAERESIS
+            filter_buf[filter_len] = 0xc3;
+            filter_buf[filter_len + 1] = 0x84;
+            filter_len += 2;
+            i += 4;
+        } else if (strncmp(src + i, "auml;", 5) == 0) {
+            // LATIN SMALL LETTER A WITH DIAERESIS
             filter_buf[filter_len] = 0xc3;
             filter_buf[filter_len + 1] = 0xa4;
             filter_len += 2;
             i += 4;
-            break;
-        // ö chacter utf-8 ncurses doesn't like Ö
-        case 'o':
-        case 'O':
+        } else if (strncmp(src + i, "Ouml;", 5) == 0) {
+            // LATIN CAPITAL LETTER O WITH DIAERESIS
+            filter_buf[filter_len] = 0xc3;
+            filter_buf[filter_len + 1] = 0x96;
+            filter_len += 2;
+            i += 4;
+        } else if (strncmp(src + i, "ouml;", 5) == 0) {
+            // LATIN SMALL LETTER A WITH DIAERESIS
             filter_buf[filter_len] = 0xc3;
             filter_buf[filter_len + 1] = 0xb6;
             filter_len += 2;
             i += 4;
-            break;
-        // " character is quote
-        case 'q':
-            filter_buf[filter_len] = '"';
-            filter_len++;
+        } else if (strncmp(src + i, "Aring;", 6) == 0) {
+            // LATIN CAPITAL LETTER A WITH RING ABOVE
+            filter_buf[filter_len] = 0xc3;
+            filter_buf[filter_len + 1] = 0x85;
+            filter_len += 2;
+            i += 5;
+        } else if (strncmp(src + i, "aring;", 6) == 0) {
+            // LATIN SMALL LETTER A WITH RING ABOVE
+            filter_buf[filter_len] = 0xc3;
+            filter_buf[filter_len + 1] = 0xa5;
+            filter_len += 2;
+            i += 5;
+        } else if (strncmp(src + i, "Uuml;", 5) == 0) {
+            // LATIN CAPITAL LETTER U WITH DIAERESIS
+            filter_buf[filter_len] = 0xc3;
+            filter_buf[filter_len + 1] = 0x9c;
+            filter_len += 2;
             i += 4;
-            break;
-        // > is gt
-        case 'g':
+        } else if (strncmp(src + i, "uuml;", 5) == 0) {
+            // LATIN SMALL LETTER U WITH DIAERESIS
+            filter_buf[filter_len] = 0xc3;
+            filter_buf[filter_len + 1] = 0xbc;
+            filter_len += 2;
+            i += 4;
+        } else if (strncmp(src + i, "Eacute;", 7) == 0) {
+            // LATIN CAPITAL LETTER E WITH ACUTE
+            filter_buf[filter_len] = 0xc3;
+            filter_buf[filter_len + 1] = 0x89;
+            filter_len += 2;
+            i += 6;
+        } else if (strncmp(src + i, "eacute;", 7) == 0) {
+            // LATIN SMALL LETTER E WITH ACUTE
+            filter_buf[filter_len] = 0xc3;
+            filter_buf[filter_len + 1] = 0xa9;
+            filter_len += 2;
+            i += 6;
+        } else if (strncmp(src + i, "curren;", 7) == 0) {
+            // CURRENCY SIGN
+            filter_buf[filter_len] = 0xc2;
+            filter_buf[filter_len + 1] = 0xa4;
+            filter_len += 2;
+            i += 6;
+        } else if (strncmp(src + i, "quot;", 5) == 0) {
+            // QUOTATION MARK
+            filter_buf[filter_len] = '"';
+            filter_len += 1;
+            i += 4;
+        } else if (strncmp(src + i, "amp;", 4) == 0) {
+            // AMPERSAND
+            filter_buf[filter_len] = '&';
+            filter_len += 1;
+            i += 3;
+        } else if (strncmp(src + i, "apos;", 5) == 0) {
+            // APOSTROPHE
+            filter_buf[filter_len] = '\'';
+            filter_len += 1;
+            i += 4;
+        } else if (strncmp(src + i, "gt;", 3) == 0) {
+            // GREATER-THAN SIGN
             filter_buf[filter_len] = '>';
-            filter_len++;
+            filter_len += 1;
             i += 2;
-        default:
-            // error?
-            break;
+        } else if (strncmp(src + i, "lt;", 3) == 0) {
+            // LESS-THAN SIGN
+            filter_buf[filter_len] = '<';
+            filter_len += 1;
+            i += 2;
         }
     }
 
