@@ -10,7 +10,8 @@ CFLAGS += -std=c99 \
 			-fPIC
 
 BIN_NAME = tekstitv
-SHARED_NAME = lib$(BIN_NAME).so
+SHARED_NAME = lib$(BIN_NAME).so.$(MAJOR_VERSION)
+SHARED_LINK = $(SHARED_NAME).$(MINOR_VERSION)
 STATIC_NAME = lib$(BIN_NAME).a
 SRC_DIR = src
 LIB_DIR = lib
@@ -42,11 +43,12 @@ executable: $(SRC_OBJECTS) $(LIB_OBJECTS)
 
 shared: $(LIB_OBJECTS)
 	@ printf "%8s %-40s %s\n" $(CC) $(SHARED_NAME)
-	@ $(CC) -shared $(TEKSTITV_INCLUDE) $(CFLAGS) $^ -o $(BUILD_DIR)/$(SHARED_NAME) $(LIB_LINKS)
+	@ $(CC) -shared $(TEKSTITV_INCLUDE) $(CFLAGS) $^ -o $(LIB_BUILD)/$(SHARED_NAME) $(LIB_LINKS)
+	@ ln -fs $(LIB_BUILD)/$(SHARED_NAME) $(LIB_BUILD)/$(SHARED_LINK)
 
 static: $(LIB_OBJECTS)
 	@ printf "%8s %-40s %s\n" $(AR) $(STATIC_NAME)
-	@ $(AR) rcs -o $(BUILD_DIR)/$(STATIC_NAME) $^
+	@ $(AR) rcs -o $(LIB_BUILD)/$(STATIC_NAME) $^
 
 # Compile object files for tekstitv binary
 $(SRC_BUILD)/%.o: $(SRC_DIR)/%.c $(SRC_HEADERS)
@@ -61,8 +63,48 @@ $(LIB_BUILD)/%.o: $(LIB_DIR)/%.c $(LIB_HEADERS)
 clean:
 	rm -rf build
 
-install: #TODO:
 
-uninstall: #TODO:
+install_executable:
+	@ echo "Installing executable"
+	@ mkdir -p $(BINDIR)
+	@ install -m 755 $(BUILD_DIR)/$(BIN_NAME) $(BINDIR)
+
+install_shared:
+	@ echo "Installing shared library"
+	@ mkdir -p $(LIBDIR)
+	@ install -m 644 $(LIB_BUILD)/$(SHARED_NAME) $(LIBDIR)
+	@ ln -fs $(LIB_DIR)/$(SHARED_NAME) $(LIBDIR)/$(SHARED_LINK)
+
+install_static:
+	@ echo "Installing static library"
+	@ mkdir -p $(LIBDIR)
+	@ install -m 644 $(LIB_BUILD)/$(STATIC_NAME) $(LIBDIR)
+
+install_headers:
+	@ echo "Installing library headers"
+	@ mkdir -p $(INCLUDEDIR)
+	@ install -m 644 $(LIB_HEADERS) $(INCLUDEDIR)
+
+uninstall_executable:
+	@ echo "Uninstalling library headers"
+	@ rm -fv $(BINDIR)/$(BIN_NAME)
+
+uninstall_shared:
+	@ echo "Uninstalling shared library"
+	@ rm -fv $(LIBDIR)/$(SHARED_NAME)
+	@ rm -fv $(LIBDIR)/$(SHARED_LINK)
+
+uninstall_static:
+	@ echo "Uninstalling shared library"
+	@ rm -fv $(LIBDIR)/$(STATIC_NAME)
+
+uninstall_headers:
+	@ echo "Uninstalling library headers"
+	@ rm -fv $(INCLUDEDIR)/$(BIN_NAME).h
+
+
+install: $(INSTALLS)
+
+uninstall: $(UNINSTALLS)
 
 .PHONY: clean install uninstall

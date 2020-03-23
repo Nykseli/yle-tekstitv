@@ -81,14 +81,20 @@ if [ -z $includedir ]; then
 fi
 
 # TODO: echo configuration
+# TODO: combine include headers to single file
 
 if ! $build_shared && ! $build_static && ! $build_executable; then
     echo "Error: cannot disable all builds"
     print_usage
 fi
 
+MAJOR_VERSION=`awk '/TEKSTITV_MAJOR_VERSION/{print $3}' include/tekstitv.h`
+MINOR_VERSION=`awk '/TEKSTITV_MINOR_VERSION/{print $3}' include/tekstitv.h`
+
 echo 'Generating makefile ...'
-echo "PREFIX = $prefix" > Makefile
+echo "MAJOR_VERSION = $MAJOR_VERSION" > Makefile
+echo "MINOR_VERSION = $MINOR_VERSION" >> Makefile
+echo "PREFIX = $prefix" >> Makefile
 echo "LIBDIR = $libdir" >> Makefile
 echo "BINDIR = $bindir" >> Makefile
 echo "INCLUDEDIR = $includedir" >> Makefile
@@ -105,14 +111,26 @@ fi
 
 BIN_LINKS="-lcurl"
 TARGETS=""
+INSTALLS=""
+UNINSTALLS=""
 if $build_shared; then
     TARGETS="$TARGETS shared"
+    INSTALLS="$INSTALLS install_shared"
+    UNINSTALLS="$UNINSTALLS uninstall_shared"
 fi
 if $build_static; then
     TARGETS="$TARGETS static"
+    INSTALLS="$INSTALLS install_static"
+    UNINSTALLS="$UNINSTALLS uninstall_static"
+fi
+if $build_executable || $build_static; then
+    INSTALLS="$INSTALLS install_headers"
+    UNINSTALLS="$UNINSTALLS uninstall_headers"
 fi
 if $build_executable; then
     TARGETS="$TARGETS executable"
+    INSTALLS="$INSTALLS install_executable"
+    UNINSTALLS="$UNINSTALLS uninstall_executable"
     if $utf8; then
         BIN_LINKS="$BIN_LINKS -lncursesw"
     else
@@ -122,6 +140,8 @@ fi
 
 echo "BIN_LINKS = $BIN_LINKS" >> Makefile
 echo "TARGETS = $TARGETS" >> Makefile
+echo "INSTALLS = $INSTALLS" >> Makefile
+echo "UNINSTALLS = $UNINSTALLS" >> Makefile
 
 cat Makefile.in >> Makefile
 echo 'Configuration complete, type make to build.'
