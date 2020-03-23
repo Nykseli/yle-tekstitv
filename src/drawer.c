@@ -61,9 +61,27 @@ static void curl_load_error(drawer* drawer, html_parser* parser)
     search_mode(drawer, parser);
 }
 
+static void escape_text(char* src, char* target, size_t src_len)
+{
+    size_t srci = 0;
+    size_t targeti = 0;
+    for (; srci < src_len; srci++, targeti++) {
+        if (src[srci] == '%') {
+            target[targeti] = '%';
+            target[++targeti] = '%';
+        } else {
+            target[targeti] = src[srci];
+        }
+    }
+
+    target[targeti] = '\0';
+}
+
 static void draw_to_drawer(drawer* drawer, char* text)
 {
-    mvwprintw(drawer->window, drawer->current_y, drawer->current_x, text);
+    char escape_buf[256];
+    escape_text(text, escape_buf, strlen(text));
+    mvwprintw(drawer->window, drawer->current_y, drawer->current_x, escape_buf);
 }
 
 static void draw_link_item(drawer* drawer, html_link link)
