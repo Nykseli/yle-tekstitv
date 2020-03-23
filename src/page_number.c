@@ -1,8 +1,8 @@
 
 #include <assert.h>
 #include <stddef.h>
+#include <tekstitv.h>
 
-#include "html_parser.h"
 #include "page_number.h"
 
 char https_page_url[] = "https://yle.fi/tekstitv/txt/xxx_00xx.htm";

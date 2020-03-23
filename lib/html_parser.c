@@ -7,8 +7,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
-#include "html_parser.h"
+#include <tekstitv.h>
 
 typedef enum {
     UNKNOWN,

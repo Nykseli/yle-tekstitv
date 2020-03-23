@@ -1,10 +1,9 @@
 #include <locale.h>
 #include <string.h>
+#include <tekstitv.h>
 
 #include "config.h"
 #include "drawer.h"
-#include "html_parser.h"
-#include "page_loader.h"
 #include "page_number.h"
 
 #define MAX_MIDDLE_WIDTH (max_window_width() / 2)

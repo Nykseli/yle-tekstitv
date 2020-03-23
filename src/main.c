@@ -1,11 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <tekstitv.h>
 
 #include "config.h"
 #include "drawer.h"
-#include "html_parser.h"
-#include "page_loader.h"
 #include "page_number.h"
 #include "printer.h"
 

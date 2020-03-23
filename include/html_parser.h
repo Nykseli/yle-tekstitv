@@ -1,3 +1,11 @@
+/**
+ * Do not directly include
+ */
+
+#ifndef _TEKSTITV
+#error "html_parser.h should not be directly incuded. Include tekstitv.h instead"
+#endif
+
 #ifndef _HTML_PARSER_H_
 #define _HTML_PARSER_H_
 
