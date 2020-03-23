@@ -14,11 +14,18 @@ static void print_usage(char* name)
     printf("Options:\n");
     printf("\t-h,--help\t\tPrint this\n");
     printf("\t-t,--text-only\t\tPrint teletext to stdout instead using ncurses\n");
+    printf("\t--version\t\tPrint program version\n");
     printf("\t--no-nav\t\tDisable all navigations\n");
     printf("\t--no-top-nav\t\tDisable top navigation\n");
     printf("\t--no-bottom-nav\t\tDisable bottom navigation\n");
     printf("\t--no-title\t\tDisable title\n");
     printf("\t--no-middle\t\tDisable middle\n");
+    exit(0);
+}
+
+static void print_version(char* name)
+{
+    printf("%s version %d.%d\n", name, TEKSTITV_MAJOR_VERSION, TEKSTITV_MINOR_VERSION);
     exit(0);
 }
 
@@ -28,6 +35,10 @@ int main(int argc, char** argv)
     init_config(argc, argv);
     if (global_config.help) {
         print_usage(argv[0]);
+    }
+
+    if (global_config.version) {
+        print_version(argv[0]);
     }
 
     if (global_config.page == -1) {
