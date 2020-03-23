@@ -129,6 +129,18 @@ static size_t copy_html_text(char* target, char* src, size_t len)
             filter_buf[filter_len + 1] = 0xa4;
             filter_len += 2;
             i += 4;
+        } else if (strncmp(src + i, "Atilde;", 7) == 0) {
+            // LATIN CAPITAL LETTER A WITH TILDE
+            filter_buf[filter_len] = 0xc3;
+            filter_buf[filter_len + 1] = 0x83;
+            filter_len += 2;
+            i += 6;
+        } else if (strncmp(src + i, "atilde;", 7) == 0) {
+            // LATIN SMALL LETTER A WITH TILDE
+            filter_buf[filter_len] = 0xc3;
+            filter_buf[filter_len + 1] = 0xa3;
+            filter_len += 2;
+            i += 6;
         } else if (strncmp(src + i, "Ouml;", 5) == 0) {
             // LATIN CAPITAL LETTER O WITH DIAERESIS
             filter_buf[filter_len] = 0xc3;
