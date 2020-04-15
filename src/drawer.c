@@ -399,22 +399,7 @@ void search_mode(drawer* drawer, html_parser* parser)
     refresh();
     while (true) {
         int c = getch();
-        if (c == '\n') {
-            int num = page_number(page);
-            if (num == -1) {
-
-                mvprintw(0, 0, "                                            ");
-                mvprintw(0, 0, "Page needs to bee value between 100 and 999");
-                refresh();
-                getch();
-                break;
-            } else {
-                add_page(num);
-                add_subpage(1);
-                load_link(drawer, parser, NULL, false);
-                break;
-            }
-        } else if (c == KEY_BACKSPACE) {
+        if (c == KEY_BACKSPACE) {
             if (page_i == 0)
                 continue;
             page_i--;
@@ -424,12 +409,28 @@ void search_mode(drawer* drawer, html_parser* parser)
         } else if (c == 27) { //esc
             break;
         } else {
-            if (page_i + 1 >= 4)
+            if (c < '0' || c > '9')
                 continue;
+
             mvaddch(0, currentx, (char)c);
             page[page_i] = (char)c;
             page_i++;
             currentx++;
+
+            if (page_i == 3) {
+                int num = page_number(page);
+                if (num == -1) {
+                    mvprintw(0, 0, "                                            ");
+                    mvprintw(0, 0, "Page needs to bee value between 100 and 999");
+                    refresh();
+                    getch();
+                } else {
+                    add_page(num);
+                    add_subpage(1);
+                    load_link(drawer, parser, NULL, false);
+                }
+                break;
+            }
         }
         refresh();
     }
@@ -506,10 +507,10 @@ void draw_parser(drawer* drawer, html_parser* parser)
 
 void init_drawer(drawer* drawer)
 {
-// #ifndef DISABLE_UTF_8
+    // #ifndef DISABLE_UTF_8
     // Makes ncurses a utf-8 if host locale is utf-8
     setlocale(LC_ALL, "");
-// #endif
+    // #endif
     // Start curses mode
     initscr();
     // Line buffering disabled, Pass on everty thing to me
