@@ -1,5 +1,9 @@
-#ifndef _HTML_PARSER_H_
-#define _HTML_PARSER_H_
+#ifndef _TEKSTITV_H_
+#define _TEKSTITV_H_
+#define _TEKSTITV
+
+#define TEKSTITV_MAJOR_VERSION 0
+#define TEKSTITV_MINOR_VERSION 1
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -88,5 +92,7 @@ static inline size_t html_item_text_size(html_item item)
         return 0;
     }
 }
+
+void load_page(html_parser* parser, char* page);
 
 #endif

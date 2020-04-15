@@ -1,0 +1,147 @@
+#!/bin/sh
+
+set -e
+
+prefix=/usr/local
+debugsym=false
+utf8=true
+build_static=true
+build_shared=true
+build_executable=true
+
+print_usage() {
+    printf 'Usage: ./configure [options]\n'
+    printf 'Options:\n'
+    printf '\t--prefix=<path>\t\tinstallation prefix. (Default: /usr/local)\n'
+    printf '\t--libdir=<path>\t\tobject code libraries (Default: $prefix/lib)\n'
+    printf '\t--bindir=<path>\t\tuser executables (Default: $prefix/bin)\n'
+    printf '\t--includedir=<path>\tC header files (Default: $prefix/include)\n'
+    printf '\t--enable-debug\t\tenable debugging (Default: disbled)\n'
+    printf '\t--disable-utf8\t\tdisable utf-8 support from parser library (Default enabled)\n'
+    printf '\t--disable-lib-build\tdo not build any libraries (Default enabled)\n'
+    printf '\t--disable-static-build\tdo not build static libraries (Default enabled)\n'
+    printf '\t--disable-shared-build\tdo not build shared libraries (Default enabled)\n'
+    printf '\t--disable-executable\tdo not build the tekstitv executable (Default enabled)\n'
+    exit 0
+}
+
+for arg in "$@"; do
+    case "$arg" in
+    --prefix=*)
+        prefix=`echo $arg | sed 's/--prefix=//'`
+        ;;
+    --libdir=*)
+        libdir=`echo $arg | sed 's/--libdir=//'`
+        ;;
+    --bindir=*)
+        bindir=`echo $arg | sed 's/--bindir=//'`
+        ;;
+    --includedir=*)
+        includedir=`echo $arg | sed 's/--includedir=//'`
+        ;;
+    --enable-debug)
+        debugsym=true
+        ;;
+    --disable-lib-build)
+        build_static=false
+        build_shared=false
+        ;;
+    --disable-static-lib)
+        build_static=false
+        ;;
+    --disable-shared-lib)
+        build_shared=false
+        ;;
+    --disable-executable)
+        build_executable=false
+        ;;
+    --disable-utf8)
+        utf8=false
+        ;;
+    --help)
+        print_usage
+        ;;
+    *)
+        echo "Invalid option: " $arg
+        print_usage
+        ;;
+    esac
+done
+
+if [ -z $libdir ]; then
+    libdir=$prefix/lib
+fi
+
+if [ -z $bindir ]; then
+    bindir=$prefix/bin
+fi
+
+if [ -z $includedir ]; then
+    includedir=$prefix/include
+fi
+
+# TODO: echo configuration
+# TODO: combine include headers to single file
+
+if ! $build_shared && ! $build_static && ! $build_executable; then
+    echo "Error: cannot disable all builds"
+    print_usage
+fi
+
+MAJOR_VERSION=`awk '/TEKSTITV_MAJOR_VERSION/{print $3}' include/tekstitv.h`
+MINOR_VERSION=`awk '/TEKSTITV_MINOR_VERSION/{print $3}' include/tekstitv.h`
+
+echo 'Generating makefile ...'
+echo "MAJOR_VERSION = $MAJOR_VERSION" > Makefile
+echo "MINOR_VERSION = $MINOR_VERSION" >> Makefile
+echo "PREFIX = $prefix" >> Makefile
+echo "LIBDIR = $libdir" >> Makefile
+echo "BINDIR = $bindir" >> Makefile
+echo "INCLUDEDIR = $includedir" >> Makefile
+
+if $debugsym; then
+    echo 'CFLAGS += -g -DDEBUG' >> Makefile
+else
+    echo 'CFLAGS += -O3 -flto' >> Makefile
+fi
+
+if ! $utf8; then
+    echo 'CFLAGS += -DDISABLE_UTF_8' >> Makefile
+fi
+
+BIN_LINKS="-lcurl"
+TARGETS=""
+INSTALLS=""
+UNINSTALLS=""
+if $build_shared; then
+    TARGETS="$TARGETS shared"
+    INSTALLS="$INSTALLS install_shared"
+    UNINSTALLS="$UNINSTALLS uninstall_shared"
+fi
+if $build_static; then
+    TARGETS="$TARGETS static"
+    INSTALLS="$INSTALLS install_static"
+    UNINSTALLS="$UNINSTALLS uninstall_static"
+fi
+if $build_executable || $build_static; then
+    INSTALLS="$INSTALLS install_headers"
+    UNINSTALLS="$UNINSTALLS uninstall_headers"
+fi
+if $build_executable; then
+    TARGETS="$TARGETS executable"
+    INSTALLS="$INSTALLS install_executable"
+    UNINSTALLS="$UNINSTALLS uninstall_executable"
+    if $utf8; then
+        BIN_LINKS="$BIN_LINKS -lncursesw"
+    else
+        BIN_LINKS="$BIN_LINKS -lncurses"
+    fi
+fi
+
+echo "BIN_LINKS = $BIN_LINKS" >> Makefile
+echo "TARGETS = $TARGETS" >> Makefile
+echo "INSTALLS = $INSTALLS" >> Makefile
+echo "UNINSTALLS = $UNINSTALLS" >> Makefile
+
+cat Makefile.in >> Makefile
+echo 'Configuration complete, type make to build.'

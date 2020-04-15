@@ -7,8 +7,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
-#include "html_parser.h"
+#include <tekstitv.h>
 
 typedef enum {
     UNKNOWN,
@@ -119,15 +118,21 @@ static size_t copy_html_text(char* target, char* src, size_t len)
         i++;
         if (strncmp(src + i, "Auml;", 5) == 0) {
             // LATIN CAPITAL LETTER A WITH DIAERESIS
-            filter_buf[filter_len] = 0xc3;
-            filter_buf[filter_len + 1] = 0x84;
-            filter_len += 2;
+#ifndef DISABLE_UTF_8
+            filter_buf[filter_len++] = 0xc3;
+            filter_buf[filter_len++] = 0x84;
+#else
+            filter_buf[filter_len++] = 'A';
+#endif
             i += 4;
         } else if (strncmp(src + i, "auml;", 5) == 0) {
             // LATIN SMALL LETTER A WITH DIAERESIS
-            filter_buf[filter_len] = 0xc3;
-            filter_buf[filter_len + 1] = 0xa4;
-            filter_len += 2;
+#ifndef DISABLE_UTF_8
+            filter_buf[filter_len++] = 0xc3;
+            filter_buf[filter_len++] = 0xa4;
+#else
+            filter_buf[filter_len++] = 'a';
+#endif
             i += 4;
         } else if (strncmp(src + i, "Atilde;", 7) == 0) {
             // LATIN CAPITAL LETTER A WITH TILDE
@@ -143,81 +148,104 @@ static size_t copy_html_text(char* target, char* src, size_t len)
             i += 6;
         } else if (strncmp(src + i, "Ouml;", 5) == 0) {
             // LATIN CAPITAL LETTER O WITH DIAERESIS
-            filter_buf[filter_len] = 0xc3;
-            filter_buf[filter_len + 1] = 0x96;
-            filter_len += 2;
+#ifndef DISABLE_UTF_8
+            filter_buf[filter_len++] = 0xc3;
+            filter_buf[filter_len++] = 0x96;
+#else
+            filter_buf[filter_len++] = 'O';
+#endif
             i += 4;
         } else if (strncmp(src + i, "ouml;", 5) == 0) {
+#ifndef DISABLE_UTF_8
             // LATIN SMALL LETTER A WITH DIAERESIS
-            filter_buf[filter_len] = 0xc3;
-            filter_buf[filter_len + 1] = 0xb6;
-            filter_len += 2;
+            filter_buf[filter_len++] = 0xc3;
+            filter_buf[filter_len++] = 0xb6;
+#else
+            filter_buf[filter_len++] = 'o';
+#endif
             i += 4;
         } else if (strncmp(src + i, "Aring;", 6) == 0) {
             // LATIN CAPITAL LETTER A WITH RING ABOVE
-            filter_buf[filter_len] = 0xc3;
-            filter_buf[filter_len + 1] = 0x85;
-            filter_len += 2;
+#ifndef DISABLE_UTF_8
+            filter_buf[filter_len++] = 0xc3;
+            filter_buf[filter_len++] = 0x85;
+#else
+            filter_buf[filter_len++] = 'A';
+#endif
             i += 5;
         } else if (strncmp(src + i, "aring;", 6) == 0) {
             // LATIN SMALL LETTER A WITH RING ABOVE
-            filter_buf[filter_len] = 0xc3;
-            filter_buf[filter_len + 1] = 0xa5;
-            filter_len += 2;
+#ifndef DISABLE_UTF_8
+            filter_buf[filter_len++] = 0xc3;
+            filter_buf[filter_len++] = 0xa5;
+#else
+            filter_buf[filter_len++] = 'a';
+#endif
             i += 5;
         } else if (strncmp(src + i, "Uuml;", 5) == 0) {
             // LATIN CAPITAL LETTER U WITH DIAERESIS
-            filter_buf[filter_len] = 0xc3;
-            filter_buf[filter_len + 1] = 0x9c;
-            filter_len += 2;
+#ifndef DISABLE_UTF_8
+            filter_buf[filter_len++] = 0xc3;
+            filter_buf[filter_len++] = 0x9c;
+#else
+            filter_buf[filter_len++] = 'U';
+#endif
             i += 4;
         } else if (strncmp(src + i, "uuml;", 5) == 0) {
             // LATIN SMALL LETTER U WITH DIAERESIS
-            filter_buf[filter_len] = 0xc3;
-            filter_buf[filter_len + 1] = 0xbc;
-            filter_len += 2;
+#ifndef DISABLE_UTF_8
+            filter_buf[filter_len++] = 0xc3;
+            filter_buf[filter_len++] = 0xbc;
+#else
+            filter_buf[filter_len++] = 'u';
+#endif
             i += 4;
         } else if (strncmp(src + i, "Eacute;", 7) == 0) {
             // LATIN CAPITAL LETTER E WITH ACUTE
-            filter_buf[filter_len] = 0xc3;
-            filter_buf[filter_len + 1] = 0x89;
-            filter_len += 2;
+#ifndef DISABLE_UTF_8
+            filter_buf[filter_len++] = 0xc3;
+            filter_buf[filter_len++] = 0x89;
+#else
+            filter_buf[filter_len++] = 'E';
+#endif
             i += 6;
         } else if (strncmp(src + i, "eacute;", 7) == 0) {
             // LATIN SMALL LETTER E WITH ACUTE
-            filter_buf[filter_len] = 0xc3;
-            filter_buf[filter_len + 1] = 0xa9;
-            filter_len += 2;
+#ifndef DISABLE_UTF_8
+            filter_buf[filter_len++] = 0xc3;
+            filter_buf[filter_len++] = 0xa9;
+#else
+            filter_buf[filter_len++] = 'e';
+#endif
             i += 6;
         } else if (strncmp(src + i, "curren;", 7) == 0) {
             // CURRENCY SIGN
-            filter_buf[filter_len] = 0xc2;
-            filter_buf[filter_len + 1] = 0xa4;
-            filter_len += 2;
+#ifndef DISABLE_UTF_8
+            filter_buf[filter_len++] = 0xc2;
+            filter_buf[filter_len++] = 0xa4;
+#else
+            filter_buf[filter_len++] = ' ';
+#endif
             i += 6;
         } else if (strncmp(src + i, "quot;", 5) == 0) {
             // QUOTATION MARK
-            filter_buf[filter_len] = '"';
-            filter_len += 1;
+            filter_buf[filter_len++] = '"';
             i += 4;
         } else if (strncmp(src + i, "amp;", 4) == 0) {
             // AMPERSAND
-            filter_buf[filter_len] = '&';
-            filter_len += 1;
+            filter_buf[filter_len++] = '&';
             i += 3;
         } else if (strncmp(src + i, "apos;", 5) == 0) {
             // APOSTROPHE
-            filter_buf[filter_len] = '\'';
-            filter_len += 1;
+            filter_buf[filter_len++] = '\'';
             i += 4;
         } else if (strncmp(src + i, "gt;", 3) == 0) {
             // GREATER-THAN SIGN
-            filter_buf[filter_len] = '>';
-            filter_len += 1;
+            filter_buf[filter_len++] = '>';
             i += 2;
         } else if (strncmp(src + i, "lt;", 3) == 0) {
             // LESS-THAN SIGN
-            filter_buf[filter_len] = '<';
+            filter_buf[filter_len++] = '<';
             filter_len += 1;
             i += 2;
         }

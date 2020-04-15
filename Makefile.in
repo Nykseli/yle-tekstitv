@@ -1,0 +1,110 @@
+
+CFLAGS += -std=c99 \
+			-Wall \
+			-Wextra \
+			-Werror \
+			-Wno-unused-parameter \
+			-Wformat-security \
+			-Wno-unused-result \
+			-pedantic \
+			-fPIC
+
+BIN_NAME = tekstitv
+SHARED_LINK = lib$(BIN_NAME).so.$(MAJOR_VERSION)
+SHARED_NAME = $(SHARED_LINK).$(MINOR_VERSION)
+STATIC_NAME = lib$(BIN_NAME).a
+SRC_DIR = src
+LIB_DIR = lib
+INCLUDE_DIR = include
+BUILD_DIR = build
+SRC_BUILD = $(BUILD_DIR)/$(SRC_DIR)
+LIB_BUILD = $(BUILD_DIR)/$(LIB_DIR)
+TEKSTITV_INCLUDE = -Iinclude
+LIB_LINKS = -lcurl
+
+
+SRC_HEADERS := $(wildcard $(SRC_DIR)/*.h)
+SRC_SOURCES := $(wildcard $(SRC_DIR)/*.c)
+SRC_OBJECTS := $(addprefix $(SRC_BUILD)/, $(notdir $(SRC_SOURCES:.c=.o)))
+
+LIB_HEADERS := $(wildcard $(INCLUDE_DIR)/*.h)
+LIB_SOURCES := $(wildcard $(LIB_DIR)/*.c)
+LIB_OBJECTS := $(addprefix $(LIB_BUILD)/, $(notdir $(LIB_SOURCES:.c=.o)))
+
+all: buildpaths $(TARGETS)
+
+buildpaths:
+	@ mkdir -p $(SRC_BUILD)
+	@ mkdir -p $(LIB_BUILD)
+
+executable: $(SRC_OBJECTS) $(LIB_OBJECTS)
+	@ printf "%8s %-40s %s\n" $(CC) $(BIN_NAME)
+	@ $(CC) $(TEKSTITV_INCLUDE) $(CFLAGS) $^ -o $(BUILD_DIR)/$(BIN_NAME) $(BIN_LINKS)
+
+shared: $(LIB_OBJECTS)
+	@ printf "%8s %-40s %s\n" $(CC) $(SHARED_NAME)
+	@ $(CC) -shared $(TEKSTITV_INCLUDE) $(CFLAGS) $^ -o $(LIB_BUILD)/$(SHARED_NAME) $(LIB_LINKS)
+	@ ln -fs $(LIB_BUILD)/$(SHARED_NAME) $(LIB_BUILD)/$(SHARED_LINK)
+
+static: $(LIB_OBJECTS)
+	@ printf "%8s %-40s %s\n" $(AR) $(STATIC_NAME)
+	@ $(AR) rcs -o $(LIB_BUILD)/$(STATIC_NAME) $^
+
+# Compile object files for tekstitv binary
+$(SRC_BUILD)/%.o: $(SRC_DIR)/%.c $(SRC_HEADERS)
+	@ printf "%8s %-40s %s\n" $(CC) $<
+	@ $(CC) $(TEKSTITV_INCLUDE) -c $(CFLAGS) -o $@ $<
+
+# Compile object files for library
+$(LIB_BUILD)/%.o: $(LIB_DIR)/%.c $(LIB_HEADERS)
+	@ printf "%8s %-40s %s\n" $(CC) $<
+	@ $(CC) $(TEKSTITV_INCLUDE) -c $(CFLAGS) -o $@ $<
+
+clean:
+	rm -rf build
+
+
+install_executable:
+	@ echo "Installing executable"
+	@ mkdir -p $(BINDIR)
+	@ install -m 755 $(BUILD_DIR)/$(BIN_NAME) $(BINDIR)
+
+install_shared:
+	@ echo "Installing shared library"
+	@ mkdir -p $(LIBDIR)
+	@ install -m 644 $(LIB_BUILD)/$(SHARED_NAME) $(LIBDIR)
+	@ ln -fs $(LIB_DIR)/$(SHARED_NAME) $(LIBDIR)/$(SHARED_LINK)
+
+install_static:
+	@ echo "Installing static library"
+	@ mkdir -p $(LIBDIR)
+	@ install -m 644 $(LIB_BUILD)/$(STATIC_NAME) $(LIBDIR)
+
+install_headers:
+	@ echo "Installing library headers"
+	@ mkdir -p $(INCLUDEDIR)
+	@ install -m 644 $(LIB_HEADERS) $(INCLUDEDIR)
+
+uninstall_executable:
+	@ echo "Uninstalling library headers"
+	@ rm -fv $(BINDIR)/$(BIN_NAME)
+
+uninstall_shared:
+	@ echo "Uninstalling shared library"
+	@ rm -fv $(LIBDIR)/$(SHARED_NAME)
+	@ rm -fv $(LIBDIR)/$(SHARED_LINK)
+
+uninstall_static:
+	@ echo "Uninstalling shared library"
+	@ rm -fv $(LIBDIR)/$(STATIC_NAME)
+
+uninstall_headers:
+	@ echo "Uninstalling library headers"
+	@ rm -fv $(INCLUDEDIR)/$(BIN_NAME).h
+
+
+install: $(INSTALLS)
+
+uninstall: $(UNINSTALLS)
+
+.PHONY: clean install uninstall

@@ -1,10 +1,9 @@
 #include <locale.h>
 #include <string.h>
+#include <tekstitv.h>
 
 #include "config.h"
 #include "drawer.h"
-#include "html_parser.h"
-#include "page_loader.h"
 #include "page_number.h"
 
 #define MAX_MIDDLE_WIDTH (max_window_width() / 2)
@@ -507,8 +506,10 @@ void draw_parser(drawer* drawer, html_parser* parser)
 
 void init_drawer(drawer* drawer)
 {
+// #ifndef DISABLE_UTF_8
     // Makes ncurses a utf-8 if host locale is utf-8
     setlocale(LC_ALL, "");
+// #endif
     // Start curses mode
     initscr();
     // Line buffering disabled, Pass on everty thing to me

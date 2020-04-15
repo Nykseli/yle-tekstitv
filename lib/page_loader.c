@@ -3,8 +3,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-
-#include "html_parser.h"
+#include <tekstitv.h>
 
 /* curl write callback, to fill html input buffer...  */
 size_t write_to_buffer(char* in, size_t size, size_t nmemb, void* out)
