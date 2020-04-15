@@ -19,6 +19,7 @@ dependency() {
 
 install() {
     dependency
+    ./configure --disable-lib-build
     make
     CPWD=`pwd`
     cd ~
