@@ -60,6 +60,27 @@ static void curl_load_error(drawer* drawer, html_parser* parser)
     search_mode(drawer, parser);
 }
 
+/**
+ * Find how many uft characters are found in the text.
+ *
+ * Utf-8 characters used in tekstitv are always 2 bytes but are displayed
+ * as one character. This cofuses the drawer->curret_x counter since it
+ * counts every byte as a displayed character.
+ * Workaround for this is just to find all the utfs used and remove the extra
+ * spaces from drawer->current_x.
+ *
+ * // TODO: combine this with escape_text or find otherwise smarter way to do this
+ */
+static int find_utfs(char* src, size_t src_len)
+{
+    int utfs = 0;
+    for (size_t i = 0; i < src_len; i++) {
+        if ((uint8_t)src[i] == 0xc3 || (uint8_t)src[i] == 0xc2)
+            utfs++;
+    }
+    return utfs;
+}
+
 static void escape_text(char* src, char* target, size_t src_len)
 {
     size_t srci = 0;
@@ -79,8 +100,10 @@ static void escape_text(char* src, char* target, size_t src_len)
 static void draw_to_drawer(drawer* drawer, char* text)
 {
     char escape_buf[256];
+    int utfs = find_utfs(text, strlen(text));
     escape_text(text, escape_buf, strlen(text));
     mvwprintw(drawer->window, drawer->current_y, drawer->current_x, escape_buf);
+    drawer->current_x -= utfs;
 }
 
 static void draw_link_item(drawer* drawer, html_link link)
