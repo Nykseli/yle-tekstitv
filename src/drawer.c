@@ -139,21 +139,32 @@ static void draw_top_navigation(drawer* drawer, html_parser* parser)
 
     // Always collect navigation links for hotkeys
     for (size_t i = 0; i < TOP_NAVIGATION_SIZE; i++) {
-        if (items[i].type != HTML_LINK)
-            continue;
-
+        // If the item doesn't contain an actual link,
+        // make sure the navigation link is null
         switch (i) {
         case 0:
-            strncpy(nav_links.prev_page, html_link_link(html_item_as_link(items[i])), HTML_LINK_SIZE);
+            if (items[i].type == HTML_LINK)
+                strncpy(nav_links.prev_page, html_link_link(html_item_as_link(items[i])), HTML_LINK_SIZE);
+            else
+                nav_links.prev_page[0] = 0;
             break;
         case 1:
-            strncpy(nav_links.prev_sub_page, html_link_link(html_item_as_link(items[i])), HTML_LINK_SIZE);
+            if (items[i].type == HTML_LINK)
+                strncpy(nav_links.prev_sub_page, html_link_link(html_item_as_link(items[i])), HTML_LINK_SIZE);
+            else
+                nav_links.prev_sub_page[0] = 0;
             break;
         case 2:
-            strncpy(nav_links.next_sub_page, html_link_link(html_item_as_link(items[i])), HTML_LINK_SIZE);
+            if (items[i].type == HTML_LINK)
+                strncpy(nav_links.next_sub_page, html_link_link(html_item_as_link(items[i])), HTML_LINK_SIZE);
+            else
+                nav_links.next_sub_page[0] = 0;
             break;
         case 3:
-            strncpy(nav_links.next_page, html_link_link(html_item_as_link(items[i])), HTML_LINK_SIZE);
+            if (items[i].type == HTML_LINK)
+                strncpy(nav_links.next_page, html_link_link(html_item_as_link(items[i])), HTML_LINK_SIZE);
+            else
+                nav_links.next_page[0] = 0;
             break;
         default:
             break;
@@ -382,7 +393,10 @@ static void load_nav_link(drawer* drawer, html_parser* parser, nav_type type)
         break;
     }
 
-    load_link(drawer, parser, link, true);
+    // Links first character is set to null in draw_top_navigation
+    // if the there is no actual page in the current page
+    if (link != NULL && link[0] != 0)
+        load_link(drawer, parser, link, true);
 }
 
 void search_mode(drawer* drawer, html_parser* parser)
