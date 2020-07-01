@@ -6,8 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #include <tekstitv.h>
+#include <unistd.h>
 
 typedef enum {
     UNKNOWN,
@@ -441,10 +441,28 @@ static void parse_middle(html_parser* parser, html_buffer* buffer)
     }
 }
 
+bool check_valid_page(html_buffer* buffer)
+{
+    // Title tag is in CAPS if the page is valid.
+    // In invalid page, the title is in lower case.
+    // Therfore if we try find the TITLE tag and it's not found before
+    // reaching end of the page, we know that the page is invalid.
+    skip_next_tag(buffer, "TITLE", 5, false);
+    return buffer->current < buffer->size;
+}
+
 void parse_html(html_parser* parser)
 {
     html_buffer* buffer = &parser->_curl_buffer;
     buffer->current = 0;
+
+    // Check if the loaded page actually exist
+    // Yle tekstitv doesn't return 404 if page is not found.
+    // Tekstitv returns page with a title "YLE Teleport"
+    if (!check_valid_page(buffer)) {
+        parser->curl_load_error = true;
+        return;
+    }
 
     // Title
     skip_next_tag(buffer, "p", 1, false);
