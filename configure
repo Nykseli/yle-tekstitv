@@ -123,7 +123,7 @@ if $build_static; then
     INSTALLS="$INSTALLS install_static"
     UNINSTALLS="$UNINSTALLS uninstall_static"
 fi
-if $build_executable || $build_static; then
+if $build_shared || $build_static; then
     INSTALLS="$INSTALLS install_headers"
     UNINSTALLS="$UNINSTALLS uninstall_headers"
 fi
