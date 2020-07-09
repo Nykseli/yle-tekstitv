@@ -15,6 +15,8 @@ static void print_usage(char* name)
     printf("\t-h,--help\t\tPrint this\n");
     printf("\t-t,--text-only\t\tPrint teletext to stdout instead using ncurses\n");
     printf("\t--version\t\tPrint program version\n");
+    printf("\t--navigation\t\tPrint navigation instructions\n");
+    printf("\t--long-navigation\tPrint navigation instructions with extra information\n");
     printf("\t--no-nav\t\tDisable all navigations\n");
     printf("\t--no-top-nav\t\tDisable top navigation\n");
     printf("\t--no-bottom-nav\t\tDisable bottom navigation\n");
@@ -29,6 +31,46 @@ static void print_version(char* name)
     exit(0);
 }
 
+static void print_verbose_navigation_instructions()
+{
+    printf("Navigation instructions: \n\n");
+    printf("|   Key   |         Action         |                         Info                        |\n");
+    printf("|----------------------------------------------------------------------------------------|\n");
+    printf("| j/Down  | Move one link down     | -                                                   |\n");
+    printf("| k/Up    | Move one link up       | -                                                   |\n");
+    printf("| l/Right | Move one link right    | -                                                   |\n");
+    printf("| h/Left  | Move one link left     | -                                                   |\n");
+    printf("| v       | Load previous page     | Tries to load page only if it exists                |\n");
+    printf("| m       | Load next page         | Tries to load page only if it exists                |\n");
+    printf("| b       | Load previous sub page | Tries to load page only if it exists                |\n");
+    printf("| n       | Load next sub page     | Tries to load page only if it exists                |\n");
+    printf("| s       | Search new page        | Automatically tries to load the page after 3 digits |\n");
+    printf("| esc     | Cancel search mode     | Works only in search mode                           |\n");
+    printf("| q       | Quit program           | Works only if not in search mode                    |\n");
+    printf("\n");
+    exit(0);
+}
+
+static void print_navigation_instructions()
+{
+    printf("Navigation instructions: \n\n");
+    printf("|   Key   |         Action         |\n");
+    printf("|----------------------------------|\n");
+    printf("| j/Down  | Move one link down     |\n");
+    printf("| k/Up    | Move one link up       |\n");
+    printf("| l/Right | Move one link right    |\n");
+    printf("| h/Left  | Move one link left     |\n");
+    printf("| v       | Load previous page     |\n");
+    printf("| m       | Load next page         |\n");
+    printf("| b       | Load previous sub page |\n");
+    printf("| n       | Load next sub page     |\n");
+    printf("| s       | Search new page        |\n");
+    printf("| esc     | Cancel search mode     |\n");
+    printf("| q       | Quit program           |\n");
+    printf("\n");
+    exit(0);
+}
+
 int main(int argc, char** argv)
 {
 
@@ -39,6 +81,14 @@ int main(int argc, char** argv)
 
     if (global_config.version) {
         print_version(argv[0]);
+    }
+
+    if (global_config.long_navigation) {
+        print_verbose_navigation_instructions();
+    }
+
+    if (global_config.navigation) {
+        print_navigation_instructions();
     }
 
     if (global_config.page == -1) {
