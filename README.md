@@ -30,6 +30,8 @@ $ tekstitv -h
 
 You can navigate the tekstitv application with following key commands.
 <br />
+You can also see the navigation guide with `--navigation` and `--long-navigation` options
+<br />
 Up, Right, Down, Left refers to the arrow keys
 
 | Key | Action | Info |

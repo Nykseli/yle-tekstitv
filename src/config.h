@@ -9,6 +9,8 @@ typedef struct {
     bool text_only;
     bool help;
     bool version;
+    bool navigation;
+    bool long_navigation;
     bool no_nav;
     bool no_top_nav;
     bool no_bottom_nav;

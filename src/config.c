@@ -10,6 +10,8 @@ config global_config = {
     .text_only = false,
     .help = false,
     .version = false,
+    .navigation = false,
+    .long_navigation = false,
     .no_nav = false,
     .no_top_nav = false,
     .no_bottom_nav = false,
@@ -31,6 +33,10 @@ static void long_option(char* option)
         global_config.help = true;
     } else if (strcmp(option, "--version") == 0) {
         global_config.version = true;
+    } else if (strcmp(option, "--navigation") == 0) {
+        global_config.navigation = true;
+    } else if (strcmp(option, "--long-navigation") == 0) {
+        global_config.long_navigation = true;
     } else if (strcmp(option, "--no-nav") == 0) {
         global_config.no_nav = true;
     } else if (strcmp(option, "--no-top-nav") == 0) {
