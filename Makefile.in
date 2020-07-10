@@ -1,15 +1,3 @@
-
-CFLAGS += -std=c99 \
-			-Wall \
-			-Wextra \
-			-Werror \
-			-Wno-unused-parameter \
-			-Wformat-security \
-			-Wno-unused-result \
-			-pedantic \
-			-fPIC
-
-BIN_NAME = tekstitv
 SHARED_LINK = lib$(BIN_NAME).so.$(MAJOR_VERSION)
 SHARED_NAME = $(SHARED_LINK).$(MINOR_VERSION)
 STATIC_NAME = lib$(BIN_NAME).a
@@ -65,9 +53,10 @@ clean:
 
 
 install_executable:
-	@ echo "Installing executable"
+	@ echo "Installing executable..."
 	@ mkdir -p $(BINDIR)
 	@ install -m 755 $(BUILD_DIR)/$(BIN_NAME) $(BINDIR)
+	@ echo "Installation complete."
 
 install_shared:
 	@ echo "Installing shared library"
@@ -86,7 +75,7 @@ install_headers:
 	@ install -m 644 $(LIB_HEADERS) $(INCLUDEDIR)
 
 uninstall_executable:
-	@ echo "Uninstalling library headers"
+	@ echo "Uninstalling binary"
 	@ rm -fv $(BINDIR)/$(BIN_NAME)
 
 uninstall_shared:

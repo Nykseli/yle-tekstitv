@@ -9,6 +9,100 @@ build_static=true
 build_shared=true
 build_executable=true
 
+NAME="tekstitv"
+MAJOR_VERSION=`awk '/TEKSTITV_MAJOR_VERSION/{print $3}' include/tekstitv.h`
+MINOR_VERSION=`awk '/TEKSTITV_MINOR_VERSION/{print $3}' include/tekstitv.h`
+BIN_LINKS="-lcurl"
+CFLAGS="-std=c99 -Wall -Wextra -Werror -Wno-unused-parameter -Wformat-security -Wno-unused-result -pedantic -fPIC"
+TARGETS=""
+INSTALLS=""
+UNINSTALLS=""
+
+print_config() {
+    print_found() {
+        printf "$1"
+        if [ -z "$2" ]; then printf "not found\n"; else printf "found\n"; fi
+    }
+
+    print_use() {
+        printf "$1"
+        if $2 ; then printf "true\n"; else printf "false\n"; fi
+    }
+
+    printf "configuring: $NAME version $MAJOR_VERSION.$MINOR_VERSION\n\n"
+
+    ldconf=`which ldconfig`
+
+    if [ -z "$ldconf" ]; then
+        ldconf="/sbin/ldconfig -p"
+    else
+        ldconf="ldconfig -p"
+    fi
+
+    printf "finding compiler... "
+    compiler=""
+    version=""
+    compilerpath=`which gcc`
+    # Test gcc first
+    if [ "$compilerpath" ]; then
+        compiler="gcc"
+    fi
+
+    # Test clang if gcc is not found
+    if [ -z "$compiler" ]; then
+        compilerpath=`which clang`
+        if [ "$compilerpath" ]; then
+            compiler="clang"
+        fi
+    fi
+
+    # Fail if gcc nor clang is found
+    if [ -z "$compiler" ]; then
+        printf "\nError! Neither gcc nor clang was found.\n"
+        exit 1
+    fi
+
+    # Find compiler version
+    if [ "$compiler" = "gcc" ]; then
+        version=`gcc --version | head -1 | cut -d" " -f4`
+    elif [ "$compiler" = "clang" ]; then
+        version=`clang --version | head -1 | cut -d" " -f3`
+    fi
+
+    printf "\nusing $compiler. version: $version\n\n"
+
+    echo "finding libraries..."
+    ldconf=`$ldconf`
+
+    ncursesw=`echo $ldconf | grep curl\.so`
+    print_found "finding curl... " $ncursesw
+
+    ncurses=`echo $ldconf | grep ncurses\.so`
+    print_found "finding ncurses... " $ncurses
+
+    ncursesw=`echo $ldconf | grep ncursesw\.so`
+    print_found "finding ncursesw... " $ncursesw
+
+    printf "\nconfiguration:\n"
+    print_use "using utf-8... " $utf8
+    print_use "using debugging... " $debugsym
+    print_use "building executable... " $build_executable
+    print_use "building static libary... " $build_static
+    print_use "building shared library... " $build_shared
+
+    printf "\nbuilding:\n"
+    echo "build path: `pwd`/build"
+    echo "library links: $BIN_LINKS"
+    echo "compiler flags: $CFLAGS"
+
+    printf "\ninstallation:\n"
+    if $build_executable; then echo "binary installation directory: $bindir"; fi
+    if $build_static || $build_shared; then
+        echo "library installation directory: $libdir"
+        echo "include hearder installation directory: $includedir"
+    fi
+}
+
 print_usage() {
     printf 'Usage: ./configure [options]\n'
     printf 'Options:\n'
@@ -80,39 +174,11 @@ if [ -z $includedir ]; then
     includedir=$prefix/include
 fi
 
-# TODO: echo configuration
-# TODO: combine include headers to single file
-
 if ! $build_shared && ! $build_static && ! $build_executable; then
     echo "Error: cannot disable all builds"
     print_usage
 fi
 
-MAJOR_VERSION=`awk '/TEKSTITV_MAJOR_VERSION/{print $3}' include/tekstitv.h`
-MINOR_VERSION=`awk '/TEKSTITV_MINOR_VERSION/{print $3}' include/tekstitv.h`
-
-echo 'Generating makefile ...'
-echo "MAJOR_VERSION = $MAJOR_VERSION" > Makefile
-echo "MINOR_VERSION = $MINOR_VERSION" >> Makefile
-echo "PREFIX = $prefix" >> Makefile
-echo "LIBDIR = $libdir" >> Makefile
-echo "BINDIR = $bindir" >> Makefile
-echo "INCLUDEDIR = $includedir" >> Makefile
-
-if $debugsym; then
-    echo 'CFLAGS += -g -DDEBUG' >> Makefile
-else
-    echo 'CFLAGS += -O3 -flto' >> Makefile
-fi
-
-if ! $utf8; then
-    echo 'CFLAGS += -DDISABLE_UTF_8' >> Makefile
-fi
-
-BIN_LINKS="-lcurl"
-TARGETS=""
-INSTALLS=""
-UNINSTALLS=""
 if $build_shared; then
     TARGETS="$TARGETS shared"
     INSTALLS="$INSTALLS install_shared"
@@ -138,6 +204,28 @@ if $build_executable; then
     fi
 fi
 
+if $debugsym; then
+    CFLAGS="$CFLAGS -g -DDEBUG"
+else
+    CFLAGS="$CFLAGS -O3 -flto"
+fi
+
+if ! $utf8; then
+    CFLAGS="$CFLAGS -DDISABLE_UTF_8"
+fi
+
+# Print configuration so user can see possible config errors easier
+print_config
+
+printf '\nGenerating makefile ...\n'
+echo "BIN_NAME = $NAME" > Makefile
+echo "MAJOR_VERSION = $MAJOR_VERSION" >> Makefile
+echo "MINOR_VERSION = $MINOR_VERSION" >> Makefile
+echo "PREFIX = $prefix" >> Makefile
+echo "LIBDIR = $libdir" >> Makefile
+echo "BINDIR = $bindir" >> Makefile
+echo "INCLUDEDIR = $includedir" >> Makefile
+echo "CFLAGS = $CFLAGS" >> Makefile
 echo "BIN_LINKS = $BIN_LINKS" >> Makefile
 echo "TARGETS = $TARGETS" >> Makefile
 echo "INSTALLS = $INSTALLS" >> Makefile
