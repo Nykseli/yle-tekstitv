@@ -1,7 +1,0 @@
-[submodule "third_party/ncurses"]
-	path = third_party/ncurses
-	url = https://github.com/mirror/ncurses
-	ignore = dirty
-[submodule "third_party/curl"]
-	path = third_party/curl
-	url = https://github.com/curl/curl
