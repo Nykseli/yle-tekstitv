@@ -1,6 +1,7 @@
 #!/bin/sh
 
-set -e
+# TODO: fix the ldconfig finding in print_config so we can use set -e again
+# set -e
 
 prefix=/usr/local
 debugsym=false
@@ -8,6 +9,7 @@ utf8=true
 build_static=true
 build_shared=true
 build_executable=true
+termux_build=false
 
 NAME="tekstitv"
 MAJOR_VERSION=`awk '/TEKSTITV_MAJOR_VERSION/{print $3}' include/tekstitv.h`
@@ -31,14 +33,6 @@ print_config() {
 
     printf "configuring: $NAME version $MAJOR_VERSION.$MINOR_VERSION\n\n"
 
-    ldconf=`which ldconfig`
-
-    if [ -z "$ldconf" ]; then
-        ldconf="/sbin/ldconfig -p"
-    else
-        ldconf="ldconfig -p"
-    fi
-
     printf "finding compiler... "
     compiler=""
     version=""
@@ -49,7 +43,9 @@ print_config() {
     fi
 
     # Test clang if gcc is not found
-    if [ -z "$compiler" ]; then
+    # Or test if gcc is actually symbolic link to gcc
+    realgcc=`gcc --version | head -1 | cut -d" " -f1`
+    if [ -z "$compiler" -o $realgcc = "clang" ]; then
         compilerpath=`which clang`
         if [ "$compilerpath" ]; then
             compiler="clang"
@@ -72,20 +68,40 @@ print_config() {
     printf "\nusing $compiler. version: $version\n\n"
 
     echo "finding libraries..."
-    ldconf=`$ldconf`
+    if [ "$termux_build" = true ]; then
+        dpkg_list=`dpkg --list`
+        curl=`echo $dpkg_list | grep libcurl`
+        print_found "finding curl... " $curl
 
-    ncursesw=`echo $ldconf | grep curl\.so`
-    print_found "finding curl... " $ncursesw
+        ncurses=`echo $dpkg_list | grep ncurses`
+        print_found "finding ncurses... " $ncurses
 
-    ncurses=`echo $ldconf | grep ncurses\.so`
-    print_found "finding ncurses... " $ncurses
+        ncursesw=`echo $dpkg_list | grep ncursesw`
+        print_found "finding ncursesw... " $ncursesw
+    else
+        ldconf=`which ldconfig`
+        if [ -z "$ldconf" ]; then
+            ldconf="/sbin/ldconfig -p"
+        else
+            ldconf="ldconfig -p"
+        fi
 
-    ncursesw=`echo $ldconf | grep ncursesw\.so`
-    print_found "finding ncursesw... " $ncursesw
+        ldconf=`$ldconf`
+
+        curl=`echo $ldconf | grep curl\.so`
+        print_found "finding curl... " $curl
+
+        ncurses=`echo $ldconf | grep ncurses\.so`
+        print_found "finding ncurses... " $ncurses
+
+        ncursesw=`echo $ldconf | grep ncursesw\.so`
+        print_found "finding ncursesw... " $ncursesw
+    fi
 
     printf "\nconfiguration:\n"
     print_use "using utf-8... " $utf8
     print_use "using debugging... " $debugsym
+    print_use "building for termux... " $termux_build
     print_use "building executable... " $build_executable
     print_use "building static libary... " $build_static
     print_use "building shared library... " $build_shared
@@ -135,6 +151,9 @@ for arg in "$@"; do
         ;;
     --enable-debug)
         debugsym=true
+        ;;
+    --termux-build)
+        termux_build=true
         ;;
     --disable-lib-build)
         build_static=false

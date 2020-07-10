@@ -19,7 +19,7 @@ dependency() {
 
 install() {
     dependency
-    ./configure --disable-lib-build
+    ./configure --disable-lib-build --termux-build
     make
     CPWD=`pwd`
     cd ~
