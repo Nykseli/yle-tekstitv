@@ -15,6 +15,9 @@ static void print_usage(char* name)
     printf("\t-h,--help\t\tPrint this\n");
     printf("\t-t,--text-only\t\tPrint teletext to stdout instead using ncurses\n");
     printf("\t--version\t\tPrint program version\n");
+    printf("\t--bg-color <hex>\tBackground color hex value (000000)\n");
+    printf("\t--text-color <hex>\tText color hex value (ffffff)\n");
+    printf("\t--link-color <hex>\tLink highlight color hex value (ffffff)\n");
     printf("\t--navigation\t\tPrint navigation instructions\n");
     printf("\t--long-navigation\tPrint navigation instructions with extra information\n");
     printf("\t--no-nav\t\tDisable all navigations\n");
