@@ -40,6 +40,7 @@ Up, Right, Down, Left refers to the arrow keys
 | k/Up | Move one link up | - |
 | l/Right | Move one link right | - |
 | h/Left | Move one link left | - |
+| g/Enter | Open the selected link | - |
 | v | Load previous page | Tries to load page only if it exists |
 | m | Load next page | Tries to load page only if it exists |
 | b | Load previous sub page | Tries to load page only if it exists |

@@ -43,6 +43,7 @@ static void print_verbose_navigation_instructions()
     printf("| k/Up    | Move one link up       | -                                                   |\n");
     printf("| l/Right | Move one link right    | -                                                   |\n");
     printf("| h/Left  | Move one link left     | -                                                   |\n");
+    printf("| g/Enter | Open the selected link | -                                                   |\n");
     printf("| v       | Load previous page     | Tries to load page only if it exists                |\n");
     printf("| m       | Load next page         | Tries to load page only if it exists                |\n");
     printf("| b       | Load previous sub page | Tries to load page only if it exists                |\n");
@@ -63,6 +64,7 @@ static void print_navigation_instructions()
     printf("| k/Up    | Move one link up       |\n");
     printf("| l/Right | Move one link right    |\n");
     printf("| h/Left  | Move one link left     |\n");
+    printf("| g/Enter | Open the selected link |\n");
     printf("| v       | Load previous page     |\n");
     printf("| m       | Load next page         |\n");
     printf("| b       | Load previous sub page |\n");
