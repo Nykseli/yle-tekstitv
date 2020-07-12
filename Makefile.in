@@ -49,7 +49,7 @@ $(LIB_BUILD)/%.o: $(LIB_DIR)/%.c $(LIB_HEADERS)
 	@ $(CC) $(TEKSTITV_INCLUDE) -c $(CFLAGS) -o $@ $<
 
 clean:
-	rm -rf build
+	rm -rf build Makefile
 
 
 install_executable:
