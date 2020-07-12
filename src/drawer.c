@@ -577,6 +577,15 @@ void init_drawer(drawer* drawer)
 
     if (drawer->color_support) {
         start_color();
+        // Redefine the colors if user has set them
+        if (can_change_color()) {
+            if (BG_RGB(0) != -1)
+                init_color(COLOR_BLACK, BG_RGB(0), BG_RGB(1), BG_RGB(2));
+            if (LINK_RGB(0) != -1)
+                init_color(COLOR_BLUE, LINK_RGB(0), LINK_RGB(1), LINK_RGB(2));
+            if (TEXT_RGB(0) != -1)
+                init_color(COLOR_WHITE, TEXT_RGB(0), TEXT_RGB(1), TEXT_RGB(2));
+        }
         init_pair(TEXT_COLOR_ID, drawer->text_color, drawer->background_color);
         init_pair(LINK_COLOR_ID, drawer->link_color, drawer->background_color);
         bkgd(TEXT_COLOR);

@@ -16,7 +16,14 @@ typedef struct {
     bool no_bottom_nav;
     bool no_title;
     bool no_middle;
+    short bg_rgb[3];
+    short link_rgb[3];
+    short text_rgb[3];
 } config;
+
+#define BG_RGB(i) (global_config.bg_rgb[i])
+#define LINK_RGB(i) (global_config.link_rgb[i])
+#define TEXT_RGB(i) (global_config.text_rgb[i])
 
 void init_config(int argc, char** argv);
 
