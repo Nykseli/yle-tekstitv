@@ -46,6 +46,8 @@ Up, Right, Down, Left refers to the arrow keys
 | b | Load previous sub page | Tries to load page only if it exists |
 | n | Load next sub page | Tries to load page only if it exists |
 | s | Search new page | Automatically tries to load the page after 3 digits |
+| o | Previous page | - |
+| p | Next page | - |
 | esc | Cancel search mode | Works only in search mode |
 | q | Quit program | Works only if *not* in search mode |
 

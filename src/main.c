@@ -5,7 +5,6 @@
 
 #include "config.h"
 #include "drawer.h"
-#include "page_number.h"
 #include "printer.h"
 
 static void print_usage(char* name)
@@ -49,6 +48,8 @@ static void print_verbose_navigation_instructions()
     printf("| b       | Load previous sub page | Tries to load page only if it exists                |\n");
     printf("| n       | Load next sub page     | Tries to load page only if it exists                |\n");
     printf("| s       | Search new page        | Automatically tries to load the page after 3 digits |\n");
+    printf("| o       | Previous page          | -                                                   |\n");
+    printf("| p       | Next page              | -                                                   |\n");
     printf("| esc     | Cancel search mode     | Works only in search mode                           |\n");
     printf("| q       | Quit program           | Works only if not in search mode                    |\n");
     printf("\n");
@@ -70,6 +71,8 @@ static void print_navigation_instructions()
     printf("| b       | Load previous sub page |\n");
     printf("| n       | Load next sub page     |\n");
     printf("| s       | Search new page        |\n");
+    printf("| o       | Previous page          |\n");
+    printf("| p       | Next page              |\n");
     printf("| esc     | Cancel search mode     |\n");
     printf("| q       | Quit program           |\n");
     printf("\n");
@@ -105,12 +108,10 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    add_page(global_config.page);
-    add_subpage(global_config.subpage);
-
     html_parser parser;
     init_html_parser(&parser);
-    load_page(&parser, https_page_url);
+    link_from_ints(&parser, global_config.page, global_config.subpage);
+    load_page(&parser);
     parse_html(&parser);
 
     if (global_config.text_only) {

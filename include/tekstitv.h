@@ -66,6 +66,8 @@ typedef struct {
     html_buffer _curl_buffer;
     // Couldn't load the page
     bool curl_load_error;
+    // Buffer for the loadable shortlink
+    char link[HTML_LINK_SIZE];
 } html_parser;
 
 #define html_item_as_text(_item) ((_item).item.text)
@@ -80,6 +82,11 @@ typedef struct {
 void init_html_parser(html_parser* parser);
 void free_html_parser(html_parser* parser);
 void parse_html(html_parser* parser);
+void link_from_ints(html_parser* parser, int page, int subpage);
+void link_from_short_link(html_parser* parser, char* shortlink);
+
+int page_number(const char* page);
+int subpage_number(const char* subpage);
 
 static inline size_t html_item_text_size(html_item item)
 {
@@ -93,6 +100,6 @@ static inline size_t html_item_text_size(html_item item)
     }
 }
 
-void load_page(html_parser* parser, char* page);
+void load_page(html_parser* parser);
 
 #endif

@@ -1,4 +1,5 @@
 
+#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdbool.h>
@@ -482,6 +483,61 @@ void parse_html(html_parser* parser)
     // Bottom nav
     skip_next_tag(buffer, "DIV", 3, true);
     parse_bottom_navigation(parser, buffer);
+}
+
+void link_from_ints(html_parser* parser, int page, int subpage)
+{
+    assert(page >= 100 && page <= 999);
+    assert(subpage >= 1 && subpage <= 99);
+
+    char tmp_link[] = "xxx_00xx.htm";
+
+    tmp_link[0] = (page / 100) + '0';
+    tmp_link[1] = (page % 100 / 10) + '0';
+    tmp_link[2] = (page % 10) + '0';
+    tmp_link[6] = subpage > 9 ? (subpage % 100 / 10) + '0' : '0';
+    tmp_link[7] = (subpage % 10) + '0';
+
+    memcpy(parser->link, tmp_link, HTML_LINK_SIZE);
+}
+
+void link_from_short_link(html_parser* parser, char* shortlink)
+{
+    memcpy(parser->link, shortlink, HTML_LINK_SIZE);
+}
+
+int page_number(const char* page)
+{
+    assert(page);
+
+    size_t len = strlen(page);
+    if (strlen(page) > 3)
+        return -1;
+
+    for (size_t i = 0; i < len; i++) {
+        if (page[i] < '0' || page[i] > '9')
+            return -1;
+    }
+
+    int result = atoi(page);
+    return result >= 100 && result < 1000 ? result : -1;
+}
+
+int subpage_number(const char* subpage)
+{
+    assert(subpage);
+
+    size_t len = strlen(subpage);
+    if (len > 2)
+        return -1;
+
+    for (size_t i = 0; i < len; i++) {
+        if (subpage[i] < '0' || subpage[i] > '9')
+            return -1;
+    }
+
+    int result = atoi(subpage);
+    return result >= 1 && result < 100 ? result : -1;
 }
 
 void init_html_parser(html_parser* parser)

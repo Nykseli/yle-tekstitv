@@ -16,7 +16,7 @@ size_t write_to_buffer(char* in, size_t size, size_t nmemb, void* out)
     return r;
 }
 
-void load_page(html_parser* parser, char* page)
+void load_page(html_parser* parser)
 {
     CURL* curl;
     char curl_errbuf[CURL_ERROR_SIZE];
@@ -24,6 +24,9 @@ void load_page(html_parser* parser, char* page)
     parser->_curl_buffer.size = 0;
     parser->curl_load_error = false;
     int err;
+    char page[] = "https://yle.fi/tekstitv/txt/xxx_xxxx.htm";
+    memcpy(page + 28, parser->link, HTML_LINK_SIZE);
+
 
     curl = curl_easy_init();
     curl_easy_setopt(curl, CURLOPT_URL, page);
