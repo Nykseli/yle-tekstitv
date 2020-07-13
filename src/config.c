@@ -177,7 +177,7 @@ static void short_option()
     } else if (strcmp(CURRENT, "-h") == 0) {
         global_config.help = true;
     } else {
-        option_error(CURRENT);
+        option_error();
     }
 }
 
