@@ -4,7 +4,6 @@
 
 #include "config.h"
 #include "drawer.h"
-#include "page_number.h"
 
 #define MAX_MIDDLE_WIDTH (max_window_width() / 2)
 #define MIDDLE_STARTX (MAX_MIDDLE_WIDTH / 2)
@@ -14,6 +13,26 @@
 #define TEXT_COLOR COLOR_PAIR(TEXT_COLOR_ID)
 #define LINK_COLOR_ID 2
 #define LINK_COLOR COLOR_PAIR(LINK_COLOR_ID)
+
+#define HISTORY_CAPACITY 16
+
+#define HISTORY_NEXT(val) (((val) + 1) % HISTORY_CAPACITY)
+#define HISTORY_PREV(val) (((val) + HISTORY_CAPACITY - 1) % HISTORY_CAPACITY)
+#define HISTORY_CURRENT_LINK (history.entries[history.current])
+
+typedef struct {
+    // Storage for browser links
+    char entries[HISTORY_CAPACITY][HTML_LINK_SIZE];
+    int count; // Amount of items in the buffer
+    int start; // Start of the valid data
+    int current; // Index of the value we are currently using
+} browser_history;
+
+browser_history history = {
+    .count = 0,
+    .start = 0,
+    .current = -1,
+};
 
 typedef struct {
     char prev_page[HTML_LINK_SIZE];
@@ -32,6 +51,67 @@ typedef enum {
 static navigation nav_links;
 
 static void search_mode(drawer* drawer, html_parser* parser);
+
+static bool history_at_last_link()
+{
+    if (history.start == 0) {
+        if (history.current == history.count - 1)
+            return true;
+    } else if (history.current == history.start - 1) {
+        return true;
+    }
+
+    return false;
+}
+
+static void add_history_link(char* link)
+{
+    bool at_last = history_at_last_link();
+
+    // If history is not full and we are at the last link we can just add new link
+    if (history.count != HISTORY_CAPACITY && at_last) {
+        history.count++;
+        history.current = HISTORY_NEXT(history.current);
+        memcpy(history.entries[history.current], link, HTML_LINK_SIZE);
+        return;
+    }
+
+    // If not at the last link, "Override" the links after current
+    if (!at_last) {
+        // + 2 Because there will be atleast the current with the upcoming link
+        if (history.start == 0 || history.start < history.current) {
+            history.count = history.current - history.start + 2;
+        } else {
+            history.count = HISTORY_CAPACITY - (history.start - history.current) + 2;
+        }
+    } else {
+        history.start = HISTORY_NEXT(history.start);
+    }
+
+    history.current = HISTORY_NEXT(history.current);
+    memcpy(history.entries[history.current], link, HTML_LINK_SIZE);
+}
+
+static char* next_link()
+{
+    if (history.count == 0)
+        return NULL;
+
+    if (history_at_last_link())
+        return NULL;
+
+    history.current = HISTORY_NEXT(history.current);
+    return HISTORY_CURRENT_LINK;
+}
+
+static char* prev_link()
+{
+    if (history.count == 0 || history.current == history.start)
+        return NULL;
+
+    history.current = HISTORY_PREV(history.current);
+    return HISTORY_CURRENT_LINK;
+}
 
 static int max_window_width()
 {
@@ -308,12 +388,15 @@ static void draw_middle(drawer* drawer, html_parser* parser)
     }
 }
 
-static void redraw_parser(drawer* drawer, html_parser* parser, bool init)
+static void redraw_parser(drawer* drawer, html_parser* parser, bool init, bool add_history)
 {
     if (parser->curl_load_error) {
         curl_load_error(drawer, parser);
         return;
     }
+
+    if (add_history)
+        add_history_link(parser->link);
 
     drawer->current_x = 0;
     drawer->current_y = 0;
@@ -377,23 +460,21 @@ static void prev_row(drawer* drawer)
         drawer->highlight_col = next.size - 1;
 }
 
-static void load_link(drawer* drawer, html_parser* parser, char* link, bool short_link)
+static void load_link(drawer* drawer, html_parser* parser, bool add_history)
 {
-    if (short_link)
-        replace_link_part(link);
-
     free_html_parser(parser);
     init_html_parser(parser);
 
-    load_page(parser, https_page_url);
+    load_page(parser);
     parse_html(parser);
-    redraw_parser(drawer, parser, true);
+    redraw_parser(drawer, parser, true, add_history);
 }
 
 static void load_highlight_link(drawer* drawer, html_parser* parser)
 {
     link_highlight link = drawer->highlight_rows[drawer->highlight_row].links[drawer->highlight_col];
-    load_link(drawer, parser, link.link, true);
+    link_from_short_link(parser, link.link);
+    load_link(drawer, parser, true);
 }
 
 static void load_nav_link(drawer* drawer, html_parser* parser, nav_type type)
@@ -418,8 +499,10 @@ static void load_nav_link(drawer* drawer, html_parser* parser, nav_type type)
 
     // Links first character is set to null in draw_top_navigation
     // if the there is no actual page in the current page
-    if (link != NULL && link[0] != 0)
-        load_link(drawer, parser, link, true);
+    if (link != NULL && link[0] != 0) {
+        link_from_short_link(parser, link);
+        load_link(drawer, parser, true);
+    }
 }
 
 void search_mode(drawer* drawer, html_parser* parser)
@@ -462,9 +545,8 @@ void search_mode(drawer* drawer, html_parser* parser)
                     refresh();
                     getch();
                 } else {
-                    add_page(num);
-                    add_subpage(1);
-                    load_link(drawer, parser, NULL, false);
+                    link_from_ints(parser, num, 1);
+                    load_link(drawer, parser, true);
                 }
                 break;
             }
@@ -491,22 +573,22 @@ void main_draw_loop(drawer* drawer, html_parser* parser)
             if (drawer->highlight_row == -1)
                 drawer->highlight_row = 0;
             prev_col(drawer);
-            redraw_parser(drawer, parser, false);
+            redraw_parser(drawer, parser, false, false);
         } else if (c == 'k' || c == KEY_UP) {
             if (drawer->highlight_col == -1)
                 drawer->highlight_col = 0;
             prev_row(drawer);
-            redraw_parser(drawer, parser, false);
+            redraw_parser(drawer, parser, false, false);
         } else if (c == 'j' || c == KEY_DOWN) {
             if (drawer->highlight_col == -1)
                 drawer->highlight_col = 0;
             next_row(drawer);
-            redraw_parser(drawer, parser, false);
+            redraw_parser(drawer, parser, false, false);
         } else if (c == 'l' || c == KEY_RIGHT) {
             if (drawer->highlight_row == -1)
                 drawer->highlight_row = 0;
             next_col(drawer);
-            redraw_parser(drawer, parser, false);
+            redraw_parser(drawer, parser, false, false);
         } else if (c == 'g' || c == '\n') { // g or enter
             load_highlight_link(drawer, parser);
         } else if (c == 'v') {
@@ -517,6 +599,18 @@ void main_draw_loop(drawer* drawer, html_parser* parser)
             load_nav_link(drawer, parser, NEXT_SUB_PAGE);
         } else if (c == 'm') {
             load_nav_link(drawer, parser, NEXT_PAGE);
+        } else if (c == 'o') {
+            char* link = prev_link();
+            if (link != NULL) {
+                link_from_short_link(parser, link);
+                load_link(drawer, parser, false);
+            }
+        } else if (c == 'p') {
+            char* link = next_link();
+            if (link != NULL) {
+                link_from_short_link(parser, link);
+                load_link(drawer, parser, false);
+            }
         } else if (c == 's') {
             search_mode(drawer, parser);
         }
@@ -536,6 +630,8 @@ void draw_parser(drawer* drawer, html_parser* parser)
         draw_middle(drawer, parser);
         draw_bottom_navigation(drawer, parser);
         wrefresh(drawer->window);
+
+        add_history_link(parser->link);
     }
 
     main_draw_loop(drawer, parser);

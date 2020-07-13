@@ -1,8 +1,10 @@
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <tekstitv.h>
 
 #include "config.h"
-#include "page_number.h"
 
 #define CURRENT (args.argv[args.current])
 #define PREVIOUS (args.argv[args.current - 1])
