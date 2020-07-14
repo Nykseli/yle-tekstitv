@@ -5,6 +5,7 @@
 
 prefix=/usr/local
 debugsym=false
+completion=true
 utf8=true
 build_static=true
 build_shared=true
@@ -105,6 +106,7 @@ print_config() {
     print_use "building executable... " $build_executable
     print_use "building static libary... " $build_static
     print_use "building shared library... " $build_shared
+    print_use "installing bash completion... " $completion
 
     printf "\nbuilding:\n"
     echo "build path: `pwd`/build"
@@ -117,6 +119,7 @@ print_config() {
         echo "library installation directory: $libdir"
         echo "include hearder installation directory: $includedir"
     fi
+    if $completion; then echo "completion installation directory: $completiondir"; fi
 }
 
 print_usage() {
@@ -126,6 +129,8 @@ print_usage() {
     printf '\t--libdir=<path>\t\tobject code libraries (Default: $prefix/lib)\n'
     printf '\t--bindir=<path>\t\tuser executables (Default: $prefix/bin)\n'
     printf '\t--includedir=<path>\tC header files (Default: $prefix/include)\n'
+    printf '\t--completiondir=<path>\twhere to install completion (Default: /etc/bash_completion.d)\n'
+    printf '\t--disable-completion\tdo not install the bash completion (Default: enabled)\n'
     printf '\t--enable-debug\t\tenable debugging (Default: disbled)\n'
     printf '\t--disable-utf8\t\tdisable utf-8 support from parser library (Default enabled)\n'
     printf '\t--disable-lib-build\tdo not build any libraries (Default enabled)\n'
@@ -148,6 +153,12 @@ for arg in "$@"; do
         ;;
     --includedir=*)
         includedir=`echo $arg | sed 's/--includedir=//'`
+        ;;
+    --completiondir=*)
+        completiondir=`echo $arg | sed 's/--completiondir=//'`
+        ;;
+    --disable-completion)
+        completion=false
         ;;
     --enable-debug)
         debugsym=true
@@ -193,6 +204,10 @@ if [ -z $includedir ]; then
     includedir=$prefix/include
 fi
 
+if [ -z $completiondir ]; then
+    completiondir=/etc/bash_completion.d
+fi
+
 if ! $build_shared && ! $build_static && ! $build_executable; then
     echo "Error: cannot disable all builds"
     print_usage
@@ -222,6 +237,10 @@ if $build_executable; then
         BIN_LINKS="$BIN_LINKS -lncurses"
     fi
 fi
+if $completion; then
+    INSTALLS="$INSTALLS install_completion"
+    UNINSTALLS="$UNINSTALLS uninstall_completion"
+fi
 
 if $debugsym; then
     CFLAGS="$CFLAGS -g -DDEBUG"
@@ -243,6 +262,7 @@ echo "MINOR_VERSION = $MINOR_VERSION" >> Makefile
 echo "PREFIX = $prefix" >> Makefile
 echo "LIBDIR = $libdir" >> Makefile
 echo "BINDIR = $bindir" >> Makefile
+echo "COMPLETIONDIR = $completiondir" >> Makefile
 echo "INCLUDEDIR = $includedir" >> Makefile
 echo "CFLAGS = $CFLAGS" >> Makefile
 echo "BIN_LINKS = $BIN_LINKS" >> Makefile

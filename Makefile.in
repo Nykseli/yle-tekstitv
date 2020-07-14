@@ -58,6 +58,9 @@ install_executable:
 	@ install -m 755 $(BUILD_DIR)/$(BIN_NAME) $(BINDIR)
 	@ echo "Installation complete."
 
+install_completion:
+	@ cp tekstitv-completion.sh $(COMPLETIONDIR)/$(BIN_NAME)
+
 install_shared:
 	@ echo "Installing shared library"
 	@ mkdir -p $(LIBDIR)
@@ -77,6 +80,9 @@ install_headers:
 uninstall_executable:
 	@ echo "Uninstalling binary"
 	@ rm -fv $(BINDIR)/$(BIN_NAME)
+
+uninstall_completion:
+	@ rm -fv $(COMPLETIONDIR)/$(BIN_NAME)
 
 uninstall_shared:
 	@ echo "Uninstalling shared library"

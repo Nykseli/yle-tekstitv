@@ -73,6 +73,10 @@ cd yle-tekstitv
 make
 sudo make install
 ```
+If you want to enable the bash auto completion without restarting bash session:
+```
+. ./tekstitv-completion.sh
+```
 
 ### Termux
 
