@@ -1,0 +1,10 @@
+# Settings can be commented out with '#'
+# Setting format is <option> = <parameter>
+# All options except a parameter
+# Note that spaces before and after '=' are optional
+# These options can be overwritten with cli options
+# See all options valiable with --help-config
+
+bg-color = 000000
+text-color = ffffff
+no-nav=true

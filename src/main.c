@@ -14,6 +14,7 @@ static void print_usage(char* name)
     printf("\t-h,--help\t\tPrint this\n");
     printf("\t-t,--text-only\t\tPrint teletext to stdout instead using ncurses\n");
     printf("\t--version\t\tPrint program version\n");
+    printf("\t--config <path>\t\tPath to config file. (Default: ~/.config/tekstitv/tekstitv.conf\n");
     printf("\t--bg-color <hex>\tBackground color hex value (000000)\n");
     printf("\t--text-color <hex>\tText color hex value (ffffff)\n");
     printf("\t--link-color <hex>\tLink highlight color hex value (ffffff)\n");
@@ -24,6 +25,20 @@ static void print_usage(char* name)
     printf("\t--no-bottom-nav\t\tDisable bottom navigation\n");
     printf("\t--no-title\t\tDisable title\n");
     printf("\t--no-middle\t\tDisable middle\n");
+    exit(0);
+}
+
+static void print_config_options()
+{
+    printf("\ttext-only=true|false\t\tPrint teletext to stdout instead using ncurses\n");
+    printf("\tno-nav=true|false\t\tDisable all navigations\n");
+    printf("\tno-top-nav=true|false\t\tDisable top navigation\n");
+    printf("\tno-bottom-nav=true|false\tDisable bottom navigation\n");
+    printf("\tno-title=true|false\t\tDisable title\n");
+    printf("\tno-middle=true|false\t\tDisable middle\n");
+    printf("\tbg-color=<hex>\t\t\tBackground color hex value (000000)\n");
+    printf("\ttext-color=<hex>\t\tText color hex value (ffffff)\n");
+    printf("\tlink-color=<hex>\t\tLink highlight color hex value (ffffff)\n");
     exit(0);
 }
 
@@ -97,6 +112,10 @@ int main(int argc, char** argv)
 
     if (global_config.navigation) {
         print_navigation_instructions();
+    }
+
+    if (global_config.help_config) {
+        print_config_options();
     }
 
     if (global_config.page == -1) {
