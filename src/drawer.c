@@ -409,6 +409,8 @@ static void redraw_parser(drawer* drawer, html_parser* parser, bool init, bool a
     }
 
     wclear(drawer->window);
+    mvprintw(0, 0, "                                            ");
+    mvprintw(0, 0, "Press q to exit, s to search");
     draw_title(drawer, parser);
     draw_top_navigation(drawer, parser);
     draw_middle(drawer, parser);
@@ -505,6 +507,55 @@ static void load_nav_link(drawer* drawer, html_parser* parser, nav_type type)
     }
 }
 
+/**
+ * Print line to screen and increment the line number.
+ */
+static void print_navigation_line(drawer* drawer, const char* line)
+{
+    mvwprintw(drawer->window, drawer->current_y, drawer->current_x, line);
+    drawer->current_y++;
+}
+
+/**
+ * Show instructions for navigating the program
+ */
+static void draw_navigation_screen(drawer* drawer, html_parser* parser)
+{
+    // First clear the window
+    wclear(drawer->window);
+    mvprintw(0, 0, "                                                        ");
+    mvprintw(0, 0, "Press q to return");
+
+    drawer->current_x = middle_startx();
+    drawer->current_y = 2;
+    print_navigation_line(drawer, "|   Key   |         Action         |");
+    print_navigation_line(drawer, "|----------------------------------|");
+    print_navigation_line(drawer, "| j/Down  | Move one link down     |");
+    print_navigation_line(drawer, "| k/Up    | Move one link up       |");
+    print_navigation_line(drawer, "| l/Right | Move one link right    |");
+    print_navigation_line(drawer, "| h/Left  | Move one link left     |");
+    print_navigation_line(drawer, "| g/Enter | Open the selected link |");
+    print_navigation_line(drawer, "| v       | Load previous page     |");
+    print_navigation_line(drawer, "| m       | Load next page         |");
+    print_navigation_line(drawer, "| b       | Load previous sub page |");
+    print_navigation_line(drawer, "| n       | Load next sub page     |");
+    print_navigation_line(drawer, "| s       | Search new page        |");
+    print_navigation_line(drawer, "| o       | Previous page          |");
+    print_navigation_line(drawer, "| p       | Next page              |");
+    print_navigation_line(drawer, "| i       | Show navigation help   |");
+    print_navigation_line(drawer, "| esc     | Cancel search mode     |");
+    print_navigation_line(drawer, "| q       | Quit program           |");
+
+    // Refresh to show the new text
+    wrefresh(drawer->window);
+
+    // Just wait until q is pressed so we can redraw
+    while (getch() != 'q')
+        ;
+
+    redraw_parser(drawer, parser, false, false);
+}
+
 void search_mode(drawer* drawer, html_parser* parser)
 {
 
@@ -599,6 +650,8 @@ void main_draw_loop(drawer* drawer, html_parser* parser)
             load_nav_link(drawer, parser, NEXT_SUB_PAGE);
         } else if (c == 'm') {
             load_nav_link(drawer, parser, NEXT_PAGE);
+        } else if (c == 'i') {
+            draw_navigation_screen(drawer, parser);
         } else if (c == 'o') {
             char* link = prev_link();
             if (link != NULL) {

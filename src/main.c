@@ -65,6 +65,7 @@ static void print_verbose_navigation_instructions()
     printf("| s       | Search new page        | Automatically tries to load the page after 3 digits |\n");
     printf("| o       | Previous page          | -                                                   |\n");
     printf("| p       | Next page              | -                                                   |\n");
+    printf("| i       | Show navigation help   | -                                                   |\n");
     printf("| esc     | Cancel search mode     | Works only in search mode                           |\n");
     printf("| q       | Quit program           | Works only if not in search mode                    |\n");
     printf("\n");
@@ -88,6 +89,7 @@ static void print_navigation_instructions()
     printf("| s       | Search new page        |\n");
     printf("| o       | Previous page          |\n");
     printf("| p       | Next page              |\n");
+    printf("| i       | Show navigation help   |\n");
     printf("| esc     | Cancel search mode     |\n");
     printf("| q       | Quit program           |\n");
     printf("\n");
