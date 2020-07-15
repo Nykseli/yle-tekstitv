@@ -8,6 +8,7 @@ typedef struct {
     int subpage;
     bool text_only;
     bool help;
+    bool help_config;
     bool version;
     bool navigation;
     bool long_navigation;

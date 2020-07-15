@@ -51,6 +51,16 @@ Up, Right, Down, Left refers to the arrow keys
 | esc | Cancel search mode | Works only in search mode |
 | q | Quit program | Works only if *not* in search mode |
 
+## Configuration
+
+Configuration file can be set to `~/.config/tekstitv/tekstitv.conf`
+or with `--config` option.
+<br>
+[tekstitv.conf.example](tekstitv.conf.example) explains how config file is structured.
+<br>
+You can see all the options valiable with `--help-config` option.
+
+
 ## Installation
 
 This program depends on ncurses and libcurl.
