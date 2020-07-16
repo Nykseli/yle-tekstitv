@@ -62,9 +62,13 @@ or with `--config` option.
 You can see all the options valiable with `--help-config` option.
 
 
-## Installation
+## Installing debian packages
 
-This program depends on ncurses and libcurl.
+You can find prebuild debian packages [here](https://github.com/Nykseli/yle-tekstitv/releases)
+
+## Building and installation
+
+Building this program depends on ncurses and libcurl.
 <br />
 Both gcc and clang are supported
 
