@@ -693,10 +693,11 @@ void draw_parser(drawer* drawer, html_parser* parser)
 
 void init_drawer(drawer* drawer)
 {
-    // #ifndef DISABLE_UTF_8
-    // Makes ncurses a utf-8 if host locale is utf-8
-    setlocale(LC_ALL, "");
-    // #endif
+#ifndef DISABLE_UTF_8
+    // Make sure that locale is set so ncurses can show UTF-8 properly
+    // Just default to en_US. This program doesn't really use locale anywhere else
+    setlocale(LC_ALL, "en_US.UTF-8");
+#endif
     // Start curses mode
     initscr();
     // Line buffering disabled, Pass on everty thing to me
