@@ -10,3 +10,6 @@ build/
 
 # Generated makefile
 Makefile
+
+# Generated .deb control file
+DEBIAN/control

@@ -1,0 +1,5 @@
+Maintainer: Miika <miika.alik@gmail.com>
+Description: Yle teletext reader
+Depends: libc6 (>= 2.28), libcurl4 (>= 7.64), libncursesw6 (>= 6.1)
+Priority: optional
+Homepage: https://github.com/Nykseli/yle-tekstitv
