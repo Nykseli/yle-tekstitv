@@ -3,7 +3,7 @@
 #define _TEKSTITV
 
 #define TEKSTITV_MAJOR_VERSION 0
-#define TEKSTITV_MINOR_VERSION 3
+#define TEKSTITV_MINOR_VERSION 4
 
 #include <stdbool.h>
 #include <stddef.h>
