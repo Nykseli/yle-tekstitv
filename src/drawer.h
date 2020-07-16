@@ -34,6 +34,7 @@ typedef struct {
     bool init_highlight_rows;
     link_highlight_row highlight_rows[32];
     int highlight_row_size;
+    bool error_drawn; // Was the last page drawn a load error page
 
 } drawer;
 

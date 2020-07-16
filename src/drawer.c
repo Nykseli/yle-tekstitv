@@ -51,6 +51,7 @@ typedef enum {
 static navigation nav_links;
 
 static void search_mode(drawer* drawer, html_parser* parser);
+static void load_link(drawer* drawer, html_parser* parser, bool add_history);
 
 static bool history_at_last_link()
 {
@@ -113,6 +114,26 @@ static char* prev_link()
     return HISTORY_CURRENT_LINK;
 }
 
+static void load_next_link(drawer* drawer, html_parser* parser)
+{
+    char* link = next_link();
+    // TODO: let user know that there is no next link
+    if (link != NULL) {
+        link_from_short_link(parser, link);
+        load_link(drawer, parser, false);
+    }
+}
+
+static void load_prev_link(drawer* drawer, html_parser* parser)
+{
+    char* link = prev_link();
+    // TODO: let user know that there is no previous link
+    if (link != NULL) {
+        link_from_short_link(parser, link);
+        load_link(drawer, parser, false);
+    }
+}
+
 static int max_window_width()
 {
     if (COLS > 80) {
@@ -133,11 +154,25 @@ static int middle_startx()
 
 static void curl_load_error(drawer* drawer, html_parser* parser)
 {
+    // Kind of a hack to get history working with load errors
+    if (!drawer->error_drawn) {
+        history.current = HISTORY_NEXT(history.current);
+        drawer->error_drawn = true;
+    }
+
     clear();
-    printw("Couldn't load the page, press any key to continue\n");
+    printw("Couldn't load the page, press s to search, o to return\n");
     refresh();
-    getch();
-    search_mode(drawer, parser);
+    for (;;) {
+        char c = getch();
+        if (c == 's') {
+            search_mode(drawer, parser);
+            break;
+        } else if (c == 'o') {
+            load_prev_link(drawer, parser);
+            break;
+        }
+    }
 }
 
 /**
@@ -400,6 +435,7 @@ static void redraw_parser(drawer* drawer, html_parser* parser, bool init, bool a
 
     drawer->current_x = 0;
     drawer->current_y = 0;
+    drawer->error_drawn = false;
     drawer->init_highlight_rows = init;
     if (init) {
         drawer->highlight_row = 0;
@@ -409,7 +445,7 @@ static void redraw_parser(drawer* drawer, html_parser* parser, bool init, bool a
     }
 
     wclear(drawer->window);
-    mvprintw(0, 0, "                                            ");
+    mvprintw(0, 0, "                                                          ");
     mvprintw(0, 0, "Press q to exit, s to search");
     draw_title(drawer, parser);
     draw_top_navigation(drawer, parser);
@@ -653,17 +689,9 @@ void main_draw_loop(drawer* drawer, html_parser* parser)
         } else if (c == 'i') {
             draw_navigation_screen(drawer, parser);
         } else if (c == 'o') {
-            char* link = prev_link();
-            if (link != NULL) {
-                link_from_short_link(parser, link);
-                load_link(drawer, parser, false);
-            }
+            load_prev_link(drawer, parser);
         } else if (c == 'p') {
-            char* link = next_link();
-            if (link != NULL) {
-                link_from_short_link(parser, link);
-                load_link(drawer, parser, false);
-            }
+            load_next_link(drawer, parser);
         } else if (c == 's') {
             search_mode(drawer, parser);
         }
@@ -723,6 +751,7 @@ void init_drawer(drawer* drawer)
     drawer->highlight_row = 0;
     drawer->highlight_col = 0;
     drawer->highlight_row_size = 0;
+    drawer->error_drawn = false;
     drawer->window = newwin(drawer->w_height, drawer->w_width, window_start_y, window_start_x);
 
     if (drawer->color_support) {
