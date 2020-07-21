@@ -101,6 +101,2030 @@ static tag_type get_tag_type(html_buffer* buffer)
     return UNKNOWN;
 }
 
+#ifndef DISABLE_UTF_8
+static void copy_html_character_utf8(unsigned char* target, char* src, size_t* tpos, size_t* spos)
+{
+    *spos += 1;
+    switch (*(src + (*spos - 1))) {
+    case '#':
+        if (strncmp(src + *spos, "256;", 4) == 0) {
+            // LATIN CAPITAL LETTER A WITH MACRON
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0x80;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "257;", 4) == 0) {
+            // LATIN SMALL LETTER A WITH MACRON
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0x81;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "260;", 4) == 0) {
+            // LATIN CAPITAL LETTER A WITH OGONEK
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0x84;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "261;", 4) == 0) {
+            // LATIN SMALL LETTER A WITH OGONEK
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0x85;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "263;", 4) == 0) {
+            // LATIN SMALL LETTER C WITH ACUTE
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0x87;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "264;", 4) == 0) {
+            // LATIN CAPITAL LETTER C WITH CIRCUMFLEX
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0x88;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "265;", 4) == 0) {
+            // LATIN SMALL LETTER C WITH CIRCUMFLEX
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0x89;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "266;", 4) == 0) {
+            // LATIN CAPITAL LETTER C WITH DOT ABOVE
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0x8a;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "267;", 4) == 0) {
+            // LATIN SMALL LETTER C WITH DOT ABOVE
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0x8b;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "268;", 4) == 0) {
+            // LATIN CAPITAL LETTER C WITH CARON
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0x8c;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "269;", 4) == 0) {
+            // LATIN SMALL LETTER C WITH CARON
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0x8d;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "270;", 4) == 0) {
+            // LATIN CAPITAL LETTER D WITH CARON
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0x8e;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "271;", 4) == 0) {
+            // LATIN SMALL LETTER D WITH CARON
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0x8f;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "273;", 4) == 0) {
+            // LATIN SMALL LETTER D WITH STROKE
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0x91;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "274;", 4) == 0) {
+            // LATIN CAPITAL LETTER E WITH MACRON
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0x92;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "275;", 4) == 0) {
+            // LATIN SMALL LETTER E WITH MACRON
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0x93;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "278;", 4) == 0) {
+            //  LATIN CAPITAL LETTER E WITH DOT ABOVE
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0x96;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "279;", 4) == 0) {
+            //  LATIN SMALL LETTER E WITH DOT ABOVE
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0x97;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "280;", 4) == 0) {
+            // LATIN CAPITAL LETTER E WITH OGONEK
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0x98;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "281;", 4) == 0) {
+            // LATIN CAPITAL LETTER E WITH OGONEK
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0x99;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "282;", 4) == 0) {
+            // LATIN CAPITAL LETTER E WITH CARON
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0x9a;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "283;", 4) == 0) {
+            // LATIN SMALL LETTER E WITH CARON
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0x9b;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "284;", 4) == 0) {
+            // LATIN CAPITAL LETTER G WITH CIRCUMFLEX
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0x9c;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "285;", 4) == 0) {
+            // LATIN SMALL LETTER G WITH CIRCUMFLEX
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0x9d;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "286;", 4) == 0) {
+            // LATIN CAPITAL LETTER G WITH BREVE
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0x9e;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "287;", 4) == 0) {
+            // LATIN SMALL LETTER G WITH BREVE
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0x9f;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "288;", 4) == 0) {
+            // LATIN CAPITAL LETTER G WITH DOT ABOVE
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0xa0;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "289;", 4) == 0) {
+            // LATIN SMALL LETTER G WITH DOT ABOVE
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0xa1;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "290;", 4) == 0) {
+            // LATIN CAPITAL LETTER K WITH CEDILLA
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0xa2;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "291;", 4) == 0) {
+            // LATIN SMALL LETTER K WITH CEDILLA
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0xa3;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "292;", 4) == 0) {
+            // LATIN CAPITAL LETTER H WITH CIRCUMFLEX
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0xa4;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "293;", 4) == 0) {
+            // LATIN SMALL LETTER H WITH CIRCUMFLEX
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0xa5;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "294;", 4) == 0) {
+            // LATIN CAPITAL LETTER H WITH STROKE
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0xa6;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "295;", 4) == 0) {
+            // LATIN SMALL LETTER H WITH STROKE
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0xa7;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "296;", 4) == 0) {
+            // LATIN CAPITAL LETTER I WITH TILDE
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0xa8;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "297;", 4) == 0) {
+            // LATIN SMALL LETTER I WITH TILDE
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0xa9;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "298;", 4) == 0) {
+            // LATIN CAPITAL LETTER I WITH MACRON
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0xaa;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "299;", 4) == 0) {
+            // LATIN SMALL LETTER I WITH MACRON
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0xab;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "302;", 4) == 0) {
+            // LATIN CAPITAL LETTER I WITH OGONEK
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0xae;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "303;", 4) == 0) {
+            // LATIN SMALL LETTER I WITH OGONEK
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0xaf;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "304;", 4) == 0) {
+            // LATIN CAPITAL LETTER I WITH DOT ABOVE
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0xb0;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "305;", 4) == 0) {
+            // LATIN SMALL LETTER DOTLESS I
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0xb1;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "308;", 4) == 0) {
+            // LATIN CAPITAL LETTER J WITH CIRCUMFLEX
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0xb4;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "309;", 4) == 0) {
+            // LATIN SMALL LETTER J WITH CIRCUMFLEX
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0xb5;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "310;", 4) == 0) {
+            // LATIN CAPITAL LETTER L WITH CEDILLA
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0xb6;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "311;", 4) == 0) {
+            // LATIN SMALL LETTER L WITH CEDILLA
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0xb7;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "312;", 4) == 0) {
+            // LATIN SMALL LETTER KRA
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0xb8;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "313;", 4) == 0) {
+            // LATIN CAPITAL LETTER L WITH ACUTE
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0xb9;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "314;", 4) == 0) {
+            // LATIN SMALL LETTER L WITH ACUTE
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0xba;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "315;", 4) == 0) {
+            // LATIN CAPITAL LETTER L WITH CEDILLA
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0xbb;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "316;", 4) == 0) {
+            // LATIN SMALL LETTER L WITH CEDILLA
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0xbc;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "317;", 4) == 0) {
+            // LATIN CAPITAL LETTER L WITH CARON
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0xbd;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "318;", 4) == 0) {
+            // LATIN SMALL LETTER L WITH CARON
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0xbe;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "321;", 4) == 0) {
+            // LATIN CAPITAL LETTER L WITH STROKE
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0x81;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "322;", 4) == 0) {
+            // LATIN SMALL LETTER L WITH STROKE
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0x82;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "323;", 4) == 0) {
+            // LATIN CAPITAL LETTER L WITH ACUTE
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0x83;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "324;", 4) == 0) {
+            // LATIN SMALL LETTER L WITH ACUTE
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0x84;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "325;", 4) == 0) {
+            // LATIN CAPITAL LETTER N WITH CEDILLA
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0x85;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "326;", 4) == 0) {
+            // LATIN SMALL LETTER N WITH CEDILLA
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0x86;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "327;", 4) == 0) {
+            // LATIN CAPITAL LETTER N WITH ACUTE
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0x87;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "328;", 4) == 0) {
+            // LATIN SMALL LETTER N WITH ACUTE
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0x88;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "330;", 4) == 0) {
+            // LATIN CAPITAL LETTER ENG
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0x8a;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "331;", 4) == 0) {
+            // LATIN SMALL LETTER ENG
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0x8b;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "332;", 4) == 0) {
+            // LATIN CAPITAL O LETTER WITH MACRON
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0x8c;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "333;", 4) == 0) {
+            // LATIN SMALL O LETTER WITH MACRON
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0x8d;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "336;", 4) == 0) {
+            // LATIN CAPITAL LETTER O WITH DOUBLE ACUTE
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0x90;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "337;", 4) == 0) {
+            // LATIN SMALL LETTER O WITH DOUBLE ACUTE
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0x91;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "342;", 4) == 0) {
+            // LATIN CAPITAL LETTER R WITH CEDILLA
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0x96;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "343;", 4) == 0) {
+            // LATIN SMALL LETTER R WITH CEDILLA
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0x97;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "344;", 4) == 0) {
+            // LATIN CAPITAL LETTER R WITH CARON
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0x98;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "345;", 4) == 0) {
+            // LATIN SMALL LETTER R WITH CARON
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0x99;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "346;", 4) == 0) {
+            // LATIN CAPITAL LETTER S WITH ACUTE
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0x9a;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "347;", 4) == 0) {
+            // LATIN SMALL LETTER S WITH ACUTE
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0x9b;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "348;", 4) == 0) {
+            // LATIN CAPITAL LETTER S WITH CIRCUMFLEX
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0x9c;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "349;", 4) == 0) {
+            // LATIN SMALL LETTER S WITH CIRCUMFLEX
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0x9d;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "350;", 4) == 0) {
+            // LATIN CAPITAL LETTER S WITH CEDILLA
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0x9e;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "351;", 4) == 0) {
+            // LATIN SMALL LETTER S WITH CEDILLA
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0x9f;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "356;", 4) == 0) {
+            // LATIN CAPITAL LETTER T WITH CARON
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xa4;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "357;", 4) == 0) {
+            // LATIN SMALL LETTER T WITH CARON
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xa5;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "358;", 4) == 0) {
+            // LATIN CAPITAL LETTER T WITH STROKE
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xa6;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "359;", 4) == 0) {
+            // LATIN SMALL LETTER T WITH STROKE
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xa7;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "360;", 4) == 0) {
+            // LATIN CAPITAL LETTER U WITH TILDE
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xa8;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "361;", 4) == 0) {
+            // LATIN SMALL LETTER U WITH TILDE
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xa9;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "362;", 4) == 0) {
+            // LATIN CAPITAL LETTER U WITH MACRON
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xaa;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "363;", 4) == 0) {
+            // LATIN SMALL LETTER U WITH MACRON
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xab;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "364;", 4) == 0) {
+            // LATIN CAPITAL LETTER U WITH BREVE
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xac;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "365;", 4) == 0) {
+            // LATIN SMALL LETTER U WITH BREVE
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xad;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "366;", 4) == 0) {
+            // LATIN CAPITAL LETTER U WITH RING ABOVE
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xae;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "367;", 4) == 0) {
+            // LATIN SMALL LETTER U WITH RING ABOVE
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xaf;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "368;", 4) == 0) {
+            // LATIN CAPITAL LETTER U WITH DOUBLE ACUTE
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xb0;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "369;", 4) == 0) {
+            // LATIN SMALL LETTER U WITH DOUBLE ACUTE
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xb1;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "370;", 4) == 0) {
+            // LATIN CAPITAL LETTER U WITH OGONEK
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xb2;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "371;", 4) == 0) {
+            // LATIN SMALL LETTER U WITH OGONEK
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xb3;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "372;", 4) == 0) {
+            // LATIN CAPITAL LETTER W WITH CIRCUMFLEX
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xb4;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "373;", 4) == 0) {
+            // LATIN SMALL LETTER W WITH CIRCUMFLEX
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xb5;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "374;", 4) == 0) {
+            // LATIN CAPITAL LETTER Y WITH CIRCUMFLEX
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xb6;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "375;", 4) == 0) {
+            // LATIN SMALL LETTER Y WITH CIRCUMFLEX
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xb7;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "377;", 4) == 0) {
+            // LATIN CAPITAL LETTER Z WITH ACUTE
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xb9;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "378;", 4) == 0) {
+            // LATIN SMALL LETTER Z WITH ACUTE
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xba;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "379;", 4) == 0) {
+            // LATIN CAPITAL LETTER Z WITH DOT ABOVE
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xbb;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "380;", 4) == 0) {
+            // LATIN SMALL LETTER Z WITH DOT ABOVE
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xbc;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "381;", 4) == 0) {
+            // LATIN CAPITAL LETTER Z WITH CARON
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xbd;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "382;", 4) == 0) {
+            // LATIN SMALL LETTER Z WITH CARON
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xbe;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "538;", 4) == 0) {
+            // LATIN CAPITAL LETTER T WITH COMMA BELOW
+            target[(*tpos)++] = 0xc8;
+            target[(*tpos)++] = 0x9a;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "539;", 4) == 0) {
+            // LATIN SMALL LETTER T WITH COMMA BELOW
+            target[(*tpos)++] = 0xc8;
+            target[(*tpos)++] = 0x9b;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "552;", 4) == 0) {
+            // LATIN CAPITAL LETTER E WITH CEDILLA
+            target[(*tpos)++] = 0xc8;
+            target[(*tpos)++] = 0xa8;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "553;", 4) == 0) {
+            // LATIN SMALL LETTER E WITH CEDILLA
+            target[(*tpos)++] = 0xc8;
+            target[(*tpos)++] = 0xa9;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "9834;", 5) == 0) {
+            // EIGHTH NOTE
+            target[(*tpos)++] = 0xe2;
+            target[(*tpos)++] = 0x99;
+            target[(*tpos)++] = 0xaa;
+            *spos += 4;
+        } else if (strncmp(src + *spos, "8486;", 5) == 0) {
+            // OHM SIGN
+            target[(*tpos)++] = 0xe2;
+            target[(*tpos)++] = 0x84;
+            target[(*tpos)++] = 0xa6;
+            *spos += 4;
+        } else if (strncmp(src + *spos, "9608;", 5) == 0) {
+            // FULL BLOCK
+            target[(*tpos)++] = 0xe2;
+            target[(*tpos)++] = 0x96;
+            target[(*tpos)++] = 0x88;
+            *spos += 4;
+        }
+        break;
+    case 'a':
+        if (strncmp(src + *spos, "uml;", 4) == 0) {
+            // LATIN SMALL LETTER A WITH DIAERESIS
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xa4;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "tilde;", 6) == 0) {
+            // LATIN SMALL LETTER A WITH TILDE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xa3;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "ring;", 5) == 0) {
+            // LATIN SMALL LETTER A WITH RING ABOVE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xa5;
+            *spos += 4;
+        } else if (strncmp(src + *spos, "mp;", 3) == 0) {
+            // AMPERSAND
+            target[(*tpos)++] = '&';
+            *spos += 2;
+        } else if (strncmp(src + *spos, "pos;", 4) == 0) {
+            // APOSTROPHE
+            target[(*tpos)++] = '\'';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "lpha;", 5) == 0) {
+            // LATIN SMALL LETTER ALPHA
+            target[(*tpos)++] = 0xc9;
+            target[(*tpos)++] = 0x91;
+            *spos += 4;
+        } else if (strncmp(src + *spos, "elig;", 5) == 0) {
+            // LATIN SMALL LETTER AE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xa6;
+            *spos += 4;
+        } else if (strncmp(src + *spos, "acute;", 6) == 0) {
+            // LATIN SMALL LETTER A WITH ACUTE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xa1;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "grave;", 6) == 0) {
+            // LATIN SMALL LETTER A WITH GRAVE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xa0;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "circ;", 5) == 0) {
+            // LATIN SMALL LETTER A WITH CIRCUMFLEX
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xa2;
+            *spos += 4;
+        }
+        break;
+    case 'A':
+        if (strncmp(src + *spos, "uml;", 4) == 0) {
+            // LATIN CAPITAL LETTER A WITH DIAERESIS
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x84;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "tilde;", 6) == 0) {
+            // LATIN CAPITAL LETTER A WITH TILDE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x83;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "ring;", 5) == 0) {
+            // LATIN CAPITAL LETTER A WITH RING ABOVE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x85;
+            *spos += 4;
+        } else if (strncmp(src + *spos, "Elig;", 5) == 0) {
+            // LATIN CAPITAL LETTER AE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x86;
+            *spos += 4;
+        } else if (strncmp(src + *spos, "acute;", 6) == 0) {
+            // LATIN CAPITAL LETTER A WITH ACUTE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x81;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "grave;", 6) == 0) {
+            // LATIN CAPITAL LETTER A WITH GRAVE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x80;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "circ;", 5) == 0) {
+            // LATIN CAPITAL LETTER A WITH CIRCUMFLEX
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x82;
+            *spos += 4;
+        }
+        break;
+    case 'c':
+        if (strncmp(src + *spos, "urren;", 6) == 0) {
+            // CURRENCY SIGN
+            target[(*tpos)++] = 0xc2;
+            target[(*tpos)++] = 0xa4;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "opy;", 4) == 0) {
+            // COPYRIGHT SIGN
+            target[(*tpos)++] = 0xc2;
+            target[(*tpos)++] = 0xa9;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "cedil;", 6) == 0) {
+            // LATIN SMALL LETTER C WITH CEDILLA
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xa7;
+            *spos += 5;
+        }
+        break;
+    case 'C':
+        if (strncmp(src + *spos, "cedil;", 6) == 0) {
+            // LATIN CAPITAL LETTER C WITH CEDILLA
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x87;
+            *spos += 5;
+        }
+        break;
+    case 'd':
+        if (strncmp(src + *spos, "eg;", 3) == 0) {
+            // DEGREE SIGN
+            target[(*tpos)++] = 0xc2;
+            target[(*tpos)++] = 0xb0;
+            *spos += 2;
+        }
+        break;
+    case 'e':
+        if (strncmp(src + *spos, "acute;", 6) == 0) {
+            // LATIN SMALL LETTER E WITH ACUTE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xa9;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "uro;", 4) == 0) {
+            // EURO SIGN
+            target[(*tpos)++] = 0xe2;
+            target[(*tpos)++] = 0x82;
+            target[(*tpos)++] = 0xac;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "th;", 3) == 0) {
+            // LATIN SMALL LETTER ETH
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xb0;
+            *spos += 2;
+        } else if (strncmp(src + *spos, "grave;", 6) == 0) {
+            // LATIN SMALL LETTER E WITH GRAVE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xa8;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "uml;", 4) == 0) {
+            // LATIN SMALL LETTER E WITH DIAERESIS
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xab;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "circ;", 5) == 0) {
+            // LATIN SMALL LETTER E WITH CIRCUMFLEX
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xaa;
+            *spos += 4;
+        }
+        break;
+    case 'E':
+        if (strncmp(src + *spos, "acute;", 6) == 0) {
+            // LATIN CAPITAL LETTER E WITH ACUTE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x89;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "TH;", 3) == 0) {
+            // LATIN CAPITAL LETTER ETH
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x90;
+            *spos += 2;
+        } else if (strncmp(src + *spos, "grave;", 6) == 0) {
+            // LATIN CAPITAL LETTER E WITH GRAVE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x88;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "uml;", 4) == 0) {
+            // LATIN CAPITAL LETTER E WITH DIAERESIS
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x8b;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "circ;", 5) == 0) {
+            // LATIN CAPITAL LETTER E WITH CIRCUMFLEX
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x8a;
+            *spos += 4;
+        }
+        break;
+    case 'f':
+        if (strncmp(src + *spos, "rac12;", 6) == 0) {
+            // VULGAR FRACTION ONE HALF
+            target[(*tpos)++] = 0xc2;
+            target[(*tpos)++] = 0xbd;
+            *spos += 5;
+        }
+        break;
+    case 'g':
+        if (strncmp(src + *spos, "t;", 2) == 0) {
+            // GREATER-THAN SIGN
+            target[(*tpos)++] = '>';
+            *spos += 1;
+        }
+        break;
+    case 'i':
+        if (strncmp(src + *spos, "excl;", 5) == 0) {
+            // INVERTED EXCLAMATION MARK
+            target[(*tpos)++] = 0xc2;
+            target[(*tpos)++] = 0xa1;
+            *spos += 4;
+        } else if (strncmp(src + *spos, "quest;", 6) == 0) {
+            // INVERTED QUESTION MARK
+            target[(*tpos)++] = 0xc2;
+            target[(*tpos)++] = 0xbf;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "acute;", 6) == 0) {
+            // LATIN SMALL LETTER I WITH ACUTE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xad;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "grave;", 6) == 0) {
+            // LATIN SMALL LETTER I WITH GRAVE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xac;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "uml;", 4) == 0) {
+            // LATIN SMALL LETTER I WITH DIAERESIS
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xaf;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "circ;", 5) == 0) {
+            // LATIN SMALL LETTER I WITH CIRCUMFLEX
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xae;
+            *spos += 4;
+        }
+        break;
+    case 'I':
+        if (strncmp(src + *spos, "acute;", 6) == 0) {
+            // LATIN CAPITAL LETTER I WITH ACUTE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x8d;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "grave;", 6) == 0) {
+            // LATIN CAPITAL LETTER I WITH GRAVE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x8c;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "uml;", 4) == 0) {
+            // LATIN CAPITAL LETTER I WITH DIAERESIS
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x8f;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "circ;", 5) == 0) {
+            // LATIN CAPITAL LETTER I WITH CIRCUMFLEX
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x8e;
+            *spos += 4;
+        }
+        break;
+    case 'l':
+        if (strncmp(src + *spos, "t;", 2) == 0) {
+            // LESS-THAN SIGN
+            target[(*tpos)++] = '<';
+            *spos += 1;
+        } else if (strncmp(src + *spos, "aquo;", 5) == 0) {
+            // LEFT-POINTING DOUBLE ANGLE QUOTATION MARK
+            target[(*tpos)++] = 0xc2;
+            target[(*tpos)++] = 0xab;
+            *spos += 4;
+        }
+        break;
+    case 'm':
+        if (strncmp(src + *spos, "iddot;", 6) == 0) {
+            // MIDDLE DOT
+            target[(*tpos)++] = 0xc2;
+            target[(*tpos)++] = 0xb7;
+            *spos += 5;
+        }
+        break;
+    case 'n':
+        if (strncmp(src + *spos, "dash;", 5) == 0) {
+            // EN DASH
+            target[(*tpos)++] = 0xe2;
+            target[(*tpos)++] = 0x80;
+            target[(*tpos)++] = 0x93;
+            *spos += 4;
+        } else if (strncmp(src + *spos, "tilde;", 6) == 0) {
+            // LATIN SMALL LETTER N WITH TILDE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xb1;
+            *spos += 5;
+        }
+        break;
+    case 'N':
+        if (strncmp(src + *spos, "tilde;", 6) == 0) {
+            // LATIN CAPITAL LETTER N WITH TILDE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x91;
+            *spos += 5;
+        }
+        break;
+    case 'o':
+        if (strncmp(src + *spos, "uml;", 4) == 0) {
+            // LATIN SMALL LETTER A WITH DIAERESIS
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xb6;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "slash;", 6) == 0) {
+            // LATIN SMALL LETTER O WITH STROKE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xb8;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "elig;", 5) == 0) {
+            // LATIN SMALL LIGATURE OE
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0x93;
+            *spos += 4;
+        } else if (strncmp(src + *spos, "acute;", 6) == 0) {
+            // LATIN SMALL LETTER O WITH ACUTE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xb3;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "grave;", 6) == 0) {
+            // LATIN SMALL LETTER O WITH GRAVE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xb2;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "tilde;", 6) == 0) {
+            // LATIN SMALL LETTER O WITH TILDE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xb5;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "circ;", 5) == 0) {
+            // LATIN SMALL LETTER O WITH CIRCUMFLEX
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xb4;
+            *spos += 4;
+        }
+        break;
+    case 'O':
+        if (strncmp(src + *spos, "uml;", 4) == 0) {
+            // LATIN CAPITAL LETTER O WITH DIAERESIS
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x96;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "slash;", 6) == 0) {
+            // LATIN CAPITAL LETTER O WITH STROKE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x98;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "Elig;", 5) == 0) {
+            // LATIN CAPITAL LIGATURE OE
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0x92;
+            *spos += 4;
+        } else if (strncmp(src + *spos, "acute;", 6) == 0) {
+            // LATIN CAPITAL LETTER O WITH ACUTE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x93;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "grave;", 6) == 0) {
+            // LATIN CAPITAL LETTER O WITH GRAVE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x92;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "tilde;", 6) == 0) {
+            // LATIN CAPITAL LETTER O WITH TILDE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x95;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "circ;", 5) == 0) {
+            // LATIN CAPITAL LETTER O WITH CIRCUMFLEX
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x94;
+            *spos += 4;
+        }
+        break;
+    case 'p':
+        if (strncmp(src + *spos, "ound;", 5) == 0) {
+            // POUND SIGN
+            target[(*tpos)++] = 0xc2;
+            target[(*tpos)++] = 0xa3;
+            *spos += 4;
+        } else if (strncmp(src + *spos, "lusmn;", 6) == 0) {
+            // PLUS-MINUS SIGN
+            target[(*tpos)++] = 0xc2;
+            target[(*tpos)++] = 0xb1;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "ermil;", 6) == 0) {
+            // PER MILLE SIGN
+            target[(*tpos)++] = 0xe2;
+            target[(*tpos)++] = 0x80;
+            target[(*tpos)++] = 0xb0;
+            *spos += 5;
+        }
+        break;
+    case 'q':
+        if (strncmp(src + *spos, "uot;", 4) == 0) {
+            // QUOTATION MARK
+            target[(*tpos)++] = '"';
+            *spos += 3;
+        }
+        break;
+    case 'r':
+        if (strncmp(src + *spos, "aquo;", 5) == 0) {
+            // RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK
+            target[(*tpos)++] = 0xc2;
+            target[(*tpos)++] = 0xbb;
+            *spos += 4;
+        }
+        break;
+    case 's':
+        if (strncmp(src + *spos, "ect;", 4) == 0) {
+            // SECTION SIGN
+            target[(*tpos)++] = 0xc2;
+            target[(*tpos)++] = 0xa7;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "zlig;", 5) == 0) {
+            // LATIN SMALL LETTER SHARP S
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x9f;
+            *spos += 4;
+        } else if (strncmp(src + *spos, "caron;", 6) == 0) {
+            // LATIN SMALL LETTER S WITH CARON
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xa1;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "up", 2) == 0 && *(src + (*spos + 3)) == ';') {
+            // SUPERSCRIPT ONE|TWO|THREE
+            target[(*tpos)++] = 0xc2;
+            switch (*(src + (*spos + 2))) {
+            case '1':
+                target[(*tpos)++] = 0xb9;
+                break;
+            case '2':
+                target[(*tpos)++] = 0xb2;
+                break;
+            case '3':
+                target[(*tpos)++] = 0xb3;
+                break;
+            }
+            *spos += 3;
+        }
+        break;
+    case 'S':
+        if (strncmp(src + *spos, "caron;", 6) == 0) {
+            // LATIN CAPITAL LETTER S WITH CARON
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xa0;
+            *spos += 5;
+        }
+        break;
+    case 't':
+        if (strncmp(src + *spos, "horn;", 5) == 0) {
+            // LATIN SMALL LETTER THORN
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xbe;
+            *spos += 4;
+        }
+        break;
+    case 'T':
+        if (strncmp(src + *spos, "HORN;", 5) == 0) {
+            // LATIN CAPITAL LETTER THORN
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x9e;
+            *spos += 4;
+        }
+        break;
+    case 'u':
+        if (strncmp(src + *spos, "uml;", 4) == 0) {
+            // LATIN SMALL LETTER U WITH DIAERESIS
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xbc;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "arr;", 4) == 0) {
+            // UPWARDS ARROW
+            target[(*tpos)++] = 0xe2;
+            target[(*tpos)++] = 0x86;
+            target[(*tpos)++] = 0x91;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "acute;", 6) == 0) {
+            // LATIN SMALL LETTER U WITH ACUTE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xba;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "grave;", 6) == 0) {
+            // LATIN SMALL LETTER U WITH GRAVE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xb9;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "circ;", 5) == 0) {
+            // LATIN SMALL LETTER U WITH CIRCUMFLEX
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xbb;
+            *spos += 4;
+        }
+        break;
+    case 'U':
+        if (strncmp(src + *spos, "uml;", 4) == 0) {
+            // LATIN CAPITAL LETTER U WITH DIAERESIS
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x9c;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "acute;", 6) == 0) {
+            // LATIN CAPITAL LETTER U WITH ACUTE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x9a;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "grave;", 6) == 0) {
+            // LATIN CAPITAL LETTER U WITH GRAVE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x99;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "circ;", 5) == 0) {
+            // LATIN CAPITAL LETTER U WITH CIRCUMFLEX
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x9b;
+            *spos += 4;
+        }
+        break;
+    case 'y':
+        if (strncmp(src + *spos, "acute;", 6) == 0) {
+            // LATIN SMALL LETTER Y WITH ACUTE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xbd;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "uml;", 4) == 0) {
+            // LATIN SMALL LETTER Y WITH DIAERESIS
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0xbf;
+            *spos += 3;
+        }
+        break;
+    case 'Y':
+        if (strncmp(src + *spos, "acute;", 6) == 0) {
+            // LATIN CAPITAL LETTER Y WITH ACUTE
+            target[(*tpos)++] = 0xc3;
+            target[(*tpos)++] = 0x9d;
+            *spos += 5;
+        } else if (strncmp(src + *spos, "uml;", 4) == 0) {
+            // LATIN CAPITAL LETTER Y WITH DIAERESIS
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0xb8;
+            *spos += 3;
+        }
+        break;
+    default:
+        // Nothing was found so return to original position
+        *spos -= 1;
+        break;
+    }
+}
+#else
+static void copy_html_character_ascii(unsigned char* target, char* src, size_t* tpos, size_t* spos)
+{
+    *spos += 1;
+    switch (*(src + (*spos - 1))) {
+    case '#':
+        if (strncmp(src + *spos, "256;", 4) == 0) {
+            // LATIN CAPITAL LETTER A WITH MACRON
+            target[(*tpos)++] = 'A';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "257;", 4) == 0) {
+            // LATIN SMALL LETTER A WITH MACRON
+            target[(*tpos)++] = 'a';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "260;", 4) == 0) {
+            // LATIN CAPITAL LETTER A WITH OGONEK
+            target[(*tpos)++] = 'A';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "261;", 4) == 0) {
+            // LATIN SMALL LETTER A WITH OGONEK
+            target[(*tpos)++] = 'a';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "263;", 4) == 0) {
+            // LATIN SMALL LETTER C WITH ACUTE
+            target[(*tpos)++] = 'c';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "264;", 4) == 0) {
+            // LATIN CAPITAL LETTER C WITH CIRCUMFLEX
+            target[(*tpos)++] = 'C';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "265;", 4) == 0) {
+            // LATIN SMALL LETTER C WITH CIRCUMFLEX
+            target[(*tpos)++] = 'c';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "266;", 4) == 0) {
+            // LATIN CAPITAL LETTER C WITH DOT ABOVE
+            target[(*tpos)++] = 'C';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "267;", 4) == 0) {
+            // LATIN SMALL LETTER C WITH DOT ABOVE
+            target[(*tpos)++] = 'c';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "268;", 4) == 0) {
+            // LATIN CAPITAL LETTER C WITH CARON
+            target[(*tpos)++] = 'C';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "269;", 4) == 0) {
+            // LATIN SMALL LETTER C WITH CARON
+            target[(*tpos)++] = 'c';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "270;", 4) == 0) {
+            // LATIN CAPITAL LETTER D WITH CARON
+            target[(*tpos)++] = 'D';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "271;", 4) == 0) {
+            // LATIN SMALL LETTER D WITH CARON
+            target[(*tpos)++] = 'd';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "273;", 4) == 0) {
+            // LATIN SMALL LETTER D WITH STROKE
+            target[(*tpos)++] = 'd';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "274;", 4) == 0) {
+            // LATIN CAPITAL LETTER E WITH MACRON
+            target[(*tpos)++] = 'E';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "275;", 4) == 0) {
+            // LATIN SMALL LETTER E WITH MACRON
+            target[(*tpos)++] = 'e';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "278;", 4) == 0) {
+            // LATIN CAPITAL LETTER E WITH DOT ABOVE
+            target[(*tpos)++] = 'E';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "279;", 4) == 0) {
+            // LATIN SMALL LETTER E WITH DOT ABOVE
+            target[(*tpos)++] = 'e';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "280;", 4) == 0) {
+            // LATIN CAPITAL LETTER E WITH OGONEK
+            target[(*tpos)++] = 'E';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "281;", 4) == 0) {
+            // LATIN SMALL LETTER E WITH OGONEK
+            target[(*tpos)++] = 'e';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "282;", 4) == 0) {
+            // LATIN CAPITAL LETTER E WITH CARON
+            target[(*tpos)++] = 'E';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "283;", 4) == 0) {
+            // LATIN SMALL LETTER E WITH CARON
+            target[(*tpos)++] = 'e';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "284;", 4) == 0) {
+            // LATIN CAPITAL LETTER G WITH CIRCUMFLEX
+            target[(*tpos)++] = 'G';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "285;", 4) == 0) {
+            // LATIN SMALL LETTER G WITH CIRCUMFLEX
+            target[(*tpos)++] = 'g';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "286;", 4) == 0) {
+            // LATIN CAPITAL LETTER G WITH BREVE
+            target[(*tpos)++] = 'G';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "287;", 4) == 0) {
+            // LATIN SMALL LETTER G WITH BREVE
+            target[(*tpos)++] = 'g';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "288;", 4) == 0) {
+            // LATIN CAPITAL LETTER G WITH DOT ABOVE
+            target[(*tpos)++] = 'G';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "289;", 4) == 0) {
+            // LATIN SMALL LETTER G WITH DOT ABOVE
+            target[(*tpos)++] = 'g';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "290;", 4) == 0) {
+            // LATIN CAPITAL LETTER K WITH CEDILLA
+            target[(*tpos)++] = 'K';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "291;", 4) == 0) {
+            // LATIN SMALL LETTER K WITH CEDILLA
+            target[(*tpos)++] = 'k';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "292;", 4) == 0) {
+            // LATIN CAPITAL LETTER H WITH CIRCUMFLEX
+            target[(*tpos)++] = 'H';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "293;", 4) == 0) {
+            // LATIN SMALL LETTER H WITH CIRCUMFLEX
+            target[(*tpos)++] = 'h';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "294;", 4) == 0) {
+            // LATIN CAPITAL LETTER H WITH STROKE
+            target[(*tpos)++] = 'H';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "295;", 4) == 0) {
+            // LATIN SMALL LETTER H WITH STROKE
+            target[(*tpos)++] = 'h';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "296;", 4) == 0) {
+            // LATIN CAPITAL LETTER I WITH TILDE
+            target[(*tpos)++] = 'I';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "297;", 4) == 0) {
+            // LATIN SMALL LETTER I WITH TILDE
+            target[(*tpos)++] = 'i';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "298;", 4) == 0) {
+            // LATIN CAPITAL LETTER I WITH MACRON
+            target[(*tpos)++] = 'I';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "299;", 4) == 0) {
+            // LATIN CAPITAL LETTER I WITH MACRON
+            target[(*tpos)++] = 'i';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "302;", 4) == 0) {
+            // LATIN CAPITAL LETTER I WITH OGONEK
+            target[(*tpos)++] = 'I';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "303;", 4) == 0) {
+            // LATIN SMALL LETTER I WITH OGONEK
+            target[(*tpos)++] = 'i';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "304;", 4) == 0) {
+            // LATIN CAPITAL LETTER I WITH DOT ABOVE
+            target[(*tpos)++] = 'I';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "305;", 4) == 0) {
+            // LATIN SMALL LETTER DOTLESS I
+            target[(*tpos)++] = 'i';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "308;", 4) == 0) {
+            // LATIN CAPITAL LETTER J WITH CIRCUMFLEX
+            target[(*tpos)++] = 'J';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "309;", 4) == 0) {
+            // LATIN SMALL LETTER J WITH CIRCUMFLEX
+            target[(*tpos)++] = 'j';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "310;", 4) == 0) {
+            // LATIN CAPITAL LETTER L WITH CEDILLA
+            target[(*tpos)++] = 'L';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "311;", 4) == 0) {
+            // LATIN SMALL LETTER L WITH CEDILLA
+            target[(*tpos)++] = 'l';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "312;", 4) == 0) {
+            // LATIN SMALL LETTER KRA
+            target[(*tpos)++] = 'K';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "313;", 4) == 0) {
+            // LATIN CAPITAL LETTER L WITH ACUTE
+            target[(*tpos)++] = 'L';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "314;", 4) == 0) {
+            // LATIN SMALL LETTER L WITH ACUTE
+            target[(*tpos)++] = 'l';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "315;", 4) == 0) {
+            // LATIN CAPITAL LETTER L WITH CEDILLA
+            target[(*tpos)++] = 'L';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "316;", 4) == 0) {
+            // LATIN SMALL LETTER L WITH CEDILLA
+            target[(*tpos)++] = 'l';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "317;", 4) == 0) {
+            // LATIN CAPITAL LETTER L WITH CARON
+            target[(*tpos)++] = 'L';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "318;", 4) == 0) {
+            // LATIN SMALL LETTER L WITH CARON
+            target[(*tpos)++] = 'l';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "321;", 4) == 0) {
+            // LATIN CAPITAL LETTER L WITH STROKE
+            target[(*tpos)++] = 'L';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "322;", 4) == 0) {
+            // LATIN SMALL LETTER L WITH STROKE
+            target[(*tpos)++] = 'l';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "323;", 4) == 0) {
+            // LATIN CAPITAL LETTER L WITH ACUTE
+            target[(*tpos)++] = 'L';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "324;", 4) == 0) {
+            // LATIN SMALL LETTER L WITH ACUTE
+            target[(*tpos)++] = 'l';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "325;", 4) == 0) {
+            // LATIN CAPITAL LETTER N WITH CEDILLA
+            target[(*tpos)++] = 'N';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "326;", 4) == 0) {
+            // LATIN SMALL LETTER N WITH CEDILLA
+            target[(*tpos)++] = 'n';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "327;", 4) == 0) {
+            // LATIN CAPITAL LETTER N WITH ACUTE
+            target[(*tpos)++] = 'N';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "328;", 4) == 0) {
+            // LATIN SMALL LETTER N WITH ACUTE
+            target[(*tpos)++] = 'n';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "330;", 4) == 0) {
+            // LATIN CAPITAL LETTER ENG
+            target[(*tpos)++] = 'N';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "331;", 4) == 0) {
+            // LATIN SMALL LETTER ENG
+            target[(*tpos)++] = 'n';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "332;", 4) == 0) {
+            // LATIN CAPITAL O LETTER WITH MACRON
+            target[(*tpos)++] = 'O';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "333;", 4) == 0) {
+            // LATIN SMALL O LETTER WITH MACRON
+            target[(*tpos)++] = 'o';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "336;", 4) == 0) {
+            // LATIN CAPITAL LETTER O WITH DOUBLE ACUTE
+            target[(*tpos)++] = 'O';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "337;", 4) == 0) {
+            // LATIN SMALL LETTER O WITH DOUBLE ACUTE
+            target[(*tpos)++] = 'o';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "342;", 4) == 0) {
+            // LATIN CAPITAL LETTER R WITH CEDILLA
+            target[(*tpos)++] = 'R';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "343;", 4) == 0) {
+            // LATIN SMALL LETTER R WITH CEDILLA
+            target[(*tpos)++] = 'r';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "344;", 4) == 0) {
+            // LATIN CAPITAL LETTER R WITH CARON
+            target[(*tpos)++] = 'R';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "345;", 4) == 0) {
+            // LATIN SMALL LETTER R WITH CARON
+            target[(*tpos)++] = 'r';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "346;", 4) == 0) {
+            // LATIN CAPITAL LETTER S WITH ACUTE
+            target[(*tpos)++] = 'S';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "347;", 4) == 0) {
+            // LATIN SMALL LETTER S WITH ACUTE
+            target[(*tpos)++] = 's';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "348;", 4) == 0) {
+            // LATIN CAPITAL LETTER S WITH CIRCUMFLEX
+            target[(*tpos)++] = 'S';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "349;", 4) == 0) {
+            // LATIN SMALL LETTER S WITH CIRCUMFLEX
+            target[(*tpos)++] = 's';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "350;", 4) == 0) {
+            // LATIN CAPITAL LETTER S WITH CEDILLA
+            target[(*tpos)++] = 'S';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "351;", 4) == 0) {
+            // LATIN SMALL LETTER S WITH CEDILLA
+            target[(*tpos)++] = 's';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "356;", 4) == 0) {
+            // LATIN CAPITAL LETTER T WITH CARON
+            target[(*tpos)++] = 'T';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "357;", 4) == 0) {
+            // LATIN SMALL LETTER T WITH CARON
+            target[(*tpos)++] = 't';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "358;", 4) == 0) {
+            // LATIN CAPITAL LETTER T WITH STROKE
+            target[(*tpos)++] = 'T';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "359;", 4) == 0) {
+            // LATIN SMALL LETTER T WITH STROKE
+            target[(*tpos)++] = 't';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "360;", 4) == 0) {
+            // LATIN CAPITAL LETTER U WITH TILDE
+            target[(*tpos)++] = 'U';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "361;", 4) == 0) {
+            // LATIN SMALL LETTER U WITH TILDE
+            target[(*tpos)++] = 'u';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "362;", 4) == 0) {
+            // LATIN CAPITAL LETTER U WITH MACRON
+            target[(*tpos)++] = 'U';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "363;", 4) == 0) {
+            // LATIN SMALL LETTER U WITH MACRON
+            target[(*tpos)++] = 'u';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "364;", 4) == 0) {
+            // LATIN CAPITAL LETTER U WITH BREVE
+            target[(*tpos)++] = 'U';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "365;", 4) == 0) {
+            // LATIN SMALL LETTER U WITH BREVE
+            target[(*tpos)++] = 'u';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "366;", 4) == 0) {
+            // LATIN CAPITAL LETTER U WITH RING ABOVE
+            target[(*tpos)++] = 'U';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "367;", 4) == 0) {
+            // LATIN SMALL LETTER U WITH RING ABOVE
+            target[(*tpos)++] = 'u';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "368;", 4) == 0) {
+            // LATIN CAPITAL LETTER U WITH DOUBLE ACUTE
+            target[(*tpos)++] = 'U';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "369;", 4) == 0) {
+            // LATIN SMALL LETTER U WITH DOUBLE ACUTE
+            target[(*tpos)++] = 'u';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "370;", 4) == 0) {
+            // LATIN CAPITAL LETTER U WITH OGONEK
+            target[(*tpos)++] = 'U';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "371;", 4) == 0) {
+            // LATIN SMALL LETTER U WITH OGONEK
+            target[(*tpos)++] = 'u';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "372;", 4) == 0) {
+            // LATIN CAPITAL LETTER W WITH CIRCUMFLEX
+            target[(*tpos)++] = 'W';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "373;", 4) == 0) {
+            // LATIN SMALL LETTER W WITH CIRCUMFLEX
+            target[(*tpos)++] = 'w';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "374;", 4) == 0) {
+            // LATIN CAPITAL LETTER Y WITH CIRCUMFLEX
+            target[(*tpos)++] = 'Y';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "375;", 4) == 0) {
+            // LATIN SMALL LETTER Y WITH CIRCUMFLEX
+            target[(*tpos)++] = 'y';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "377;", 4) == 0) {
+            // LATIN CAPITAL LETTER Z WITH ACUTE
+            target[(*tpos)++] = 'Z';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "378;", 4) == 0) {
+            // LATIN SMALL LETTER Z WITH ACUTE
+            target[(*tpos)++] = 'z';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "379;", 4) == 0) {
+            // LATIN CAPITAL LETTER Z WITH DOT ABOVE
+            target[(*tpos)++] = 'Z';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "380;", 4) == 0) {
+            // LATIN SMALL LETTER Z WITH DOT ABOVE
+            target[(*tpos)++] = 'z';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "381;", 4) == 0) {
+            // LATIN CAPITAL LETTER Z WITH CARON
+            target[(*tpos)++] = 'Z';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "382;", 4) == 0) {
+            // LATIN SMALL LETTER Z WITH CARON
+            target[(*tpos)++] = 'z';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "538;", 4) == 0) {
+            // LATIN CAPITAL LETTER T WITH COMMA BELOW
+            target[(*tpos)++] = 'T';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "539;", 4) == 0) {
+            // LATIN SMALL LETTER T WITH COMMA BELOW
+            target[(*tpos)++] = 't';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "552;", 4) == 0) {
+            // LATIN CAPITAL LETTER E WITH CEDILLA
+            target[(*tpos)++] = 'E';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "553;", 4) == 0) {
+            // LATIN SMALL LETTER E WITH CEDILLA
+            target[(*tpos)++] = 'e';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "9834;", 5) == 0) {
+            // EIGHTH NOTE
+            *spos += 4;
+        } else if (strncmp(src + *spos, "8486;", 5) == 0) {
+            // OHM SIGN
+            target[(*tpos)++] = 'O';
+            *spos += 4;
+        } else if (strncmp(src + *spos, "9608;", 5) == 0) {
+            // FULL BLOCK
+            target[(*tpos)++] = ' ';
+            *spos += 4;
+        }
+        break;
+    case 'a':
+        if (strncmp(src + *spos, "uml;", 4) == 0) {
+            // LATIN SMALL LETTER A WITH DIAERESIS
+            target[(*tpos)++] = 'a';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "tilde;", 6) == 0) {
+            // LATIN SMALL LETTER A WITH TILDE
+            target[(*tpos)++] = 'a';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "ring;", 5) == 0) {
+            // LATIN SMALL LETTER A WITH RING ABOVE
+            target[(*tpos)++] = 'a';
+            *spos += 4;
+        } else if (strncmp(src + *spos, "mp;", 3) == 0) {
+            // AMPERSAND
+            target[(*tpos)++] = '&';
+            *spos += 2;
+        } else if (strncmp(src + *spos, "pos;", 4) == 0) {
+            // APOSTROPHE
+            target[(*tpos)++] = '\'';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "lpha;", 5) == 0) {
+            // LATIN SMALL LETTER ALPHA
+            target[(*tpos)++] = 'a';
+            *spos += 4;
+        } else if (strncmp(src + *spos, "elig;", 5) == 0) {
+            // LATIN SMALL LETTER AE
+            target[(*tpos)++] = 'a';
+            *spos += 4;
+        } else if (strncmp(src + *spos, "acute;", 6) == 0) {
+            // LATIN SMALL LETTER A WITH ACUTE
+            target[(*tpos)++] = 'a';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "grave;", 6) == 0) {
+            // LATIN SMALL LETTER A WITH GRAVE
+            target[(*tpos)++] = 'a';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "circ;", 5) == 0) {
+            // LATIN SMALL LETTER A WITH CIRCUMFLEX
+            target[(*tpos)++] = 'a';
+            *spos += 4;
+        }
+        break;
+    case 'A':
+        if (strncmp(src + *spos, "uml;", 4) == 0) {
+            // LATIN CAPITAL LETTER A WITH DIAERESIS
+            target[(*tpos)++] = 'A';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "tilde;", 6) == 0) {
+            // LATIN CAPITAL LETTER A WITH TILDE
+            target[(*tpos)++] = 'A';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "ring;", 5) == 0) {
+            // LATIN CAPITAL LETTER A WITH RING ABOVE
+            target[(*tpos)++] = 'A';
+            *spos += 4;
+        } else if (strncmp(src + *spos, "Elig;", 5) == 0) {
+            // LATIN CAPITAL LETTER AE
+            target[(*tpos)++] = 'A';
+            *spos += 4;
+        } else if (strncmp(src + *spos, "acute;", 6) == 0) {
+            // LATIN CAPITAL LETTER A WITH ACUTE
+            target[(*tpos)++] = 'A';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "grave;", 6) == 0) {
+            // LATIN CAPITAL LETTER A WITH GRAVE
+            target[(*tpos)++] = 'A';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "circ;", 5) == 0) {
+            // LATIN CAPITAL LETTER A WITH CIRCUMFLEX
+            target[(*tpos)++] = 'A';
+            *spos += 4;
+        }
+        break;
+    case 'c':
+        if (strncmp(src + *spos, "urren;", 6) == 0) {
+            // CURRENCY SIGN
+            target[(*tpos)++] = 'c';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "opy;", 4) == 0) {
+            // COPYRIGHT SIGN
+            target[(*tpos)++] = 'c';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "cedil;", 6) == 0) {
+            // LATIN SMALL LETTER C WITH CEDILLA
+            target[(*tpos)++] = 'c';
+            *spos += 5;
+        }
+        break;
+    case 'C':
+        if (strncmp(src + *spos, "cedil;", 6) == 0) {
+            // LATIN CAPITAL LETTER C WITH CEDILLA
+            target[(*tpos)++] = 'C';
+            *spos += 5;
+        }
+        break;
+    case 'd':
+        if (strncmp(src + *spos, "eg;", 3) == 0) {
+            // DEGREE SIGN
+            target[(*tpos)++] = 'o';
+            *spos += 2;
+        }
+        break;
+    case 'e':
+        if (strncmp(src + *spos, "acute;", 6) == 0) {
+            // LATIN SMALL LETTER E WITH ACUTE
+            target[(*tpos)++] = 'e';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "uro;", 4) == 0) {
+            // EURO SIGN
+            target[(*tpos)++] = 'e';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "th;", 3) == 0) {
+            // LATIN SMALL LETTER ETH
+            target[(*tpos)++] = 'e';
+            *spos += 2;
+        } else if (strncmp(src + *spos, "grave;", 6) == 0) {
+            // LATIN SMALL LETTER E WITH GRAVE
+            target[(*tpos)++] = 'e';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "uml;", 4) == 0) {
+            // LATIN SMALL LETTER E WITH DIAERESIS
+            target[(*tpos)++] = 'e';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "circ;", 5) == 0) {
+            // LATIN SMALL LETTER E WITH CIRCUMFLEX
+            target[(*tpos)++] = 'e';
+            *spos += 4;
+        }
+        break;
+    case 'E':
+        if (strncmp(src + *spos, "acute;", 6) == 0) {
+            // LATIN CAPITAL LETTER E WITH ACUTE
+            target[(*tpos)++] = 'E';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "TH;", 3) == 0) {
+            // LATIN CAPITAL LETTER ETH
+            target[(*tpos)++] = 'E';
+            *spos += 2;
+        } else if (strncmp(src + *spos, "grave;", 6) == 0) {
+            // LATIN CAPITAL LETTER E WITH GRAVE
+            target[(*tpos)++] = 'E';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "uml;", 4) == 0) {
+            // LATIN CAPITAL LETTER E WITH DIAERESIS
+            target[(*tpos)++] = 'E';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "circ;", 5) == 0) {
+            // LATIN CAPITAL LETTER E WITH CIRCUMFLEX
+            target[(*tpos)++] = 'E';
+            *spos += 4;
+        }
+        break;
+    case 'f':
+        if (strncmp(src + *spos, "rac12;", 6) == 0) {
+            // VULGAR FRACTION ONE HALF
+            target[(*tpos)++] = '1';
+            target[(*tpos)++] = '/';
+            target[(*tpos)++] = '2';
+            *spos += 5;
+        }
+        break;
+    case 'g':
+        if (strncmp(src + *spos, "t;", 2) == 0) {
+            // GREATER-THAN SIGN
+            target[(*tpos)++] = '>';
+            *spos += 1;
+        }
+        break;
+    case 'i':
+        if (strncmp(src + *spos, "excl;", 5) == 0) {
+            // INVERTED EXCLAMATION MARK
+            target[(*tpos)++] = '!';
+            *spos += 4;
+        } else if (strncmp(src + *spos, "quest;", 6) == 0) {
+            // INVERTED QUESTION MARK
+            target[(*tpos)++] = '?';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "acute;", 6) == 0) {
+            // LATIN SMALL LETTER I WITH ACUTE
+            target[(*tpos)++] = 'i';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "grave;", 6) == 0) {
+            // LATIN SMALL LETTER I WITH GRAVE
+            target[(*tpos)++] = 'i';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "uml;", 4) == 0) {
+            // LATIN SMALL LETTER I WITH DIAERESIS
+            target[(*tpos)++] = 'i';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "circ;", 5) == 0) {
+            // LATIN SMALL LETTER I WITH CIRCUMFLEX
+            target[(*tpos)++] = 'i';
+            *spos += 4;
+        }
+        break;
+    case 'I':
+        if (strncmp(src + *spos, "acute;", 6) == 0) {
+            // LATIN CAPITAL LETTER I WITH ACUTE
+            target[(*tpos)++] = 'I';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "grave;", 6) == 0) {
+            // LATIN CAPITAL LETTER I WITH GRAVE
+            target[(*tpos)++] = 'I';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "uml;", 4) == 0) {
+            // LATIN CAPITAL LETTER I WITH DIAERESIS
+            target[(*tpos)++] = 'I';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "circ;", 5) == 0) {
+            // LATIN CAPITAL LETTER I WITH CIRCUMFLEX
+            target[(*tpos)++] = 'I';
+            *spos += 4;
+        }
+        break;
+    case 'l':
+        if (strncmp(src + *spos, "t;", 2) == 0) {
+            // LESS-THAN SIGN
+            target[(*tpos)++] = '<';
+            *spos += 1;
+        } else if (strncmp(src + *spos, "aquo;", 5) == 0) {
+            // LEFT-POINTING DOUBLE ANGLE QUOTATION MARK
+            target[(*tpos)++] = '<';
+            *spos += 4;
+        }
+        break;
+    case 'm':
+        if (strncmp(src + *spos, "iddot;", 6) == 0) {
+            // MIDDLE DOT
+            target[(*tpos)++] = '.';
+            *spos += 5;
+        }
+        break;
+    case 'n':
+        if (strncmp(src + *spos, "dash;", 5) == 0) {
+            // EN DASH
+            target[(*tpos)++] = '-';
+            *spos += 4;
+        } else if (strncmp(src + *spos, "tilde;", 6) == 0) {
+            // LATIN SMALL LETTER N WITH TILDE
+            target[(*tpos)++] = 'n';
+            *spos += 5;
+        }
+        break;
+    case 'N':
+        if (strncmp(src + *spos, "tilde;", 6) == 0) {
+            // LATIN CAPITAL LETTER N WITH TILDE
+            target[(*tpos)++] = 'N';
+            *spos += 5;
+        }
+        break;
+    case 'o':
+        if (strncmp(src + *spos, "uml;", 4) == 0) {
+            // LATIN SMALL LETTER O WITH DIAERESIS
+            target[(*tpos)++] = 'o';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "slash;", 6) == 0) {
+            // LATIN SMALL LETTER O WITH STROKE
+            target[(*tpos)++] = 'o';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "elig;", 5) == 0) {
+            // LATIN SMALL LIGATURE OE
+            target[(*tpos)++] = 'o';
+            target[(*tpos)++] = 'e';
+            *spos += 4;
+        } else if (strncmp(src + *spos, "acute;", 6) == 0) {
+            // LATIN SMALL LETTER O WITH ACUTE
+            target[(*tpos)++] = 'o';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "grave;", 6) == 0) {
+            // LATIN SMALL LETTER O WITH GRAVE
+            target[(*tpos)++] = 'o';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "tilde;", 6) == 0) {
+            // LATIN SMALL LETTER O WITH TILDE
+            target[(*tpos)++] = 'o';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "circ;", 5) == 0) {
+            // LATIN SMALL LETTER O WITH CIRCUMFLEX
+            target[(*tpos)++] = 'o';
+            *spos += 4;
+        }
+        break;
+    case 'O':
+        if (strncmp(src + *spos, "uml;", 4) == 0) {
+            // LATIN CAPITAL LETTER O WITH DIAERESIS
+            target[(*tpos)++] = 'O';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "slash;", 6) == 0) {
+            // LATIN CAPITAL LETTER O WITH STROKE
+            target[(*tpos)++] = 'O';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "Elig;", 5) == 0) {
+            // LATIN CAPITAL LIGATURE OE
+            target[(*tpos)++] = 'O';
+            target[(*tpos)++] = 'E';
+            *spos += 4;
+        } else if (strncmp(src + *spos, "acute;", 6) == 0) {
+            // LATIN CAPITAL LETTER O WITH ACUTE
+            target[(*tpos)++] = 'O';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "grave;", 6) == 0) {
+            // LATIN CAPITAL LETTER O WITH GRAVE
+            target[(*tpos)++] = 'O';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "tilde;", 6) == 0) {
+            // LATIN CAPITAL LETTER O WITH TILDE
+            target[(*tpos)++] = 'O';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "circ;", 5) == 0) {
+            // LATIN CAPITAL LETTER O WITH CIRCUMFLEX
+            target[(*tpos)++] = 'O';
+            *spos += 4;
+        }
+        break;
+    case 'p':
+        if (strncmp(src + *spos, "ound;", 5) == 0) {
+            // POUND SIGN
+            target[(*tpos)++] = 'p';
+            *spos += 4;
+        } else if (strncmp(src + *spos, "lusmn;", 6) == 0) {
+            // PLUS-MINUS SIGN
+            target[(*tpos)++] = '+';
+            target[(*tpos)++] = '/';
+            target[(*tpos)++] = '-';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "ermil;", 6) == 0) {
+            // PER MILLE SIGN
+            target[(*tpos)++] = 'p';
+            *spos += 5;
+        }
+        break;
+    case 'q':
+        if (strncmp(src + *spos, "uot;", 4) == 0) {
+            // QUOTATION MARK
+            target[(*tpos)++] = '"';
+            *spos += 3;
+        }
+        break;
+    case 'r':
+        if (strncmp(src + *spos, "aquo;", 5) == 0) {
+            // RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK
+            target[(*tpos)++] = '>';
+            *spos += 4;
+        }
+        break;
+    case 's':
+        if (strncmp(src + *spos, "ect;", 4) == 0) {
+            // SECTION SIGN
+            target[(*tpos)++] = 's';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "zlig;", 5) == 0) {
+            // LATIN SMALL LETTER SHARP S
+            target[(*tpos)++] = 'B';
+            *spos += 4;
+        } else if (strncmp(src + *spos, "caron;", 6) == 0) {
+            // LATIN SMALL LETTER S WITH CARON
+            target[(*tpos)++] = 's';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "up", 2) == 0 && *(src + (*spos + 3)) == ';') {
+            // SUPERSCRIPT ONE|TWO|THREE
+            switch (*(src + (*spos + 2))) {
+            case '1':
+                target[(*tpos)++] = '1';
+                break;
+            case '2':
+                target[(*tpos)++] = '2';
+                break;
+            case '3':
+                target[(*tpos)++] = '3';
+                break;
+            }
+            *spos += 3;
+        }
+        break;
+    case 'S':
+        if (strncmp(src + *spos, "caron;", 6) == 0) {
+            // LATIN CAPITAL LETTER S WITH CARON
+            target[(*tpos)++] = 'S';
+            *spos += 5;
+        }
+        break;
+    case 't':
+        if (strncmp(src + *spos, "horn;", 5) == 0) {
+            // LATIN SMALL LETTER THORN
+            target[(*tpos)++] = 't';
+            *spos += 4;
+        }
+        break;
+    case 'T':
+        if (strncmp(src + *spos, "HORN;", 5) == 0) {
+            // LATIN CAPITAL LETTER THORN
+            target[(*tpos)++] = 'T';
+            *spos += 4;
+        }
+        break;
+    case 'u':
+        if (strncmp(src + *spos, "uml;", 4) == 0) {
+            // LATIN SMALL LETTER U WITH DIAERESIS
+            target[(*tpos)++] = 'u';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "arr;", 4) == 0) {
+            // UPWARDS ARROW
+            target[(*tpos)++] = '^';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "acute;", 6) == 0) {
+            // LATIN SMALL LETTER U WITH ACUTE
+            target[(*tpos)++] = 'u';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "grave;", 6) == 0) {
+            // LATIN SMALL LETTER U WITH GRAVE
+            target[(*tpos)++] = 'u';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "circ;", 5) == 0) {
+            // LATIN SMALL LETTER U WITH CIRCUMFLEX
+            target[(*tpos)++] = 'u';
+            *spos += 4;
+        }
+        break;
+    case 'U':
+        if (strncmp(src + *spos, "uml;", 4) == 0) {
+            // LATIN CAPITAL LETTER U WITH DIAERESIS
+            target[(*tpos)++] = 'U';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "acute;", 6) == 0) {
+            // LATIN CAPITAL LETTER U WITH ACUTE
+            target[(*tpos)++] = 'U';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "grave;", 6) == 0) {
+            // LATIN CAPITAL LETTER U WITH GRAVE
+            target[(*tpos)++] = 'U';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "circ;", 5) == 0) {
+            // LATIN CAPITAL LETTER U WITH CIRCUMFLEX
+            target[(*tpos)++] = 'U';
+            *spos += 4;
+        }
+        break;
+    case 'y':
+        if (strncmp(src + *spos, "acute;", 6) == 0) {
+            // LATIN SMALL LETTER Y WITH ACUTE
+            target[(*tpos)++] = 'y';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "uml;", 4) == 0) {
+            // LATIN SMALL LETTER Y WITH DIAERESIS
+            target[(*tpos)++] = 'y';
+            *spos += 3;
+        }
+        break;
+    case 'Y':
+        if (strncmp(src + *spos, "acute;", 6) == 0) {
+            // LATIN CAPITAL LETTER Y WITH ACUTE
+            target[(*tpos)++] = 'Y';
+            *spos += 5;
+        } else if (strncmp(src + *spos, "uml;", 4) == 0) {
+            // LATIN CAPITAL LETTER Y WITH DIAERESIS
+            target[(*tpos)++] = 'Y';
+            *spos += 3;
+        }
+        break;
+    default:
+        // Nothing was found so return to original position
+        *spos -= 1;
+        break;
+    }
+}
+#endif
 // Copy and filter html encoded characters
 static size_t copy_html_text(char* target, char* src, size_t len)
 {
@@ -116,140 +2140,13 @@ static size_t copy_html_text(char* target, char* src, size_t len)
             continue;
         }
 
+        // Consume the & character
         i++;
-        if (strncmp(src + i, "Auml;", 5) == 0) {
-            // LATIN CAPITAL LETTER A WITH DIAERESIS
 #ifndef DISABLE_UTF_8
-            filter_buf[filter_len++] = 0xc3;
-            filter_buf[filter_len++] = 0x84;
+        copy_html_character_utf8(filter_buf, src, &filter_len, &i);
 #else
-            filter_buf[filter_len++] = 'A';
+        copy_html_character_ascii(filter_buf, src, &filter_len, &i);
 #endif
-            i += 4;
-        } else if (strncmp(src + i, "auml;", 5) == 0) {
-            // LATIN SMALL LETTER A WITH DIAERESIS
-#ifndef DISABLE_UTF_8
-            filter_buf[filter_len++] = 0xc3;
-            filter_buf[filter_len++] = 0xa4;
-#else
-            filter_buf[filter_len++] = 'a';
-#endif
-            i += 4;
-        } else if (strncmp(src + i, "Atilde;", 7) == 0) {
-            // LATIN CAPITAL LETTER A WITH TILDE
-            filter_buf[filter_len] = 0xc3;
-            filter_buf[filter_len + 1] = 0x83;
-            filter_len += 2;
-            i += 6;
-        } else if (strncmp(src + i, "atilde;", 7) == 0) {
-            // LATIN SMALL LETTER A WITH TILDE
-            filter_buf[filter_len] = 0xc3;
-            filter_buf[filter_len + 1] = 0xa3;
-            filter_len += 2;
-            i += 6;
-        } else if (strncmp(src + i, "Ouml;", 5) == 0) {
-            // LATIN CAPITAL LETTER O WITH DIAERESIS
-#ifndef DISABLE_UTF_8
-            filter_buf[filter_len++] = 0xc3;
-            filter_buf[filter_len++] = 0x96;
-#else
-            filter_buf[filter_len++] = 'O';
-#endif
-            i += 4;
-        } else if (strncmp(src + i, "ouml;", 5) == 0) {
-#ifndef DISABLE_UTF_8
-            // LATIN SMALL LETTER A WITH DIAERESIS
-            filter_buf[filter_len++] = 0xc3;
-            filter_buf[filter_len++] = 0xb6;
-#else
-            filter_buf[filter_len++] = 'o';
-#endif
-            i += 4;
-        } else if (strncmp(src + i, "Aring;", 6) == 0) {
-            // LATIN CAPITAL LETTER A WITH RING ABOVE
-#ifndef DISABLE_UTF_8
-            filter_buf[filter_len++] = 0xc3;
-            filter_buf[filter_len++] = 0x85;
-#else
-            filter_buf[filter_len++] = 'A';
-#endif
-            i += 5;
-        } else if (strncmp(src + i, "aring;", 6) == 0) {
-            // LATIN SMALL LETTER A WITH RING ABOVE
-#ifndef DISABLE_UTF_8
-            filter_buf[filter_len++] = 0xc3;
-            filter_buf[filter_len++] = 0xa5;
-#else
-            filter_buf[filter_len++] = 'a';
-#endif
-            i += 5;
-        } else if (strncmp(src + i, "Uuml;", 5) == 0) {
-            // LATIN CAPITAL LETTER U WITH DIAERESIS
-#ifndef DISABLE_UTF_8
-            filter_buf[filter_len++] = 0xc3;
-            filter_buf[filter_len++] = 0x9c;
-#else
-            filter_buf[filter_len++] = 'U';
-#endif
-            i += 4;
-        } else if (strncmp(src + i, "uuml;", 5) == 0) {
-            // LATIN SMALL LETTER U WITH DIAERESIS
-#ifndef DISABLE_UTF_8
-            filter_buf[filter_len++] = 0xc3;
-            filter_buf[filter_len++] = 0xbc;
-#else
-            filter_buf[filter_len++] = 'u';
-#endif
-            i += 4;
-        } else if (strncmp(src + i, "Eacute;", 7) == 0) {
-            // LATIN CAPITAL LETTER E WITH ACUTE
-#ifndef DISABLE_UTF_8
-            filter_buf[filter_len++] = 0xc3;
-            filter_buf[filter_len++] = 0x89;
-#else
-            filter_buf[filter_len++] = 'E';
-#endif
-            i += 6;
-        } else if (strncmp(src + i, "eacute;", 7) == 0) {
-            // LATIN SMALL LETTER E WITH ACUTE
-#ifndef DISABLE_UTF_8
-            filter_buf[filter_len++] = 0xc3;
-            filter_buf[filter_len++] = 0xa9;
-#else
-            filter_buf[filter_len++] = 'e';
-#endif
-            i += 6;
-        } else if (strncmp(src + i, "curren;", 7) == 0) {
-            // CURRENCY SIGN
-#ifndef DISABLE_UTF_8
-            filter_buf[filter_len++] = 0xc2;
-            filter_buf[filter_len++] = 0xa4;
-#else
-            filter_buf[filter_len++] = ' ';
-#endif
-            i += 6;
-        } else if (strncmp(src + i, "quot;", 5) == 0) {
-            // QUOTATION MARK
-            filter_buf[filter_len++] = '"';
-            i += 4;
-        } else if (strncmp(src + i, "amp;", 4) == 0) {
-            // AMPERSAND
-            filter_buf[filter_len++] = '&';
-            i += 3;
-        } else if (strncmp(src + i, "apos;", 5) == 0) {
-            // APOSTROPHE
-            filter_buf[filter_len++] = '\'';
-            i += 4;
-        } else if (strncmp(src + i, "gt;", 3) == 0) {
-            // GREATER-THAN SIGN
-            filter_buf[filter_len++] = '>';
-            i += 2;
-        } else if (strncmp(src + i, "lt;", 3) == 0) {
-            // LESS-THAN SIGN
-            filter_buf[filter_len++] = '<';
-            filter_len += 1;
-            i += 2;
-        }
     }
 
     strncpy(target, (char*)filter_buf, filter_len);
