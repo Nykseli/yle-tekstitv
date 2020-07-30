@@ -510,6 +510,10 @@ static void load_link(drawer* drawer, html_parser* parser, bool add_history)
 
 static void load_highlight_link(drawer* drawer, html_parser* parser)
 {
+    // Make sure that something has been highlighted
+    if (drawer->highlight_col == -1 || drawer->highlight_row == -1)
+        return;
+
     link_highlight link = drawer->highlight_rows[drawer->highlight_row].links[drawer->highlight_col];
     link_from_short_link(parser, link.link);
     load_link(drawer, parser, true);
