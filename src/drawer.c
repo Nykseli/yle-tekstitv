@@ -627,6 +627,7 @@ void search_mode(drawer* drawer, html_parser* parser)
             page[page_i] = (char)c;
             page_i++;
             currentx++;
+            refresh();
 
             if (page_i == 3) {
                 int num = page_number(page);
@@ -642,7 +643,6 @@ void search_mode(drawer* drawer, html_parser* parser)
                 break;
             }
         }
-        refresh();
     }
 
     // hide cursor and inputs
