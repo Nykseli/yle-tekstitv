@@ -438,8 +438,9 @@ static void redraw_parser(drawer* drawer, html_parser* parser, bool init, bool a
     drawer->error_drawn = false;
     drawer->init_highlight_rows = init;
     if (init) {
-        drawer->highlight_row = 0;
-        drawer->highlight_col = 0;
+        // row and col needs to be -1 so it becomes + after +1
+        drawer->highlight_row = -1;
+        drawer->highlight_col = -1;
         drawer->highlight_row_size = 0;
         memset(drawer->highlight_rows, 0, sizeof(link_highlight_row) * 32);
     }
