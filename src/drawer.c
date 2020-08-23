@@ -270,9 +270,6 @@ static void draw_title(drawer* drawer, html_parser* parser)
 
 static void draw_top_navigation(drawer* drawer, html_parser* parser)
 {
-    if (global_config.no_nav || global_config.no_top_nav)
-        return;
-
     html_item* items = parser->top_navigation;
 
     // Always collect navigation links for hotkeys
@@ -307,12 +304,10 @@ static void draw_top_navigation(drawer* drawer, html_parser* parser)
         default:
             break;
         }
-
-        // strncpy(nav_links.prev_page, html_link_link(links[0]), HTML_LINK_SIZE);
-        // strncpy(nav_links.prev_sub_page, html_link_link(links[1]), HTML_LINK_SIZE);
-        // strncpy(nav_links.next_sub_page, html_link_link(links[2]), HTML_LINK_SIZE);
-        // strncpy(nav_links.next_page, html_link_link(links[3]), HTML_LINK_SIZE);
     }
+
+    if (global_config.no_nav || global_config.no_top_nav)
+        return;
 
     // Only draw navigation on "big" terminals
     if (max_window_width() < 80)
