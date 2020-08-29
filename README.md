@@ -75,7 +75,7 @@ Both gcc and clang are supported
 ### Debian
 
 ```
-$ sudo apt-get install libcurl4-openssl-dev libncurses-dev
+$ sudo apt-get install libcurl4-openssl-dev libncursesw5-dev
 ```
 
 After installing depencies you can install the binary.
