@@ -4,13 +4,13 @@
 #include <ncurses.h>
 #include <stdbool.h>
 
-typedef struct{
+typedef struct {
     char link[64];
     int start_x;
     int start_y;
 } link_highlight;
 
-typedef struct{
+typedef struct {
     link_highlight links[16];
     int size;
 } link_highlight_row;
