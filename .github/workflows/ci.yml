@@ -1,6 +1,6 @@
 name: Clang format
 
-on: [push, pull_request]
+on: [push]
 
 jobs:
   clang-format:
@@ -20,7 +20,7 @@ jobs:
       - name: install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -qq libcurl4-openssl-dev libncurses-dev
+          sudo apt-get install -qq libcurl4-openssl-dev libncursesw-dev
       - name: build the binary
         run: |
           ./configure
@@ -34,7 +34,7 @@ jobs:
       - name: install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -qq libcurl4-openssl-dev libncurses-dev
+          sudo apt-get install -qq libcurl4-openssl-dev libncursesw-dev
       - name: build the binary
         run: |
           ./configure
