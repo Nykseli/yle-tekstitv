@@ -1,6 +1,6 @@
 name: Clang format
 
-on: [push, pull_request]
+on: [push]
 
 jobs:
   clang-format:
@@ -13,3 +13,31 @@ jobs:
           sudo apt-get install -qq clang-format
     - name: Check format
       run: ./format-test.sh
+  build-linux-gcc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -qq libcurl4-openssl-dev libncursesw5-dev
+      - name: build the binary
+        run: |
+          ./configure
+          make
+        env:
+          CC: gcc
+  build-linux-clang:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -qq libcurl4-openssl-dev libncursesw5-dev
+      - name: build the binary
+        run: |
+          ./configure
+          make
+        env:
+          CC: clang
