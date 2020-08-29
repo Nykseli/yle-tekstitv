@@ -1,0 +1,15 @@
+name: Clang format
+
+on: [push, pull_request]
+
+jobs:
+  clang-format:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install dependencies
+      run: |
+          sudo apt-get update
+          sudo apt-get install -qq clang-format
+    - name: Check format
+      run: ./format-test.sh
