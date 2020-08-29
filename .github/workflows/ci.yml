@@ -20,7 +20,7 @@ jobs:
       - name: install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -qq libcurl4-openssl-dev libncursesw6
+          sudo apt-get install -qq libcurl4-openssl-dev libncursesw5-dev
       - name: build the binary
         run: |
           ./configure
@@ -34,7 +34,7 @@ jobs:
       - name: install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -qq libcurl4-openssl-dev libncursesw6
+          sudo apt-get install -qq libcurl4-openssl-dev libncursesw5-dev
       - name: build the binary
         run: |
           ./configure
