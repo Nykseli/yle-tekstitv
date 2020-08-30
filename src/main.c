@@ -4,6 +4,7 @@
 #include <tekstitv.h>
 
 #include "config.h"
+#include "database.h"
 #include "drawer.h"
 #include "printer.h"
 
@@ -129,6 +130,7 @@ int main(int argc, char** argv)
         return 1;
     }
 
+    teledb_init_database();
     html_parser parser;
     init_html_parser(&parser);
     link_from_ints(&parser, global_config.page, global_config.subpage);
@@ -145,5 +147,6 @@ int main(int argc, char** argv)
     }
 
     free_html_parser(&parser);
+    teledb_free_database();
     return 0;
 }

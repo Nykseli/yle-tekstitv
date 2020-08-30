@@ -1,8 +1,10 @@
 #include <locale.h>
+#include <stdlib.h>
 #include <string.h>
 #include <tekstitv.h>
 
 #include "config.h"
+#include "database.h"
 #include "drawer.h"
 
 #define MAX_MIDDLE_WIDTH (max_window_width() / 2)
@@ -648,6 +650,110 @@ void search_mode(drawer* drawer, html_parser* parser)
     refresh();
 }
 
+static void favourite_mode(drawer* drawer, html_parser* parser, int highlight_id)
+{
+    // First clear the window
+    wclear(drawer->window);
+    mvprintw(0, 0, "                                                        ");
+    mvprintw(0, 0, "Press q to return");
+
+    // Then draw the favourites
+    drawer->current_x = middle_startx();
+    drawer->current_y = 2;
+
+    // TODO: way to select and load a favourite page. Show them as links?
+    tele_entries entries = teledb_load_data();
+    for (int i = 0; i < entries.db_count; i++) {
+        tele_entry te = entries.db_entries[i];
+        bool highlight = highlight_id == (int)i;
+        if (drawer->color_support) {
+            wattron(drawer->window, LINK_COLOR);
+            if (highlight)
+                wattron(drawer->window, A_REVERSE);
+        }
+        mvwprintw(drawer->window, drawer->current_y, drawer->current_x, te.page_num);
+
+        if (drawer->color_support) {
+            wattroff(drawer->window, LINK_COLOR);
+            if (highlight)
+                wattroff(drawer->window, A_REVERSE);
+        }
+        // ncurses is abit unreliable with \t so use spaces instead
+        mvwprintw(drawer->window, drawer->current_y, drawer->current_x + DB_PAGE_NUM_LEN, "        %s", te.descript);
+        drawer->current_y++;
+    }
+
+    // Refresh to show the new text
+    wrefresh(drawer->window);
+
+    int fav = -1;
+    while (true) {
+        short c = getch();
+        fav = -1;
+        if (c == 'q') {
+            break;
+        } else if (c == 'k' || c == KEY_UP) {
+            fav = (highlight_id + entries.db_count - 1) % entries.db_count;
+            break;
+        } else if (c == 'j' || c == KEY_DOWN) {
+            fav = (highlight_id + 1) % entries.db_count;
+            break;
+        } else if (c == 'g' || c == '\n') { // g or enter
+            // Ignore if no link is highlighted
+            if (highlight_id == -1)
+                continue;
+
+            int page = atoi(entries.db_entries[highlight_id].page_num);
+            link_from_ints(parser, page, 1);
+            fav = -2;
+            break;
+        } else if (c == 'd') {
+            // Ignore if no link is highlighted
+            if (highlight_id == -1)
+                continue;
+
+            teledb_delete_entry(highlight_id);
+            fav = highlight_id - 1 >= 0 ? highlight_id - 1 : 0;
+            break;
+        } else if (c == 'p') {
+            // Ignore if no link is highlighted
+            if (highlight_id == -1)
+                continue;
+
+            int err = teledb_move_entry(highlight_id, TELE_MOVE_UP);
+            // Highlight the moved entry if successful
+            if (err == 0)
+                fav = highlight_id - 1;
+            else
+                fav = highlight_id;
+            break;
+        } else if (c == 'o') {
+            // Ignore if no link is highlighted
+            if (highlight_id == -1)
+                continue;
+
+            int err = teledb_move_entry(highlight_id, TELE_MOVE_DOWN);
+            // Highlight the moved entry if successful
+            if (err == 0)
+                fav = highlight_id + 1;
+            else
+                fav = highlight_id;
+            break;
+        } else if (c == 's') {
+            teledb_commit_data();
+            fav = highlight_id;
+            break;
+        }
+    }
+
+    if (fav == -1)
+        redraw_parser(drawer, parser, false, false);
+    else if (fav == -2)
+        load_link(drawer, parser, true);
+    else
+        favourite_mode(drawer, parser, fav);
+}
+
 void main_draw_loop(drawer* drawer, html_parser* parser)
 {
     drawer->highlight_col = -1;
@@ -694,6 +800,8 @@ void main_draw_loop(drawer* drawer, html_parser* parser)
             load_next_link(drawer, parser);
         } else if (c == 's') {
             search_mode(drawer, parser);
+        } else if (c == 'f') {
+            favourite_mode(drawer, parser, -1);
         }
     }
 }
