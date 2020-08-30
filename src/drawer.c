@@ -52,6 +52,29 @@ typedef enum {
 
 static navigation nav_links;
 
+typedef enum {
+    EDIT_ENTRY_NONE,
+    EDIT_ENTRY_PAGE,
+    EDIT_ENTRY_DESC,
+    HIGHLIGHT_ENTRY_NONE,
+    HIGHLIGHT_ENTRY_PAGE,
+    HIGHLIGHT_ENTRY_DESC,
+} edit_entry_select;
+
+typedef struct {
+    char page[DB_PAGE_NUM_LEN + 1];
+    int page_size;
+    char desc[DB_DESCRIPT_LEN + 1];
+    int desc_size;
+} edit_entry;
+
+static edit_entry fav_edit = {
+    .page_size = 0,
+    .desc_size = 0,
+    .page = "\0",
+    .desc = "\0",
+};
+
 static void search_mode(drawer* drawer, html_parser* parser);
 static void load_link(drawer* drawer, html_parser* parser, bool add_history);
 
@@ -214,6 +237,24 @@ static void escape_text(char* src, char* target, size_t src_len)
     target[targeti] = '\0';
 }
 
+static void set_link_color_on(drawer* drawer, bool highlight)
+{
+    if (drawer->color_support) {
+        wattron(drawer->window, LINK_COLOR);
+        if (highlight)
+            wattron(drawer->window, A_REVERSE);
+    }
+}
+
+static void set_link_color_off(drawer* drawer, bool highlight)
+{
+    if (drawer->color_support) {
+        wattroff(drawer->window, LINK_COLOR);
+        if (highlight)
+            wattroff(drawer->window, A_REVERSE);
+    }
+}
+
 static void draw_to_drawer(drawer* drawer, char* text)
 {
     char escape_buf[256];
@@ -231,19 +272,11 @@ static void draw_link_item(drawer* drawer, html_link link)
         highlight = hlight.start_x == drawer->current_x && hlight.start_y == drawer->current_y;
     }
 
-    if (drawer->color_support) {
-        wattron(drawer->window, LINK_COLOR);
-        if (highlight)
-            wattron(drawer->window, A_REVERSE);
-    }
+    set_link_color_on(drawer, highlight);
 
     draw_to_drawer(drawer, html_link_text(link));
 
-    if (drawer->color_support) {
-        wattroff(drawer->window, LINK_COLOR);
-        if (highlight)
-            wattroff(drawer->window, A_REVERSE);
-    }
+    set_link_color_off(drawer, highlight);
 }
 
 static void add_link_highlight(drawer* drawer, html_link link)
@@ -650,7 +683,8 @@ void search_mode(drawer* drawer, html_parser* parser)
     refresh();
 }
 
-static void favourite_mode(drawer* drawer, html_parser* parser, int highlight_id)
+// TODO: Draw maximum amount (10?) of entries per page
+static void favourite_listing_mode(drawer* drawer, html_parser* parser, int highlight_id)
 {
     // First clear the window
     wclear(drawer->window);
@@ -661,23 +695,15 @@ static void favourite_mode(drawer* drawer, html_parser* parser, int highlight_id
     drawer->current_x = middle_startx();
     drawer->current_y = 2;
 
-    // TODO: way to select and load a favourite page. Show them as links?
     tele_entries entries = teledb_load_data();
     for (int i = 0; i < entries.db_count; i++) {
         tele_entry te = entries.db_entries[i];
-        bool highlight = highlight_id == (int)i;
-        if (drawer->color_support) {
-            wattron(drawer->window, LINK_COLOR);
-            if (highlight)
-                wattron(drawer->window, A_REVERSE);
-        }
-        mvwprintw(drawer->window, drawer->current_y, drawer->current_x, te.page_num);
+        bool highlight = highlight_id == i;
 
-        if (drawer->color_support) {
-            wattroff(drawer->window, LINK_COLOR);
-            if (highlight)
-                wattroff(drawer->window, A_REVERSE);
-        }
+        set_link_color_on(drawer, highlight);
+        mvwprintw(drawer->window, drawer->current_y, drawer->current_x, te.page_num);
+        set_link_color_off(drawer, highlight);
+
         // ncurses is abit unreliable with \t so use spaces instead
         mvwprintw(drawer->window, drawer->current_y, drawer->current_x + DB_PAGE_NUM_LEN, "        %s", te.descript);
         drawer->current_y++;
@@ -686,6 +712,7 @@ static void favourite_mode(drawer* drawer, html_parser* parser, int highlight_id
     // Refresh to show the new text
     wrefresh(drawer->window);
 
+    // TODO: way to modify/edit the selected link
     int fav = -1;
     while (true) {
         short c = getch();
@@ -751,7 +778,148 @@ static void favourite_mode(drawer* drawer, html_parser* parser, int highlight_id
     else if (fav == -2)
         load_link(drawer, parser, true);
     else
-        favourite_mode(drawer, parser, fav);
+        favourite_listing_mode(drawer, parser, fav);
+}
+
+static void add_favourite_mode(drawer* drawer, html_parser* parser, edit_entry_select select)
+{
+
+    // Spaces between the number and desc editing fields
+    int padding = 8;
+    // First clear the window
+    wclear(drawer->window);
+    mvprintw(0, 0, "                                                        ");
+    mvprintw(0, 0, "Press q to return");
+
+    // Then draw the add editing fields
+    drawer->current_x = middle_startx();
+
+    // Draw the page field
+    drawer->current_y = 2;
+    if (select == EDIT_ENTRY_PAGE || select == HIGHLIGHT_ENTRY_PAGE)
+        set_link_color_on(drawer, true);
+
+    // Draw the text
+    mvwprintw(drawer->window, drawer->current_y, drawer->current_x, fav_edit.page);
+    // Draw the highlighting to show how much space there is to edit
+    for (int i = fav_edit.page_size; i < DB_PAGE_NUM_LEN; i++) {
+        int x = drawer->current_x + i;
+        mvwprintw(drawer->window, drawer->current_y, x, " ");
+    }
+
+    if (select == EDIT_ENTRY_PAGE || select == HIGHLIGHT_ENTRY_PAGE)
+        set_link_color_off(drawer, true);
+
+    // Draw the description field
+    if (select == EDIT_ENTRY_DESC || select == HIGHLIGHT_ENTRY_DESC)
+        set_link_color_on(drawer, true);
+
+    // Draw the text
+    mvwprintw(drawer->window, drawer->current_y, drawer->current_x + DB_PAGE_NUM_LEN + padding, fav_edit.desc);
+    // Draw the highlighting to show how much space there is to edit
+    for (int i = fav_edit.desc_size; i < DB_DESCRIPT_LEN; i++) {
+        int x = drawer->current_x + i + DB_PAGE_NUM_LEN + padding;
+        mvwprintw(drawer->window, drawer->current_y, x, " ");
+    }
+    if (select == EDIT_ENTRY_DESC || select == HIGHLIGHT_ENTRY_DESC)
+        set_link_color_off(drawer, true);
+
+    // Draw lines to indicate where the text fields are
+    drawer->current_y++;
+    for (int i = 0; i < DB_PAGE_NUM_LEN; i++) {
+        int x = drawer->current_x + i;
+        mvwprintw(drawer->window, drawer->current_y, x, "_");
+    }
+    for (int i = 0; i < DB_DESCRIPT_LEN; i++) {
+        int x = drawer->current_x + i + DB_PAGE_NUM_LEN + padding;
+        mvwprintw(drawer->window, drawer->current_y, x, "_");
+    }
+
+    wrefresh(drawer->window);
+
+    bool exit = false;
+    while (true) {
+        short c = getch();
+        if (select == EDIT_ENTRY_DESC) {
+            if (c == '\n') {
+                select = HIGHLIGHT_ENTRY_DESC;
+                break;
+            }
+
+            // Remove letter
+            if (c == KEY_BACKSPACE) {
+                if (fav_edit.desc_size > 0) {
+                    fav_edit.desc_size--;
+                    fav_edit.desc[fav_edit.desc_size] = '\0';
+                }
+                break;
+            }
+
+            // Make sure whe don't add too many numbers
+            if (fav_edit.page_size >= DB_DESCRIPT_LEN)
+                continue;
+
+            fav_edit.desc[fav_edit.desc_size++] = c;
+            fav_edit.desc[fav_edit.desc_size] = '\0';
+            break;
+        } else if (select == EDIT_ENTRY_PAGE) {
+            if (c == '\n') {
+                select = HIGHLIGHT_ENTRY_PAGE;
+                break;
+            }
+
+            // Remove letter
+            if (c == KEY_BACKSPACE) {
+                if (fav_edit.page_size > 0) {
+                    fav_edit.page_size--;
+                    fav_edit.page[fav_edit.page_size] = '\0';
+                }
+                break;
+            }
+
+            // Page can only contain 0-9
+            if (c < '0' || c > '9')
+                continue;
+            // Make sure whe don't add too many numbers
+            if (fav_edit.page_size >= DB_PAGE_NUM_LEN)
+                continue;
+
+            fav_edit.page[fav_edit.page_size++] = c;
+            fav_edit.page[fav_edit.page_size] = '\0';
+            break;
+        } else {
+            if (c == 'l' || c == 'h') {
+                select = select == HIGHLIGHT_ENTRY_PAGE ? HIGHLIGHT_ENTRY_DESC : HIGHLIGHT_ENTRY_PAGE;
+                break;
+            } else if (c == 'q') {
+                exit = true;
+                break;
+            } else if (c == '\n') {
+                if (select == HIGHLIGHT_ENTRY_DESC) {
+                    select = EDIT_ENTRY_DESC;
+                    break;
+                } else if (select == HIGHLIGHT_ENTRY_PAGE) {
+                    select = EDIT_ENTRY_PAGE;
+                    break;
+                }
+            } else if (c == 's') {
+                // TODO: report error if page is not exaclty 3 numbers
+                teledb_add_page(fav_edit.page, fav_edit.desc);
+                teledb_commit_data();
+                fav_edit.desc[0] = '\0';
+                fav_edit.desc_size = 0;
+                fav_edit.page[0] = '\0';
+                fav_edit.page_size = 0;
+                exit = true;
+                break;
+            }
+        }
+    }
+
+    if (!exit)
+        add_favourite_mode(drawer, parser, select);
+    else
+        redraw_parser(drawer, parser, true, false);
 }
 
 void main_draw_loop(drawer* drawer, html_parser* parser)
@@ -801,7 +969,9 @@ void main_draw_loop(drawer* drawer, html_parser* parser)
         } else if (c == 's') {
             search_mode(drawer, parser);
         } else if (c == 'f') {
-            favourite_mode(drawer, parser, -1);
+            favourite_listing_mode(drawer, parser, -1);
+        } else if (c == 'a') {
+            add_favourite_mode(drawer, parser, EDIT_ENTRY_NONE);
         }
     }
 }

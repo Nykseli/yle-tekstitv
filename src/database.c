@@ -1,4 +1,5 @@
 
+#include <assert.h>
 #include <fcntl.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -122,6 +123,30 @@ int teledb_delete_entry(int index)
     }
     entries.db_count--;
     return 0;
+}
+
+// TODO: fail error?
+void teledb_add_page(char* page, char* desc)
+{
+    size_t page_len = strlen(page);
+    size_t desc_len = strlen(desc);
+    assert(page_len == DB_PAGE_NUM_LEN);
+    assert(desc_len <= DB_DESCRIPT_LEN);
+
+    // Make sure that we are adding the page to the newest db data
+    entries = teledb_load_data();
+
+    tele_entry te;
+    te.page_num_size = page_len;
+    te.descript_size = desc_len;
+    memcpy(te.page_num, page, page_len);
+    te.page_num[page_len] = '\0';
+    memcpy(te.descript, desc, desc_len);
+    te.descript[desc_len] = '\0';
+
+    entries.db_entries = realloc(entries.db_entries, sizeof(tele_entry) * (entries.db_count + 1));
+    entries.db_entries[entries.db_count] = te;
+    entries.db_count++;
 }
 
 /**

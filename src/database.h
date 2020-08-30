@@ -6,9 +6,9 @@
 
 #include <stdint.h>
 
-/* Maximum length of the description db field*/
+/* Maximum length of the description db field */
 #define DB_DESCRIPT_LEN 40
-/* Maximum length of the page_num db field*/
+/* Maximum length of the page_num db field */
 #define DB_PAGE_NUM_LEN 3
 
 typedef struct {
@@ -33,12 +33,17 @@ typedef enum {
 /* Load data from database */
 tele_entries teledb_load_data();
 
-/*
+/**
  * Delete database entry based on index. Starting from 0.
  *
  * Return -1 if delete failed, 0 if successfull
  */
 int teledb_delete_entry(int index);
+
+/**
+ * Add a new entry to the database
+ */
+void teledb_add_page(char* page, char* desc);
 
 /**
  * Move the data entry up or down.
