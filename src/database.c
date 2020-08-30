@@ -1,6 +1,8 @@
 
 #include <assert.h>
+#include <errno.h>
 #include <fcntl.h>
+#include <pwd.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -59,11 +61,82 @@ static tele_entries entries;
 /* Is the newest data from file loaded */
 static bool newest_data = false;
 
+static size_t get_home_dir(char* buff)
+{
+    char* homedir;
+    // Try to find the home path from $HOME variable
+    // If and if not found, use the uid
+    if ((homedir = getenv("HOME")) == NULL) {
+        homedir = getpwuid(getuid())->pw_dir;
+    }
+
+    size_t path_len = strlen(homedir);
+    // Let's hope the file path is under 1024 characters
+    if (path_len + 34 >= 1024) {
+        fprintf(stderr, "Cannot open database. File path is over 1024 characters.");
+        exit(1);
+    }
+
+    memcpy(buff, homedir, path_len);
+    return path_len;
+}
+
+/**
+ * Make sure that all the directories and files exist and can be accessed(?)
+ * Also add the tele_header to the file if a new db file is created.
+ */
+static void init_db_file()
+{
+    char db_path[1024];
+    struct stat folder_stat;
+
+    // Try to find the config path for the database.
+    // Try to create the folder path if it's not found
+    size_t path_len = get_home_dir(db_path);
+    memcpy(db_path + path_len, "/.config/tekstitv/", 19);
+    path_len += 18;
+
+    int res = stat(db_path, &folder_stat);
+    if (res == -1) {
+        // read/write/search permissions for owner and group, and with read/search permissions for others.
+        // Basically the default values when creating directory with mkdir command
+        res = mkdir(db_path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+        if (res == -1) {
+            fprintf(stderr, "Error creating folder '~/.config/tekstitv/': '%s'\n", strerror(errno));
+            exit(1);
+        }
+    }
+
+    memcpy(db_path + path_len, "database.teledb", 16);
+    res = stat(db_path, &folder_stat);
+    // No need to do anything if the file exists and we can access it
+    if (res != -1)
+        return;
+
+    int fd = open(db_path, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    if (fd == -1) {
+        fprintf(stderr, "Error opening database '~/.config/tekstitv/database.teledb': '%s'\n", strerror(errno));
+        exit(1);
+    }
+
+    // We want to add the header to the new db
+    write(fd, &header, sizeof(tele_header));
+    close(fd);
+}
+
 static int get_db_fd()
 {
-    // TODO: open file from home folder
-    // TODO: make sure this was succesfull
-    return open("test.teledb", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    char db_path[1024];
+    size_t path_len = get_home_dir(db_path);
+    memcpy(db_path + path_len, "/.config/tekstitv/database.teledb", 34);
+
+    int fd = open(db_path, O_RDWR, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    if (fd == -1) {
+        fprintf(stderr, "Error opening database '~/.config/tekstitv/database.teledb': '%s'\n", strerror(errno));
+        exit(1);
+    }
+
+    return fd;
 }
 
 /* Load data from database */
@@ -72,7 +145,7 @@ tele_entries teledb_load_data()
     // Only load data from the file if we need to.
     // Newest data is set to true in teledb_commit_data()
     if (newest_data)
-        goto ret;
+        goto return_data;
 
     int file = get_db_fd();
     struct stat fs;
@@ -99,7 +172,7 @@ tele_entries teledb_load_data()
     close(file);
     newest_data = true;
 
-ret:
+return_data:
     return entries;
 }
 
@@ -212,8 +285,10 @@ void teledb_commit_data()
 
 void teledb_init_database()
 {
+    init_db_file();
     entries.db_count = 0;
     entries.db_entries = NULL;
+    entries = teledb_load_data();
 }
 
 void teledb_free_database()
