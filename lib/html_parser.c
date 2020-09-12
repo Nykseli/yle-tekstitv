@@ -372,6 +372,16 @@ static void copy_html_character_utf8(unsigned char* target, char* src, size_t* t
             target[(*tpos)++] = 0xc4;
             target[(*tpos)++] = 0xbe;
             *spos += 3;
+        } else if (strncmp(src + *spos, "319;", 4) == 0) {
+            // LATIN CAPITAL LETTER L WITH MIDDLE DOT
+            target[(*tpos)++] = 0xc4;
+            target[(*tpos)++] = 0xbf;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "320;", 4) == 0) {
+            // LATIN SMALL LETTER L WITH MIDDLE DOT
+            target[(*tpos)++] = 0xc5;
+            target[(*tpos)++] = 0x80;
+            *spos += 3;
         } else if (strncmp(src + *spos, "321;", 4) == 0) {
             // LATIN CAPITAL LETTER L WITH STROKE
             target[(*tpos)++] = 0xc5;
@@ -783,6 +793,12 @@ static void copy_html_character_utf8(unsigned char* target, char* src, size_t* t
             target[(*tpos)++] = 0xc2;
             target[(*tpos)++] = 0xb0;
             *spos += 2;
+        } else if (strncmp(src + *spos, "arr;", 4) == 0) {
+            // DOWNWARDS ARROW
+            target[(*tpos)++] = 0xe2;
+            target[(*tpos)++] = 0x86;
+            target[(*tpos)++] = 0x93;
+            *spos += 3;
         }
         break;
     case 'e':
@@ -928,6 +944,12 @@ static void copy_html_character_utf8(unsigned char* target, char* src, size_t* t
             target[(*tpos)++] = 0xc2;
             target[(*tpos)++] = 0xab;
             *spos += 4;
+        } else if (strncmp(src + *spos, "arr;", 4) == 0) {
+            // LEFTWARDS ARROW
+            target[(*tpos)++] = 0xe2;
+            target[(*tpos)++] = 0x86;
+            target[(*tpos)++] = 0x90;
+            *spos += 3;
         }
         break;
     case 'm':
@@ -1067,6 +1089,18 @@ static void copy_html_character_utf8(unsigned char* target, char* src, size_t* t
             // RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK
             target[(*tpos)++] = 0xc2;
             target[(*tpos)++] = 0xbb;
+            *spos += 4;
+        } else if (strncmp(src + *spos, "arr;", 4) == 0) {
+            // RIGHTWARDS ARROW
+            target[(*tpos)++] = 0xe2;
+            target[(*tpos)++] = 0x86;
+            target[(*tpos)++] = 0x92;
+            *spos += 3;
+        } else if (strncmp(src + *spos, "dquo;", 5) == 0) {
+            // RIGHT DOUBLE QUOTATION MARK
+            target[(*tpos)++] = 0xe2;
+            target[(*tpos)++] = 0x80;
+            target[(*tpos)++] = 0x9d;
             *spos += 4;
         }
         break;
@@ -1429,6 +1463,15 @@ static void copy_html_character_ascii(unsigned char* target, char* src, size_t* 
             // LATIN SMALL LETTER L WITH CARON
             target[(*tpos)++] = 'l';
             *spos += 3;
+        } else if (strncmp(src + *spos, "319;", 4) == 0) {
+            // LATIN CAPITAL LETTER L WITH MIDDLE DOT
+            target[(*tpos)++] = 'L';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "320;", 4) == 0) {
+            // LATIN SMALL LETTER L WITH MIDDLE DOT
+            target[(*tpos)++] = 'l';
+            *spos += 3;
+
         } else if (strncmp(src + *spos, "321;", 4) == 0) {
             // LATIN CAPITAL LETTER L WITH STROKE
             target[(*tpos)++] = 'L';
@@ -1759,6 +1802,10 @@ static void copy_html_character_ascii(unsigned char* target, char* src, size_t* 
             // DEGREE SIGN
             target[(*tpos)++] = 'o';
             *spos += 2;
+        } else if (strncmp(src + *spos, "arr;", 4) == 0) {
+            // DOWNWARDS ARROW
+            target[(*tpos)++] = 'Y';
+            *spos += 3;
         }
         break;
     case 'e':
@@ -1882,6 +1929,10 @@ static void copy_html_character_ascii(unsigned char* target, char* src, size_t* 
             // LEFT-POINTING DOUBLE ANGLE QUOTATION MARK
             target[(*tpos)++] = '<';
             *spos += 4;
+        } else if (strncmp(src + *spos, "arr;", 4) == 0) {
+            // LEFTWARDS ARROW
+            target[(*tpos)++] = '<';
+            *spos += 3;
         }
         break;
     case 'm':
@@ -2001,6 +2052,14 @@ static void copy_html_character_ascii(unsigned char* target, char* src, size_t* 
         if (strncmp(src + *spos, "aquo;", 5) == 0) {
             // RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK
             target[(*tpos)++] = '>';
+            *spos += 4;
+        } else if (strncmp(src + *spos, "arr;", 4) == 0) {
+            // RIGHTWARDS ARROW
+            target[(*tpos)++] = '>';
+            *spos += 3;
+        } else if (strncmp(src + *spos, "dquo;", 5) == 0) {
+            // RIGHT DOUBLE QUOTATION MARK
+            target[(*tpos)++] = '"';
             *spos += 4;
         }
         break;
