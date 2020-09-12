@@ -27,7 +27,6 @@ void load_page(html_parser* parser)
     char page[] = "https://yle.fi/tekstitv/txt/xxx_xxxx.htm";
     memcpy(page + 28, parser->link, HTML_LINK_SIZE);
 
-
     curl = curl_easy_init();
     curl_easy_setopt(curl, CURLOPT_URL, page);
     curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, curl_errbuf);
