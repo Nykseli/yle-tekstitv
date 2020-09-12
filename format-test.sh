@@ -1,5 +1,18 @@
 #/bin/bash
 
-# Check if there is something wrong.
-# Diff exits with 1 if there is a diff to be found
-diff -u <(cat src/*) <(clang-format src/*)
+# Check if there is something wrong with formatting
+FORMAT=`diff -u <(cat src/*) <(clang-format src/*)`
+if [[ ! -z $FORMAT ]]; then
+    echo "${FORMAT}"
+    exit 1
+fi
+FORMAT=`diff -u <(cat lib/*) <(clang-format lib/*)`
+if [[ ! -z $FORMAT ]]; then
+    echo "${FORMAT}"
+    exit 1
+fi
+FORMAT=`diff -u <(cat include/*) <(clang-format include/*)`
+if [[ ! -z $FORMAT ]]; then
+    echo "${FORMAT}"
+    exit 1
+fi
