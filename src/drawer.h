@@ -16,6 +16,7 @@ typedef struct {
 } link_highlight_row;
 
 typedef struct {
+    WINDOW* info_window;
     WINDOW* window;
     int w_width;
     int w_height;

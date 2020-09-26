@@ -52,6 +52,7 @@ static navigation nav_links;
 
 static void search_mode(drawer* drawer, html_parser* parser);
 static void load_link(drawer* drawer, html_parser* parser, bool add_history);
+static void draw_to_info_window(drawer* drawer, const char* text);
 
 static bool history_at_last_link()
 {
@@ -160,9 +161,7 @@ static void curl_load_error(drawer* drawer, html_parser* parser)
         drawer->error_drawn = true;
     }
 
-    clear();
-    printw("Couldn't load the page, press s to search, o to return\n");
-    refresh();
+    draw_to_info_window(drawer, "Couldn't load the page, press s to search, o to return");
     for (;;) {
         char c = getch();
         if (c == 's') {
@@ -256,6 +255,17 @@ static void add_link_highlight(drawer* drawer, html_link link)
     link_highlight_row* row = &drawer->highlight_rows[drawer->highlight_row_size];
     row->links[row->size] = h;
     row->size++;
+}
+
+/**
+ * Draw on the first line of the drawer. This should only contain things
+ * like tips and the page search.
+ */
+static void draw_to_info_window(drawer* drawer, const char* text)
+{
+    wclear(drawer->info_window);
+    mvwprintw(drawer->info_window, 0, 0, text);
+    wrefresh(drawer->info_window);
 }
 
 static void draw_title(drawer* drawer, html_parser* parser)
@@ -441,8 +451,7 @@ static void redraw_parser(drawer* drawer, html_parser* parser, bool init, bool a
     }
 
     wclear(drawer->window);
-    mvprintw(0, 0, "                                                          ");
-    mvprintw(0, 0, "Press q to exit, s to search");
+    draw_to_info_window(drawer, "Press q to exit, s to search");
     draw_title(drawer, parser);
     draw_top_navigation(drawer, parser);
     draw_middle(drawer, parser);
@@ -559,8 +568,7 @@ static void draw_navigation_screen(drawer* drawer, html_parser* parser)
 {
     // First clear the window
     wclear(drawer->window);
-    mvprintw(0, 0, "                                                        ");
-    mvprintw(0, 0, "Press q to return");
+    draw_to_info_window(drawer, "Press q to return");
 
     drawer->current_x = middle_startx();
     drawer->current_y = 2;
@@ -595,15 +603,11 @@ static void draw_navigation_screen(drawer* drawer, html_parser* parser)
 void search_mode(drawer* drawer, html_parser* parser)
 {
 
-    mvprintw(0, 0, "                                                        ");
-    mvprintw(0, 0, "Search page:");
+    draw_to_info_window(drawer, "Search page:");
     int currentx = 13;
     int page_i = 0;
     char page[4] = { 0, 0, 0, 0 };
 
-    // Show cursor and inputs
-    curs_set(2);
-    refresh();
     while (true) {
         int c = getch();
         if (c == KEY_BACKSPACE) {
@@ -628,8 +632,7 @@ void search_mode(drawer* drawer, html_parser* parser)
             if (page_i == 3) {
                 int num = page_number(page);
                 if (num == -1) {
-                    mvprintw(0, 0, "                                            ");
-                    mvprintw(0, 0, "Page needs to bee value between 100 and 999");
+                    draw_to_info_window(drawer, "Page needs to bee value between 100 and 999");
                     refresh();
                     getch();
                 } else {
@@ -641,11 +644,7 @@ void search_mode(drawer* drawer, html_parser* parser)
         }
     }
 
-    // hide cursor and inputs
-    curs_set(0);
-    mvprintw(0, 0, "                                            ");
-    mvprintw(0, 0, "Press q to exit, s to search");
-    refresh();
+    draw_to_info_window(drawer, "Press q to exit, s to search");
 }
 
 void main_draw_loop(drawer* drawer, html_parser* parser)
@@ -706,6 +705,7 @@ void draw_parser(drawer* drawer, html_parser* parser)
         drawer->init_highlight_rows = true;
         memset(drawer->highlight_rows, 0, sizeof(link_highlight_row) * 32);
 
+        draw_to_info_window(drawer, "Press q to exit, s to search");
         draw_title(drawer, parser);
         draw_top_navigation(drawer, parser);
         draw_middle(drawer, parser);
@@ -734,7 +734,6 @@ void init_drawer(drawer* drawer)
     noecho();
     // All those F and arrow keys
     keypad(stdscr, TRUE);
-    printw("Press q to exit, s to search");
     // Hide cursor
     curs_set(0);
     int window_start_x = (COLS - max_window_width()) / 2;
@@ -753,6 +752,7 @@ void init_drawer(drawer* drawer)
     drawer->highlight_row_size = 0;
     drawer->error_drawn = false;
     drawer->window = newwin(drawer->w_height, drawer->w_width, window_start_y, window_start_x);
+    drawer->info_window = newwin(1, max_window_width(), 0, 0);
 
     if (drawer->color_support) {
         start_color();
@@ -777,4 +777,5 @@ void init_drawer(drawer* drawer)
 void free_drawer(drawer* drawer)
 {
     delwin(drawer->window);
+    delwin(drawer->info_window);
 }
