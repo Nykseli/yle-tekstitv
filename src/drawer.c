@@ -392,6 +392,31 @@ static void draw_bottom_navigation(drawer* drawer, html_parser* parser)
         drawer->highlight_row_size++;
 }
 
+static void draw_sub_pages(drawer* drawer, html_parser* parser)
+{
+    if (global_config.no_sub_page)
+        return;
+
+    drawer->current_x = middle_startx();
+    drawer->current_y++;
+    bool link_on_row = false;
+    for (size_t i = 0; i < parser->sub_pages.size; i++) {
+        html_item item = parser->sub_pages.items[i];
+        if (item.type == HTML_LINK) {
+            draw_link_item(drawer, html_item_as_link(item));
+            add_link_highlight(drawer, html_item_as_link(item));
+            link_on_row = true;
+            drawer->current_x += html_link_text_size(html_item_as_link(item));
+        } else if (item.type == HTML_TEXT) {
+            draw_to_drawer(drawer, html_text_text(html_item_as_text(item)));
+            drawer->current_x += html_text_text_size(html_item_as_text(item));
+        }
+    }
+
+    if (drawer->init_highlight_rows && link_on_row)
+        drawer->highlight_row_size++;
+}
+
 static void draw_middle(drawer* drawer, html_parser* parser)
 {
     if (global_config.no_middle)
@@ -455,6 +480,7 @@ static void redraw_parser(drawer* drawer, html_parser* parser, bool init, bool a
     draw_title(drawer, parser);
     draw_top_navigation(drawer, parser);
     draw_middle(drawer, parser);
+    draw_sub_pages(drawer, parser);
     draw_bottom_navigation(drawer, parser);
     wrefresh(drawer->window);
 }
@@ -709,6 +735,7 @@ void draw_parser(drawer* drawer, html_parser* parser)
         draw_title(drawer, parser);
         draw_top_navigation(drawer, parser);
         draw_middle(drawer, parser);
+        draw_sub_pages(drawer, parser);
         draw_bottom_navigation(drawer, parser);
         wrefresh(drawer->window);
 

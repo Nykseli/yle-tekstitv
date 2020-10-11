@@ -101,6 +101,21 @@ static tag_type get_tag_type(html_buffer* buffer)
     return UNKNOWN;
 }
 
+/**
+ * How many bytes are in text in the current position
+ */
+static size_t get_current_text_size(html_buffer* buffer)
+{
+    size_t text_len = 0;
+    for (;; text_len++) {
+        char c = buffer->html[buffer->current + text_len];
+        if (c == '<' || c == '\r')
+            break;
+    }
+
+    return text_len;
+}
+
 #ifndef DISABLE_UTF_8
 static void copy_html_character_utf8(unsigned char* target, char* src, size_t* tpos, size_t* spos)
 {
@@ -2230,11 +2245,7 @@ static void parse_current_link(html_buffer* buffer, html_link* linkbuf, size_t i
     skip_next_char(buffer, '>');
 
     // find the length of the text
-    size_t text_len = 0;
-    for (;; text_len++) {
-        if (buffer->html[buffer->current + text_len] == '<')
-            break;
-    }
+    size_t text_len = get_current_text_size(buffer);
 
     // copy the inner text
     // First add the possible pre_spaces
@@ -2326,12 +2337,7 @@ static void parse_middle_link(html_parser* parser, html_buffer* buffer, size_t s
 static void parse_middle_text(html_parser* parser, html_buffer* buffer, size_t spaces)
 {
 
-    size_t text_len = 0;
-    for (;; text_len++) {
-        char c = buffer->html[buffer->current + text_len];
-        if (c == '<' || c == '\r')
-            break;
-    }
+    size_t text_len = get_current_text_size(buffer);
 
     // create new item
     html_item item;
@@ -2398,6 +2404,41 @@ static void parse_middle(html_parser* parser, html_buffer* buffer)
     }
 }
 
+static void parse_sub_pages(html_parser* parser, html_buffer* buffer)
+{
+    skip_next_tag(buffer, "p", 1, false);
+    while (strncmp(buffer->html + buffer->current, "</p>", 3) != 0) {
+        if (parser->sub_pages.size >= HTML_ROW_MAX)
+            break;
+
+        tag_type type = get_tag_type(buffer);
+        switch (type) {
+        case UNKNOWN: {
+            // In this context UNKNOWN means regular text
+            size_t text_size = get_current_text_size(buffer);
+            html_item item;
+            item.type = HTML_TEXT;
+            memcpy(html_item_as_text(item).text, buffer->html + buffer->current, text_size);
+            item.item.text.size = text_size;
+            item.item.text.text[item.item.text.size] = '\0';
+            parser->sub_pages.items[parser->sub_pages.size++] = item;
+            buffer->current += text_size;
+        } break;
+        case LINK: {
+            html_item item;
+            item.type = HTML_LINK;
+            parse_current_link(buffer, &html_item_as_link(item), 0);
+            parser->sub_pages.items[parser->sub_pages.size++] = item;
+        } break;
+        case FONT: {
+            skip_next_tag(buffer, "font", 4, true);
+        } break;
+        default:
+            break;
+        }
+    }
+}
+
 bool check_valid_page(html_buffer* buffer)
 {
     // Title tag is in CAPS if the page is valid.
@@ -2434,6 +2475,11 @@ void parse_html(html_parser* parser)
     // Middle
     skip_next_tag(buffer, "DIV", 3, false);
     parse_middle(parser, buffer);
+    skip_next_tag(buffer, "DIV", 3, true);
+
+    // Sub pages
+    skip_next_tag(buffer, "DIV", 3, false);
+    parse_sub_pages(parser, buffer);
     skip_next_tag(buffer, "DIV", 3, true);
 
     // Bottom nav
@@ -2500,6 +2546,8 @@ void init_html_parser(html_parser* parser)
 {
     parser->middle_rows = 0;
     parser->middle = calloc(MIDDLE_HTML_ROWS_MAX, sizeof(html_row));
+    parser->sub_pages.size = 0;
+    memset(parser->sub_pages.items, 0, HTML_ROW_MAX * sizeof(html_item));
     memset(parser->title.text, 0, HTML_TEXT_MAX);
     memset(parser->bottom_navigation, 0, sizeof(html_link) * BOTTOM_NAVIGATION_SIZE);
     memset(parser->top_navigation, 0, sizeof(html_item) * TOP_NAVIGATION_SIZE);
