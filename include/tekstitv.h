@@ -56,8 +56,8 @@ typedef struct {
     // title seems to always be 1 string
     html_text title;
     html_item top_navigation[TOP_NAVIGATION_SIZE];
-    //html_link bottom_navigation[BOTTOM_NAVIGATION_SIZE];
     html_link bottom_navigation[BOTTOM_NAVIGATION_SIZE];
+    html_row sub_pages;
 
     // Middle part of the teksti tv seems to be only dynamic one
     html_row* middle;
