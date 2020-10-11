@@ -55,6 +55,7 @@ config global_config = {
     .no_bottom_nav = false,
     .no_title = false,
     .no_middle = false,
+    .no_sub_page = false,
     .bg_rgb = { -1, -1, -1 },
     .text_rgb = { -1, -1, -1 },
     .link_rgb = { -1, -1, -1 },
@@ -177,6 +178,8 @@ static void long_option()
         global_config.no_title = true;
     } else if (strcmp(CURRENT, "--no-middle") == 0) {
         global_config.no_middle = true;
+    } else if (strcmp(CURRENT, "--no-sub-page") == 0) {
+        global_config.no_sub_page = true;
     } else if (strcmp(CURRENT, "--bg-color") == 0) {
         parse_color_argument(COLOR_BG);
     } else if (strcmp(CURRENT, "--text-color") == 0) {
@@ -297,8 +300,10 @@ static bool set_config_option(config_line line)
         success = set_boolean_option(&global_config.no_title, line.parameter.start, parameter_len);
     } else if (strncmp(line.option.start, "no-middle", option_len) == 0) {
         success = set_boolean_option(&global_config.no_middle, line.parameter.start, parameter_len);
+    } else if (strncmp(line.option.start, "no-sub-page", option_len) == 0) {
+        success = set_boolean_option(&global_config.no_sub_page, line.parameter.start, parameter_len);
     } else {
-        return config_parse_error("Uknown option.");
+        return config_parse_error("Unknown option.");
     }
 
     return success;

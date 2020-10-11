@@ -394,6 +394,9 @@ static void draw_bottom_navigation(drawer* drawer, html_parser* parser)
 
 static void draw_sub_pages(drawer* drawer, html_parser* parser)
 {
+    if (global_config.no_sub_page)
+        return;
+
     drawer->current_x = middle_startx();
     drawer->current_y++;
     bool link_on_row = false;

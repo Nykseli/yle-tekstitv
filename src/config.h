@@ -17,6 +17,7 @@ typedef struct {
     bool no_bottom_nav;
     bool no_title;
     bool no_middle;
+    bool no_sub_page;
     short bg_rgb[3];
     short link_rgb[3];
     short text_rgb[3];

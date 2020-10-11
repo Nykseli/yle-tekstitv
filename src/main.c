@@ -13,6 +13,7 @@ static void print_usage(char* name)
     printf("Options:\n");
     printf("\t-h,--help\t\tPrint this\n");
     printf("\t-t,--text-only\t\tPrint teletext to stdout instead using ncurses\n");
+    printf("\t--config-help\t\tPrint config file options\n");
     printf("\t--version\t\tPrint program version\n");
     printf("\t--config <path>\t\tPath to config file. (Default: ~/.config/tekstitv/tekstitv.conf\n");
     printf("\t--bg-color <hex>\tBackground color hex value (000000)\n");
@@ -25,6 +26,7 @@ static void print_usage(char* name)
     printf("\t--no-bottom-nav\t\tDisable bottom navigation\n");
     printf("\t--no-title\t\tDisable title\n");
     printf("\t--no-middle\t\tDisable middle\n");
+    printf("\t--no-sub-page\t\tDisable list of sub page numbers\n");
     exit(0);
 }
 
@@ -36,6 +38,7 @@ static void print_config_options()
     printf("\tno-bottom-nav=true|false\tDisable bottom navigation\n");
     printf("\tno-title=true|false\t\tDisable title\n");
     printf("\tno-middle=true|false\t\tDisable middle\n");
+    printf("\tno-sub-page=true|false\t\tDisable list of sub page numbers\n");
     printf("\tbg-color=<hex>\t\t\tBackground color hex value (000000)\n");
     printf("\ttext-color=<hex>\t\tText color hex value (ffffff)\n");
     printf("\tlink-color=<hex>\t\tLink highlight color hex value (ffffff)\n");
