@@ -19,6 +19,9 @@ LIB_HEADERS := $(wildcard $(INCLUDE_DIR)/*.h)
 LIB_SOURCES := $(wildcard $(LIB_DIR)/*.c)
 LIB_OBJECTS := $(addprefix $(LIB_BUILD)/, $(notdir $(LIB_SOURCES:.c=.o)))
 
+TEST_EXECS := $(wildcard tests/check_*.c)
+TEST_EXECS := $(addprefix tests/, $(notdir $(TEST_EXECS:.c=)))
+
 all: buildpaths $(TARGETS)
 
 buildpaths:
@@ -38,6 +41,11 @@ static: $(LIB_OBJECTS)
 	@ printf "%8s %-40s %s\n" $(AR) $(STATIC_NAME)
 	@ $(AR) rcs -o $(LIB_BUILD)/$(STATIC_NAME) $^
 
+# Build with make to keep the building clean
+# But handle the executing and run time erros with bash
+test: $(TEST_EXECS)
+	@ bash tests/run.sh
+
 # Compile object files for tekstitv binary
 $(SRC_BUILD)/%.o: $(SRC_DIR)/%.c $(SRC_HEADERS)
 	@ printf "%8s %-40s %s\n" $(CC) $<
@@ -47,6 +55,11 @@ $(SRC_BUILD)/%.o: $(SRC_DIR)/%.c $(SRC_HEADERS)
 $(LIB_BUILD)/%.o: $(LIB_DIR)/%.c $(LIB_HEADERS)
 	@ printf "%8s %-40s %s\n" $(CC) $<
 	@ $(CC) $(TEKSTITV_INCLUDE) -c $(CFLAGS) -o $@ $<
+
+# Compile the test executables
+tests/check_%: tests/check_%.c $(LIB_OBJECTS)
+	@ printf "%8s %-40s %s\n" $(CC) $<
+	@ $(CC) $(TEKSTITV_INCLUDE) $(CFLAGS) $^ -o $@.test -lcheck -lsubunit -lrt -lm -pthread
 
 clean:
 	rm -rf build Makefile
@@ -102,4 +115,4 @@ install: $(INSTALLS)
 
 uninstall: $(UNINSTALLS)
 
-.PHONY: clean install uninstall
+.PHONY: clean install uninstall test
