@@ -67,7 +67,7 @@ typedef struct {
     // Couldn't load the page
     bool curl_load_error;
     // Buffer for the loadable shortlink
-    char link[HTML_LINK_SIZE];
+    char link[HTML_LINK_SIZE + 1];
 } html_parser;
 
 #define html_item_as_text(_item) ((_item).item.text)

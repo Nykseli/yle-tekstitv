@@ -13,3 +13,7 @@ Makefile
 
 # Generated .deb control file
 DEBIAN/control
+
+# Test files
+tests/*.test
+!tests/**/*.htm

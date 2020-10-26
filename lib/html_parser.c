@@ -2236,10 +2236,15 @@ static void parse_current_link(html_buffer* buffer, html_link* linkbuf, size_t i
     skip_next_char(buffer, '=');
     skip_next_char(buffer, '"');
 
-    // copy the link. currently all the links are exactly 34 characters
-    strncpy(linkbuf->url.text, buffer->html + buffer->current, HTML_LINK_SIZE);
-    linkbuf->url.size = HTML_LINK_SIZE;
-    linkbuf->url.text[HTML_LINK_SIZE] = '\0';
+    size_t link_len = 0;
+    for (;; link_len++) {
+        if (buffer->html[buffer->current + link_len] == '"')
+            break;
+    }
+
+    strncpy(linkbuf->url.text, buffer->html + buffer->current, link_len);
+    linkbuf->url.size = link_len;
+    linkbuf->url.text[link_len] = '\0';
 
     // go to end of the opening a tag
     skip_next_char(buffer, '>');
@@ -2273,6 +2278,7 @@ static void parse_title(html_parser* parser, html_buffer* buffer)
     // Copy the title string
     strncpy(html_text_text(parser->title), buffer->html + buffer->current, title_len);
     parser->title.size = title_len;
+    parser->title.text[title_len] = '\0';
     buffer->current += title_len;
     skip_next_tag(buffer, "big", 3, true);
 }
@@ -2327,6 +2333,12 @@ static void parse_middle_link(html_parser* parser, html_buffer* buffer, size_t s
     html_item item;
     item.type = HTML_LINK;
     parse_current_link(buffer, &html_item_as_link(item), spaces);
+    // Turn invalid links to text items
+    if (item.item.link.url.size != HTML_LINK_SIZE) {
+        item.type = HTML_TEXT;
+        item.item.text.size = item.item.link.url.size;
+        strcpy(item.item.text.text, item.item.link.url.text);
+    }
 
     // append item to row
     size_t row_index = parser->middle[parser->middle_rows].size;
@@ -2349,8 +2361,10 @@ static void parse_middle_text(html_parser* parser, html_buffer* buffer, size_t s
         item.item.text.text[i] = ' ';
 
     // Then copy the actual text
-    //strncpy(item.item.text.text + spaces, buffer->html + buffer->current, text_len);
     size_t filter_len = copy_html_text(item.item.text.text + spaces, buffer->html + buffer->current, text_len);
+    // Ignore empty texts
+    if (filter_len == 0)
+        return;
     item.item.text.size = filter_len + spaces;
     item.item.text.text[item.item.text.size] = '\0';
     buffer->current += text_len;
@@ -2501,11 +2515,13 @@ void link_from_ints(html_parser* parser, int page, int subpage)
     tmp_link[7] = (subpage % 10) + '0';
 
     memcpy(parser->link, tmp_link, HTML_LINK_SIZE);
+    parser->link[HTML_LINK_SIZE] = '\0';
 }
 
 void link_from_short_link(html_parser* parser, char* shortlink)
 {
     memcpy(parser->link, shortlink, HTML_LINK_SIZE);
+    parser->link[HTML_LINK_SIZE] = '\0';
 }
 
 int page_number(const char* page)

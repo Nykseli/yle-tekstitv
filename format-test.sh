@@ -16,3 +16,8 @@ if [[ ! -z $FORMAT ]]; then
     echo "${FORMAT}"
     exit 1
 fi
+FORMAT=`diff -u <(cat tests/*.c) <(clang-format tests/*.c)`
+if [[ ! -z $FORMAT ]]; then
+    echo "${FORMAT}"
+    exit 1
+fi
