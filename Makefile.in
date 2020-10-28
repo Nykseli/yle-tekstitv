@@ -62,8 +62,7 @@ tests/check_%: tests/check_%.c $(LIB_OBJECTS)
 	@ $(CC) $(TEKSTITV_INCLUDE) $(CFLAGS) $^ -o $@.test -lcheck -lsubunit -lrt -lm -pthread
 
 clean:
-	rm -rf build Makefile
-
+	@ rm -rfv build Makefile tests/*.test
 
 install_executable:
 	@ echo "Installing executable..."
