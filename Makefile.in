@@ -47,7 +47,7 @@ test: $(TEST_EXECS)
 	@ bash tests/run.sh
 
 # Compile object files for tekstitv binary
-$(SRC_BUILD)/%.o: $(SRC_DIR)/%.c $(SRC_HEADERS)
+$(SRC_BUILD)/%.o: $(SRC_DIR)/%.c $(SRC_HEADERS) $(LIB_HEADERS)
 	@ printf "%8s %-40s %s\n" $(CC) $<
 	@ $(CC) $(TEKSTITV_INCLUDE) -c $(CFLAGS) -o $@ $<
 
