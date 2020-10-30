@@ -531,6 +531,7 @@ static void prev_row(drawer* drawer)
 
 static void load_link(drawer* drawer, html_parser* parser, bool add_history)
 {
+    draw_to_info_window(drawer, "Loading page...");
     free_html_parser(parser);
     init_html_parser(parser);
 
