@@ -137,7 +137,7 @@ START_TEST(parse_html_test_page_100)
     m_empty(3);
     m_size(4, 5);
     m_text(4, 0, 5, "     ");
-    m_text(4, 1, 23, "https://yle.fi/tekstitv");
+    m_text(4, 1, 15, "yle.fi/tekstitv");
     m_text(4, 2, 4, "    ");
     m_link(4, 3, "199_0001.htm", 3, "199");
     m_text(4, 4, 15, " PÄÄHAKEMISTO");
