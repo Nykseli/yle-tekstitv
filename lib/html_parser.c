@@ -2336,8 +2336,8 @@ static void parse_middle_link(html_parser* parser, html_buffer* buffer, size_t s
     // Turn invalid links to text items
     if (item.item.link.url.size != HTML_LINK_SIZE) {
         item.type = HTML_TEXT;
-        item.item.text.size = item.item.link.url.size;
-        strcpy(item.item.text.text, item.item.link.url.text);
+        item.item.text.size = item.item.link.inner_text.size;
+        strcpy(item.item.text.text, item.item.link.inner_text.text);
     }
 
     // append item to row
