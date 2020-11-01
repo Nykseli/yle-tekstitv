@@ -53,6 +53,8 @@ static navigation nav_links;
 static void search_mode(drawer* drawer, html_parser* parser);
 static void load_link(drawer* drawer, html_parser* parser, bool add_history);
 static void draw_to_info_window(drawer* drawer, const char* text);
+static int handle_getch(drawer* drawer, html_parser* parser);
+static void redraw_parser(drawer* drawer, html_parser* parser, bool init, bool add_history);
 
 static bool history_at_last_link()
 {
@@ -163,7 +165,7 @@ static void curl_load_error(drawer* drawer, html_parser* parser)
 
     draw_to_info_window(drawer, "Couldn't load the page, press s to search, o to return");
     for (;;) {
-        char c = getch();
+        char c = handle_getch(drawer, parser);
         if (c == 's') {
             search_mode(drawer, parser);
             break;
@@ -172,6 +174,68 @@ static void curl_load_error(drawer* drawer, html_parser* parser)
             break;
         }
     }
+}
+
+/**
+ * Set/reset the main window
+ */
+static void set_main_window_size(drawer* drawer)
+{
+    if (drawer->window != NULL)
+        delwin(drawer->window);
+    if (drawer->info_window == NULL)
+        drawer->info_window = newwin(1, max_window_width(), 0, 0);
+
+    int window_start_x = (COLS - max_window_width()) / 2;
+    int window_start_y = 1;
+
+    drawer->w_width = max_window_width();
+    drawer->w_height = LINES - window_start_y;
+    drawer->current_x = 0;
+    drawer->current_y = 0;
+    drawer->color_support = has_colors();
+    drawer->text_color = COLOR_WHITE;
+    drawer->link_color = COLOR_BLUE;
+    drawer->background_color = COLOR_BLACK;
+    drawer->highlight_row = -1;
+    drawer->highlight_col = -1;
+    drawer->highlight_row_size = 0;
+    drawer->error_drawn = false;
+    drawer->window = newwin(drawer->w_height, drawer->w_width, window_start_y, window_start_x);
+
+    if (drawer->color_support) {
+        start_color();
+        // Redefine the colors if user has set them
+        if (can_change_color()) {
+            if (BG_RGB(0) != -1)
+                init_color(COLOR_BLACK, BG_RGB(0), BG_RGB(1), BG_RGB(2));
+            if (LINK_RGB(0) != -1)
+                init_color(COLOR_BLUE, LINK_RGB(0), LINK_RGB(1), LINK_RGB(2));
+            if (TEXT_RGB(0) != -1)
+                init_color(COLOR_WHITE, TEXT_RGB(0), TEXT_RGB(1), TEXT_RGB(2));
+        }
+        init_pair(TEXT_COLOR_ID, drawer->text_color, drawer->background_color);
+        init_pair(LINK_COLOR_ID, drawer->link_color, drawer->background_color);
+        bkgd(TEXT_COLOR);
+        wbkgd(drawer->window, TEXT_COLOR);
+    }
+
+    refresh();
+}
+
+/**
+ * Handle the ncurses getch function and return its value
+ * after handling the required functionality
+ */
+static int handle_getch(drawer* drawer, html_parser* parser)
+{
+    int c = getch();
+    if (c == KEY_RESIZE) {
+        set_main_window_size(drawer);
+        redraw_parser(drawer, parser, false, false);
+    }
+
+    return c;
 }
 
 /**
@@ -621,8 +685,16 @@ static void draw_navigation_screen(drawer* drawer, html_parser* parser)
     wrefresh(drawer->window);
 
     // Just wait until q is pressed so we can redraw
-    while (getch() != 'q')
-        ;
+    while (true) {
+        int c = handle_getch(drawer, parser);
+        if (c == KEY_RESIZE) {
+            // return on KEY_RESIZE
+            // handle_getch redraws the parser for us
+            return;
+        } else if (c == KEY_RESIZE) {
+            break;
+        }
+    }
 
     redraw_parser(drawer, parser, false, false);
 }
@@ -636,7 +708,7 @@ void search_mode(drawer* drawer, html_parser* parser)
     char page[4] = { 0, 0, 0, 0 };
 
     while (true) {
-        int c = getch();
+        int c = handle_getch(drawer, parser);
         if (c == KEY_BACKSPACE) {
             if (page_i == 0)
                 continue;
@@ -661,7 +733,7 @@ void search_mode(drawer* drawer, html_parser* parser)
                 if (num == -1) {
                     draw_to_info_window(drawer, "Page needs to bee value between 100 and 999");
                     refresh();
-                    getch();
+                    handle_getch(drawer, parser);
                 } else {
                     link_from_ints(parser, num, 1);
                     load_link(drawer, parser, true);
@@ -679,7 +751,7 @@ void main_draw_loop(drawer* drawer, html_parser* parser)
     drawer->highlight_col = -1;
     drawer->highlight_row = -1;
     while (true) {
-        int c = getch();
+        int c = handle_getch(drawer, parser);
         if (c == 'q') {
             break;
         } else if (c == 'h' || c == KEY_LEFT) {
@@ -764,42 +836,10 @@ void init_drawer(drawer* drawer)
     keypad(stdscr, TRUE);
     // Hide cursor
     curs_set(0);
-    int window_start_x = (COLS - max_window_width()) / 2;
-    int window_start_y = 1;
 
-    drawer->w_width = max_window_width();
-    drawer->w_height = LINES - window_start_y;
-    drawer->current_x = 0;
-    drawer->current_y = 0;
-    drawer->color_support = has_colors();
-    drawer->text_color = COLOR_WHITE;
-    drawer->link_color = COLOR_BLUE;
-    drawer->background_color = COLOR_BLACK;
-    drawer->highlight_row = 0;
-    drawer->highlight_col = 0;
-    drawer->highlight_row_size = 0;
-    drawer->error_drawn = false;
-    drawer->window = newwin(drawer->w_height, drawer->w_width, window_start_y, window_start_x);
-    drawer->info_window = newwin(1, max_window_width(), 0, 0);
-
-    if (drawer->color_support) {
-        start_color();
-        // Redefine the colors if user has set them
-        if (can_change_color()) {
-            if (BG_RGB(0) != -1)
-                init_color(COLOR_BLACK, BG_RGB(0), BG_RGB(1), BG_RGB(2));
-            if (LINK_RGB(0) != -1)
-                init_color(COLOR_BLUE, LINK_RGB(0), LINK_RGB(1), LINK_RGB(2));
-            if (TEXT_RGB(0) != -1)
-                init_color(COLOR_WHITE, TEXT_RGB(0), TEXT_RGB(1), TEXT_RGB(2));
-        }
-        init_pair(TEXT_COLOR_ID, drawer->text_color, drawer->background_color);
-        init_pair(LINK_COLOR_ID, drawer->link_color, drawer->background_color);
-        bkgd(TEXT_COLOR);
-        wbkgd(drawer->window, TEXT_COLOR);
-    }
-
-    refresh();
+    drawer->window = NULL;
+    drawer->info_window = NULL;
+    set_main_window_size(drawer);
 }
 
 void free_drawer(drawer* drawer)
