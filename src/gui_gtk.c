@@ -2,21 +2,41 @@
 
 #include "gui_gtk.h"
 
-static gboolean hovering_over_link = FALSE;
-static GdkCursor* hand_cursor = NULL;
-static GdkCursor* regular_cursor = NULL;
-// Text buffer for the visual representation of the teletext data
-static GtkTextBuffer* teletext_buffer = NULL;
-static GtkWidget* global_window = NULL;
-static GtkWidget* global_main_box = NULL;
-static html_parser* global_parser = NULL;
-// keep track of the latest succesful loaded irl
-// TODO: handle this with history
-static gchar current_link[HTML_LINK_SIZE + 1];
-
 // Data key for g_object_set_data
 #define URL_DATA_KEY "url"
 #define PAGE_LINK_MAX 64
+
+// Struct for keeping the global variables "clean"
+typedef struct {
+    // For keeping track what type of cursor we want to show
+    gboolean hovering_over_link;
+    GdkCursor* hand_cursor;
+    GdkCursor* regular_cursor;
+
+    GdkDisplay* display;
+    GtkWidget* window;
+    GtkWidget* text_view;
+    GtkWidget* main_box;
+    // Text buffer for the visual representation of the teletext data
+    GtkTextBuffer* teletext_buffer;
+    html_parser* parser;
+    // keep track of the latest succesful loaded irl
+    // TODO: handle this with history
+    gchar current_link[HTML_LINK_SIZE + 1];
+
+} global_view;
+
+global_view view = {
+    .parser = NULL,
+    .window = NULL,
+    .display = NULL,
+    .main_box = NULL,
+    .text_view = NULL,
+    .hand_cursor = NULL,
+    .regular_cursor = NULL,
+    .teletext_buffer = NULL,
+    .hovering_over_link = FALSE,
+};
 
 // TODO: figure a way to store the links as pointers with
 //       g_object_set_data in insert_link
@@ -40,7 +60,7 @@ static void reload_teletext_view(gchar* url);
 static void load_error_return_button_click(GtkButton* button, gpointer user_data)
 {
     gtk_widget_hide(GTK_WIDGET(button));
-    reload_teletext_view(current_link);
+    reload_teletext_view(view.current_link);
 }
 
 /**
@@ -51,12 +71,12 @@ static void show_curl_load_error()
     static GtkWidget* return_button = NULL;
     if (!return_button) {
         return_button = gtk_button_new_with_label("Return");
-        gtk_container_add(GTK_CONTAINER(global_main_box), GTK_WIDGET(return_button));
-        g_signal_connect(GTK_BUTTON(return_button), "clicked", G_CALLBACK(load_error_return_button_click), G_OBJECT(global_window));
+        gtk_container_add(GTK_CONTAINER(view.main_box), GTK_WIDGET(return_button));
+        g_signal_connect(GTK_BUTTON(return_button), "clicked", G_CALLBACK(load_error_return_button_click), G_OBJECT(view.window));
     }
 
     gtk_widget_show(return_button);
-    gtk_text_buffer_set_text(teletext_buffer, "Error loading the page...", -1);
+    gtk_text_buffer_set_text(view.teletext_buffer, "Error loading the page...", -1);
 }
 
 /**
@@ -83,32 +103,32 @@ static void insert_link(GtkTextBuffer* buffer, GtkTextIter* iter, html_link link
 }
 
 /**
- * Fill the buffer with text and links from global_parser->middle
+ * Fill the buffer with text and links from view.parser->middle
  */
 static void show_page_middle()
 {
     GtkTextIter iter;
-    gtk_text_buffer_set_text(teletext_buffer, "", 0);
-    gtk_text_buffer_get_iter_at_offset(teletext_buffer, &iter, 0);
+    gtk_text_buffer_set_text(view.teletext_buffer, "", 0);
+    gtk_text_buffer_get_iter_at_offset(view.teletext_buffer, &iter, 0);
     html_item_type last_type = HTML_TEXT;
 
-    for (size_t i = 0; i < global_parser->middle_rows; i++) {
-        for (size_t j = 0; j < global_parser->middle[i].size; j++) {
-            html_item item = global_parser->middle[i].items[j];
+    for (size_t i = 0; i < view.parser->middle_rows; i++) {
+        for (size_t j = 0; j < view.parser->middle[i].size; j++) {
+            html_item item = view.parser->middle[i].items[j];
             if (item.type == HTML_LINK) {
                 if (last_type == HTML_LINK)
-                    gtk_text_buffer_insert(teletext_buffer, &iter, "-", 1);
+                    gtk_text_buffer_insert(view.teletext_buffer, &iter, "-", 1);
 
-                insert_link(teletext_buffer, &iter, html_item_as_link(item));
+                insert_link(view.teletext_buffer, &iter, html_item_as_link(item));
                 last_type = HTML_LINK;
             } else if (item.type == HTML_TEXT) {
-                gtk_text_buffer_insert(teletext_buffer, &iter, html_text_text(html_item_as_text(item)), -1);
+                gtk_text_buffer_insert(view.teletext_buffer, &iter, html_text_text(html_item_as_text(item)), -1);
                 last_type = HTML_TEXT;
             }
         }
-        gtk_text_buffer_insert(teletext_buffer, &iter, "\n", 1);
+        gtk_text_buffer_insert(view.teletext_buffer, &iter, "\n", 1);
     }
-    gtk_text_buffer_insert(teletext_buffer, &iter, "\n", 1);
+    gtk_text_buffer_insert(view.teletext_buffer, &iter, "\n", 1);
 }
 
 /**
@@ -116,12 +136,12 @@ static void show_page_middle()
  */
 static void show_page()
 {
-    if (global_parser->curl_load_error) {
+    if (view.parser->curl_load_error) {
         show_curl_load_error();
         return;
     }
 
-    strcpy(current_link, global_parser->link);
+    strcpy(view.current_link, view.parser->link);
     // TODO: Draw all the things
     show_page_middle();
 }
@@ -149,13 +169,13 @@ static void set_cursor_if_appropriate(GtkTextView* text_view, gint x, gint y)
         }
     }
 
-    if (hovering != hovering_over_link) {
-        hovering_over_link = hovering;
+    if (hovering != view.hovering_over_link) {
+        view.hovering_over_link = hovering;
 
-        if (hovering_over_link)
-            gdk_window_set_cursor(gtk_text_view_get_window(text_view, GTK_TEXT_WINDOW_TEXT), hand_cursor);
+        if (view.hovering_over_link)
+            gdk_window_set_cursor(gtk_text_view_get_window(text_view, GTK_TEXT_WINDOW_TEXT), view.hand_cursor);
         else
-            gdk_window_set_cursor(gtk_text_view_get_window(text_view, GTK_TEXT_WINDOW_TEXT), regular_cursor);
+            gdk_window_set_cursor(gtk_text_view_get_window(text_view, GTK_TEXT_WINDOW_TEXT), view.regular_cursor);
     }
 
     if (tags)
@@ -245,17 +265,17 @@ static void reload_teletext_view(gchar* url)
 {
 
     // TODO: loading indicator
-    link_from_short_link(global_parser, (char*)url);
-    free_html_parser(global_parser);
-    init_html_parser(global_parser);
-    load_page(global_parser);
-    parse_html(global_parser);
+    link_from_short_link(view.parser, (char*)url);
+    free_html_parser(view.parser);
+    init_html_parser(view.parser);
+    load_page(view.parser);
+    parse_html(view.parser);
 
     GtkTextIter end_iter;
     GtkTextIter start_iter;
-    gtk_text_buffer_get_end_iter(teletext_buffer, &end_iter);
-    gtk_text_buffer_get_start_iter(teletext_buffer, &start_iter);
-    gtk_text_buffer_delete(teletext_buffer, &start_iter, &end_iter);
+    gtk_text_buffer_get_end_iter(view.teletext_buffer, &end_iter);
+    gtk_text_buffer_get_start_iter(view.teletext_buffer, &start_iter);
+    gtk_text_buffer_delete(view.teletext_buffer, &start_iter, &end_iter);
     page_links.size = 0;
     show_page();
 }
@@ -264,38 +284,38 @@ static void activate(GtkApplication* app, gpointer user_data)
 {
     // Init the base window
     // TODO: create a window inside the main window and center the inner window
-    global_window = gtk_application_window_new(app);
+    view.window = gtk_application_window_new(app);
     // Cursor for hovering over the links
-    GdkDisplay* display = gtk_widget_get_display(global_window);
-    hand_cursor = gdk_cursor_new_from_name(display, "pointer");
-    regular_cursor = gdk_cursor_new_from_name(display, "text");
-    gtk_window_set_title(GTK_WINDOW(global_window), "Teksti-TV");
-    gtk_window_set_default_size(GTK_WINDOW(global_window), 400, 400);
-    gtk_window_set_resizable(GTK_WINDOW(global_window), FALSE);
+    view.display = gtk_widget_get_display(view.window);
+    view.hand_cursor = gdk_cursor_new_from_name(view.display, "pointer");
+    view.regular_cursor = gdk_cursor_new_from_name(view.display, "text");
+    gtk_window_set_title(GTK_WINDOW(view.window), "Teksti-TV");
+    gtk_window_set_default_size(GTK_WINDOW(view.window), 400, 400);
+    gtk_window_set_resizable(GTK_WINDOW(view.window), FALSE);
 
-    global_main_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
-    gtk_container_add(GTK_CONTAINER(global_window), global_main_box);
-    GtkWidget* text_view = gtk_text_view_new();
-    gtk_text_view_set_editable(GTK_TEXT_VIEW(text_view), false);
-    gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(text_view), GTK_WRAP_WORD);
-    gtk_text_view_set_left_margin(GTK_TEXT_VIEW(text_view), 20);
-    gtk_text_view_set_right_margin(GTK_TEXT_VIEW(text_view), 20);
+    view.main_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+    gtk_container_add(GTK_CONTAINER(view.window), view.main_box);
+    view.text_view = gtk_text_view_new();
+    gtk_text_view_set_editable(GTK_TEXT_VIEW(view.text_view), false);
+    gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(view.text_view), GTK_WRAP_WORD);
+    gtk_text_view_set_left_margin(GTK_TEXT_VIEW(view.text_view), 20);
+    gtk_text_view_set_right_margin(GTK_TEXT_VIEW(view.text_view), 20);
 
     // TODO: keyboard support for navigating the links
-    g_signal_connect(text_view, "event-after", G_CALLBACK(click_event_after), NULL);
-    g_signal_connect(text_view, "motion-notify-event", G_CALLBACK(motion_notify_event), NULL);
+    g_signal_connect(view.text_view, "event-after", G_CALLBACK(click_event_after), NULL);
+    g_signal_connect(view.text_view, "motion-notify-event", G_CALLBACK(motion_notify_event), NULL);
 
-    teletext_buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
-    gtk_container_add(GTK_CONTAINER(global_main_box), GTK_WIDGET(text_view));
+    view.teletext_buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(view.text_view));
+    gtk_container_add(GTK_CONTAINER(view.main_box), GTK_WIDGET(view.text_view));
     show_page();
 
-    gtk_widget_show_all(global_window);
+    gtk_widget_show_all(view.window);
 }
 
 int open_gtk_gui(html_parser* parser)
 {
-    global_parser = parser;
-    strcpy(current_link, global_parser->link);
+    view.parser = parser;
+    strcpy(view.current_link, view.parser->link);
     GtkApplication* app = gtk_application_new("org.nykseli.teletext", G_APPLICATION_FLAGS_NONE);
     g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
     int status = g_application_run(G_APPLICATION(app), 0, NULL);
