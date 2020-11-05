@@ -77,6 +77,7 @@ static void show_curl_load_error()
 
     gtk_widget_show(return_button);
     gtk_text_buffer_set_text(view.teletext_buffer, "Error loading the page...", -1);
+    gtk_window_set_title(GTK_WINDOW(view.window), "Teksti-TV");
 }
 
 /**
@@ -102,33 +103,83 @@ static void insert_link(GtkTextBuffer* buffer, GtkTextIter* iter, html_link link
     page_links.size += 1;
 }
 
+static void show_page_title(GtkTextIter* iter)
+{
+    gtk_window_set_title(GTK_WINDOW(view.window), view.parser->title.text);
+    // TODO: do we want to see the title as a text when we can set it as the window title?
+    // gtk_text_buffer_insert(view.teletext_buffer, iter, view.parser->title.text , view.parser->title.size);
+    // gtk_text_buffer_insert(view.teletext_buffer, iter, "\n", 1);
+}
+
+static void show_top_navigation(GtkTextIter* iter)
+{
+    gtk_text_buffer_insert(view.teletext_buffer, iter, "\n", 1);
+    // TODO: make sure the window is big enough for drawing this
+    html_item* items = view.parser->top_navigation;
+    for (size_t i = 0; i < TOP_NAVIGATION_SIZE; i++) {
+        if (items[i].type == HTML_LINK) {
+            insert_link(view.teletext_buffer, iter, html_item_as_link(items[i]));
+        } else {
+            html_text item = html_item_as_text(items[i]);
+            gtk_text_buffer_insert(view.teletext_buffer, iter, item.text, item.size);
+        }
+
+        if (i < TOP_NAVIGATION_SIZE - 1) {
+            gtk_text_buffer_insert(view.teletext_buffer, iter, " | ", 3);
+        }
+    }
+}
+
 /**
  * Fill the buffer with text and links from view.parser->middle
  */
-static void show_page_middle()
+static void show_page_middle(GtkTextIter* iter)
 {
-    GtkTextIter iter;
-    gtk_text_buffer_set_text(view.teletext_buffer, "", 0);
-    gtk_text_buffer_get_iter_at_offset(view.teletext_buffer, &iter, 0);
     html_item_type last_type = HTML_TEXT;
-
     for (size_t i = 0; i < view.parser->middle_rows; i++) {
         for (size_t j = 0; j < view.parser->middle[i].size; j++) {
             html_item item = view.parser->middle[i].items[j];
             if (item.type == HTML_LINK) {
                 if (last_type == HTML_LINK)
-                    gtk_text_buffer_insert(view.teletext_buffer, &iter, "-", 1);
+                    gtk_text_buffer_insert(view.teletext_buffer, iter, "-", 1);
 
-                insert_link(view.teletext_buffer, &iter, html_item_as_link(item));
+                insert_link(view.teletext_buffer, iter, html_item_as_link(item));
                 last_type = HTML_LINK;
             } else if (item.type == HTML_TEXT) {
-                gtk_text_buffer_insert(view.teletext_buffer, &iter, html_text_text(html_item_as_text(item)), -1);
+                gtk_text_buffer_insert(view.teletext_buffer, iter, html_text_text(html_item_as_text(item)), -1);
                 last_type = HTML_TEXT;
             }
         }
-        gtk_text_buffer_insert(view.teletext_buffer, &iter, "\n", 1);
+        gtk_text_buffer_insert(view.teletext_buffer, iter, "\n", 1);
     }
-    gtk_text_buffer_insert(view.teletext_buffer, &iter, "\n", 1);
+}
+
+static void show_sub_pages(GtkTextIter* iter)
+{
+    for (size_t i = 0; i < view.parser->sub_pages.size; i++) {
+        html_item item = view.parser->sub_pages.items[i];
+        if (item.type == HTML_LINK) {
+            insert_link(view.teletext_buffer, iter, html_item_as_link(item));
+        } else if (item.type == HTML_TEXT) {
+            gtk_text_buffer_insert(view.teletext_buffer, iter, html_text_text(html_item_as_text(item)), -1);
+        }
+    }
+    gtk_text_buffer_insert(view.teletext_buffer, iter, "\n", 1);
+}
+
+static void show_bottom_navigation(GtkTextIter* iter)
+{
+    // TODO: make sure the window is big enough for drawing this
+    show_top_navigation(iter);
+
+    html_link* links = view.parser->bottom_navigation;
+    for (size_t i = 0; i < BOTTOM_NAVIGATION_SIZE; i++) {
+        insert_link(view.teletext_buffer, iter, links[i]);
+        if (i < BOTTOM_NAVIGATION_SIZE - 1) {
+            gtk_text_buffer_insert(view.teletext_buffer, iter, " | ", 3);
+        }
+    }
+    gtk_text_buffer_insert(view.teletext_buffer, iter, "\n", 1);
 }
 
 /**
@@ -141,9 +192,18 @@ static void show_page()
         return;
     }
 
+    // Save the most resent succesfully loaded page link
     strcpy(view.current_link, view.parser->link);
-    // TODO: Draw all the things
-    show_page_middle();
+
+    GtkTextIter iter;
+    gtk_text_buffer_set_text(view.teletext_buffer, "", 0);
+    gtk_text_buffer_get_iter_at_offset(view.teletext_buffer, &iter, 0);
+    show_page_title(&iter);
+    show_top_navigation(&iter);
+    show_page_middle(&iter);
+    show_sub_pages(&iter);
+    show_bottom_navigation(&iter);
+    gtk_text_buffer_insert(view.teletext_buffer, &iter, "\n", 1);
 }
 
 /**
@@ -290,8 +350,8 @@ static void activate(GtkApplication* app, gpointer user_data)
     view.hand_cursor = gdk_cursor_new_from_name(view.display, "pointer");
     view.regular_cursor = gdk_cursor_new_from_name(view.display, "text");
     gtk_window_set_title(GTK_WINDOW(view.window), "Teksti-TV");
-    gtk_window_set_default_size(GTK_WINDOW(view.window), 400, 400);
-    gtk_window_set_resizable(GTK_WINDOW(view.window), FALSE);
+    gtk_window_set_default_size(GTK_WINDOW(view.window), 500, 500);
+    gtk_window_set_resizable(GTK_WINDOW(view.window), TRUE);
 
     view.main_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
     gtk_container_add(GTK_CONTAINER(view.window), view.main_box);
