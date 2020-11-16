@@ -390,9 +390,9 @@ static void load_config(char* filepath)
 {
     // Don't report missing file when trying to load the file from default path.
     bool default_config = false;
+    char tmp_dir[1024];
     if (filepath == NULL) {
         // Let's hope the file path is under 1024 characters
-        char tmp_dir[1024];
         char* homedir;
         // Try to find the home path from $HOME variable
         // If and if not found, use the uid
