@@ -56,6 +56,22 @@ static void draw_to_info_window(drawer* drawer, const char* text);
 static int handle_getch(drawer* drawer, html_parser* parser);
 static void redraw_parser(drawer* drawer, html_parser* parser, bool init, bool add_history);
 
+#ifdef DEBUG
+/**
+ * Append text to /tmp/tekstitv.debug.log
+ */
+#include <stdarg.h>
+static void draw_logger(const char* format, ...)
+{
+    va_list argptr;
+    va_start(argptr, format);
+    FILE* tmpFile = fopen("/tmp/tekstitv.debug.log", "a");
+    vfprintf(tmpFile, format, argptr);
+    va_end(argptr);
+    fclose(tmpFile);
+}
+#endif // DEBUG_LOGGER
+
 static bool history_at_last_link()
 {
     if (history.start == 0) {
@@ -186,11 +202,11 @@ static void set_main_window_size(drawer* drawer)
     if (drawer->info_window == NULL)
         drawer->info_window = newwin(1, max_window_width(), 0, 0);
 
-    int window_start_x = (COLS - max_window_width()) / 2;
-    int window_start_y = 1;
+    drawer->window_start_x = (COLS - max_window_width()) / 2;
+    drawer->window_start_y = 1;
 
     drawer->w_width = max_window_width();
-    drawer->w_height = LINES - window_start_y;
+    drawer->w_height = LINES - drawer->window_start_y;
     drawer->current_x = 0;
     drawer->current_y = 0;
     drawer->color_support = has_colors();
@@ -201,7 +217,7 @@ static void set_main_window_size(drawer* drawer)
     drawer->highlight_col = -1;
     drawer->highlight_row_size = 0;
     drawer->error_drawn = false;
-    drawer->window = newwin(drawer->w_height, drawer->w_width, window_start_y, window_start_x);
+    drawer->window = newwin(drawer->w_height, drawer->w_width, drawer->window_start_y, drawer->window_start_x);
 
     if (drawer->color_support) {
         start_color();
@@ -221,6 +237,24 @@ static void set_main_window_size(drawer* drawer)
     }
 
     refresh();
+}
+
+static bool find_link_highligth(drawer* drawer, int x, int y, char* link_target)
+{
+    int hrows = drawer->highlight_row_size;
+    link_highlight_row* lrows = drawer->highlight_rows;
+    for (int i = 0; i < hrows; i++) {
+        for (int j = 0; j < lrows[i].size; j++) {
+            link_highlight link = lrows[i].links[j];
+            bool match_y = y - drawer->window_start_y == link.start_y;
+            int adjustx = x - drawer->window_start_x;
+            if (match_y && adjustx >= link.start_x && adjustx <= link.start_x + (int)strlen(link.text)) {
+                strcpy(link_target, link.link);
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 /**
@@ -314,6 +348,9 @@ static void add_link_highlight(drawer* drawer, html_link link)
 
     link_highlight h;
     strncpy(h.link, link.url.text, HTML_LINK_SIZE);
+    h.link[HTML_LINK_SIZE] = '\0';
+    strncpy(h.text, link.inner_text.text, link.inner_text.size);
+    h.text[link.inner_text.size] = '\0';
     h.start_x = drawer->current_x;
     h.start_y = drawer->current_y;
     link_highlight_row* row = &drawer->highlight_rows[drawer->highlight_row_size];
@@ -792,6 +829,14 @@ void main_draw_loop(drawer* drawer, html_parser* parser)
             load_next_link(drawer, parser);
         } else if (c == 's') {
             search_mode(drawer, parser);
+        } else if (c == KEY_MOUSE) {
+            MEVENT event;
+            if (getmouse(&event) == OK && event.bstate & BUTTON1_PRESSED) {
+                char link_buf[HTML_LINK_SIZE + 1];
+                find_link_highligth(drawer, event.x, event.y, link_buf);
+                link_from_short_link(parser, link_buf);
+                load_link(drawer, parser, true);
+            }
         }
     }
 }
@@ -836,6 +881,8 @@ void init_drawer(drawer* drawer)
     keypad(stdscr, TRUE);
     // Hide cursor
     curs_set(0);
+    // Get all the mouse events
+    mousemask(ALL_MOUSE_EVENTS, NULL);
 
     drawer->window = NULL;
     drawer->info_window = NULL;
