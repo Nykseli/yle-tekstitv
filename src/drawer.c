@@ -831,7 +831,7 @@ void main_draw_loop(drawer* drawer, html_parser* parser)
             search_mode(drawer, parser);
         } else if (c == KEY_MOUSE) {
             MEVENT event;
-            if (getmouse(&event) == OK && event.bstate & BUTTON1_PRESSED) {
+            if (getmouse(&event) == OK && event.bstate & BUTTON1_CLICKED) {
                 char link_buf[HTML_LINK_SIZE + 1];
                 find_link_highligth(drawer, event.x, event.y, link_buf);
                 link_from_short_link(parser, link_buf);
