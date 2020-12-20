@@ -712,6 +712,7 @@ static void draw_navigation_screen(drawer* drawer, html_parser* parser)
     print_navigation_line(drawer, "| b       | Load previous sub page |");
     print_navigation_line(drawer, "| n       | Load next sub page     |");
     print_navigation_line(drawer, "| s       | Search new page        |");
+    print_navigation_line(drawer, "| r       | Reload page            |");
     print_navigation_line(drawer, "| o       | Previous page          |");
     print_navigation_line(drawer, "| p       | Next page              |");
     print_navigation_line(drawer, "| i       | Show navigation help   |");

@@ -66,6 +66,7 @@ static void print_verbose_navigation_instructions()
     printf("| b       | Load previous sub page | Tries to load page only if it exists                |\n");
     printf("| n       | Load next sub page     | Tries to load page only if it exists                |\n");
     printf("| s       | Search new page        | Automatically tries to load the page after 3 digits |\n");
+    printf("| r       | Reload page            | -                                                   |\n");
     printf("| o       | Previous page          | -                                                   |\n");
     printf("| p       | Next page              | -                                                   |\n");
     printf("| i       | Show navigation help   | -                                                   |\n");
@@ -90,6 +91,7 @@ static void print_navigation_instructions()
     printf("| b       | Load previous sub page |\n");
     printf("| n       | Load next sub page     |\n");
     printf("| s       | Search new page        |\n");
+    printf("| r       | Reload page            |\n");
     printf("| o       | Previous page          |\n");
     printf("| p       | Next page              |\n");
     printf("| i       | Show navigation help   |\n");

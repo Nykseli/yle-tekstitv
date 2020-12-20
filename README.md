@@ -46,6 +46,7 @@ Up, Right, Down, Left refers to the arrow keys
 | b | Load previous sub page | Tries to load page only if it exists |
 | n | Load next sub page | Tries to load page only if it exists |
 | s | Search new page | Automatically tries to load the page after 3 digits |
+| r | Reload page | - |
 | o | Previous page | - |
 | p | Next page | - |
 | i | Show navigation help | - |
