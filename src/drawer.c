@@ -49,6 +49,7 @@ typedef enum {
 } nav_type;
 
 static navigation nav_links;
+static link_highlight* old_link = NULL;
 
 static void search_mode(drawer* drawer, html_parser* parser);
 static void load_link(drawer* drawer, html_parser* parser, bool add_history);
@@ -248,8 +249,8 @@ static bool find_link_highligth(drawer* drawer, int x, int y, char* link_target)
             link_highlight link = lrows[i].links[j];
             bool match_y = y - drawer->window_start_y == link.start_y;
             int adjustx = x - drawer->window_start_x;
-            if (match_y && adjustx >= link.start_x && adjustx <= link.start_x + (int)strlen(link.text)) {
-                strcpy(link_target, link.link);
+            if (match_y && adjustx >= link.start_x && adjustx <= link.start_x + (int)strlen(html_link_text(link.link))) {
+                strcpy(link_target, html_link_link(link.link));
                 return true;
             }
         }
@@ -347,10 +348,10 @@ static void add_link_highlight(drawer* drawer, html_link link)
         return;
 
     link_highlight h;
-    strncpy(h.link, link.url.text, HTML_LINK_SIZE);
-    h.link[HTML_LINK_SIZE] = '\0';
-    strncpy(h.text, link.inner_text.text, link.inner_text.size);
-    h.text[link.inner_text.size] = '\0';
+    strncpy(html_link_link(h.link), link.url.text, HTML_LINK_SIZE);
+    html_link_link(h.link)[HTML_LINK_SIZE] = '\0';
+    strncpy(html_link_text(h.link), link.inner_text.text, link.inner_text.size);
+    html_link_text(h.link)[link.inner_text.size] = '\0';
     h.start_x = drawer->current_x;
     h.start_y = drawer->current_y;
     link_highlight_row* row = &drawer->highlight_rows[drawer->highlight_row_size];
@@ -554,6 +555,30 @@ static void draw_middle(drawer* drawer, html_parser* parser)
     }
 }
 
+/**
+ * Update link highlights without drawing the whole window
+ */
+static void update_link_highlights(drawer* drawer)
+{
+    // hightlights rows are initialized before this
+    // so set this to false so highlighting works in draw_link_item
+    drawer->init_highlight_rows = false;
+
+    link_highlight* new_link = &drawer->highlight_rows[drawer->highlight_row].links[drawer->highlight_col];
+    drawer->current_x = new_link->start_x;
+    drawer->current_y = new_link->start_y;
+    draw_link_item(drawer, new_link->link);
+
+    if (old_link != NULL) {
+        drawer->current_x = old_link->start_x;
+        drawer->current_y = old_link->start_y;
+        draw_link_item(drawer, old_link->link);
+    }
+
+    old_link = new_link;
+    wrefresh(drawer->window);
+}
+
 static void redraw_parser(drawer* drawer, html_parser* parser, bool init, bool add_history)
 {
     if (parser->curl_load_error) {
@@ -648,7 +673,7 @@ static void load_highlight_link(drawer* drawer, html_parser* parser)
         return;
 
     link_highlight link = drawer->highlight_rows[drawer->highlight_row].links[drawer->highlight_col];
-    link_from_short_link(parser, link.link);
+    link_from_short_link(parser, html_link_link(link.link));
     load_link(drawer, parser, true);
 }
 
@@ -796,22 +821,22 @@ void main_draw_loop(drawer* drawer, html_parser* parser)
             if (drawer->highlight_row == -1)
                 drawer->highlight_row = 0;
             prev_col(drawer);
-            redraw_parser(drawer, parser, false, false);
+            update_link_highlights(drawer);
         } else if (c == 'k' || c == KEY_UP) {
             if (drawer->highlight_col == -1)
                 drawer->highlight_col = 0;
             prev_row(drawer);
-            redraw_parser(drawer, parser, false, false);
+            update_link_highlights(drawer);
         } else if (c == 'j' || c == KEY_DOWN) {
             if (drawer->highlight_col == -1)
                 drawer->highlight_col = 0;
             next_row(drawer);
-            redraw_parser(drawer, parser, false, false);
+            update_link_highlights(drawer);
         } else if (c == 'l' || c == KEY_RIGHT) {
             if (drawer->highlight_row == -1)
                 drawer->highlight_row = 0;
             next_col(drawer);
-            redraw_parser(drawer, parser, false, false);
+            update_link_highlights(drawer);
         } else if (c == 'g' || c == '\n') { // g or enter
             load_highlight_link(drawer, parser);
         } else if (c == 'v') {

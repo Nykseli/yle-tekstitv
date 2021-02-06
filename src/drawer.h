@@ -5,8 +5,7 @@
 #include <stdbool.h>
 
 typedef struct {
-    char link[HTML_LINK_SIZE + 1];
-    char text[64];
+    html_link link;
     int start_x;
     int start_y;
 } link_highlight;
