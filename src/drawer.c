@@ -271,7 +271,7 @@ static int handle_getch(drawer* drawer, html_parser* parser)
     int c = getch();
     if (c == KEY_RESIZE) {
         set_main_window_size(drawer);
-        redraw_parser(drawer, parser, false, false);
+        redraw_parser(drawer, parser, true, false);
     }
 
     return c;
