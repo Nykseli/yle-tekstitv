@@ -758,7 +758,7 @@ static void draw_navigation_screen(drawer* drawer, html_parser* parser)
             // return on KEY_RESIZE
             // handle_getch redraws the parser for us
             return;
-        } else if (c == KEY_RESIZE) {
+        } else if (c == 'q') {
             break;
         }
     }
