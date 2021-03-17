@@ -244,7 +244,7 @@ static void set_main_window_size(drawer* drawer)
     refresh();
 }
 
-static bool find_link_highligth(drawer* drawer, int x, int y, char* link_target)
+static bool find_link_highlight(drawer* drawer, int x, int y, char* link_target)
 {
     int hrows = drawer->highlight_row_size;
     link_highlight_row* lrows = drawer->highlight_rows;
@@ -865,9 +865,10 @@ void main_draw_loop(drawer* drawer, html_parser* parser)
             MEVENT event;
             if (getmouse(&event) == OK && event.bstate & BUTTON1_CLICKED) {
                 char link_buf[HTML_LINK_SIZE + 1];
-                find_link_highligth(drawer, event.x, event.y, link_buf);
-                link_from_short_link(parser, link_buf);
-                load_link(drawer, parser, true);
+                if (find_link_highlight(drawer, event.x, event.y, link_buf)) {
+                    link_from_short_link(parser, link_buf);
+                    load_link(drawer, parser, true);
+                }
             }
         }
     }
