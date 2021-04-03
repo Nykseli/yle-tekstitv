@@ -29,7 +29,7 @@ void load_page(html_parser* parser)
 
     curl = curl_easy_init();
     curl_easy_setopt(curl, CURLOPT_URL, page);
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, "Yle teletext reader "TEKSTITV_STR_VERSION);
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, "Yle teletext reader " TEKSTITV_STR_VERSION);
     curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, curl_errbuf);
     curl_easy_setopt(curl, CURLOPT_FAILONERROR, 1L);
     // TODO: uncomment for verbose mode
