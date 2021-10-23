@@ -18,6 +18,7 @@ typedef struct {
     bool no_title;
     bool no_middle;
     bool no_sub_page;
+    bool default_colors;
     short bg_rgb[3];
     short link_rgb[3];
     short text_rgb[3];

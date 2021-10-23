@@ -215,30 +215,39 @@ static void set_main_window_size(drawer* drawer)
     drawer->current_x = 0;
     drawer->current_y = 0;
     drawer->color_support = has_colors();
-    drawer->text_color = COLOR_WHITE;
-    drawer->link_color = COLOR_BLUE;
-    drawer->background_color = COLOR_BLACK;
+    drawer->text_color = -1;
+    drawer->link_color = -1;
+    drawer->background_color = -1;
     drawer->highlight_row = -1;
     drawer->highlight_col = -1;
     drawer->highlight_row_size = 0;
     drawer->error_drawn = false;
     drawer->window = newwin(drawer->w_height, drawer->w_width, drawer->window_start_y, drawer->window_start_x);
 
-    if (drawer->color_support) {
+    if (drawer->color_support && !global_config.default_colors) {
+        use_default_colors();
         start_color();
+        // Link color is by default the default blue
+        // Other colors are defined by the console theme by default
+        drawer->link_color = COLOR_BLUE;
         // Redefine the colors if user has set them
         if (can_change_color()) {
-            if (BG_RGB(0) != -1)
+            if (BG_RGB(0) != -1) {
+                drawer->background_color = COLOR_BLACK;
                 init_color(COLOR_BLACK, BG_RGB(0), BG_RGB(1), BG_RGB(2));
+            }
             if (LINK_RGB(0) != -1)
                 init_color(COLOR_BLUE, LINK_RGB(0), LINK_RGB(1), LINK_RGB(2));
-            if (TEXT_RGB(0) != -1)
+            if (TEXT_RGB(0) != -1) {
+                drawer->text_color = COLOR_WHITE;
                 init_color(COLOR_WHITE, TEXT_RGB(0), TEXT_RGB(1), TEXT_RGB(2));
+            }
         }
         init_pair(TEXT_COLOR_ID, drawer->text_color, drawer->background_color);
         init_pair(LINK_COLOR_ID, drawer->link_color, drawer->background_color);
         bkgd(TEXT_COLOR);
         wbkgd(drawer->window, TEXT_COLOR);
+        wbkgd(drawer->info_window, TEXT_COLOR);
     }
 
     refresh();

@@ -27,6 +27,8 @@ static void print_usage(char* name)
     printf("\t--no-title\t\tDisable title\n");
     printf("\t--no-middle\t\tDisable middle\n");
     printf("\t--no-sub-page\t\tDisable list of sub page numbers\n");
+    printf("\t--default-colors\tDisable all custom coloring. Including custom link colors\n");
+    printf("\t\t\t\tUse colors based on the console theme instead\n");
     exit(0);
 }
 
@@ -39,6 +41,8 @@ static void print_config_options()
     printf("\tno-title=true|false\t\tDisable title\n");
     printf("\tno-middle=true|false\t\tDisable middle\n");
     printf("\tno-sub-page=true|false\t\tDisable list of sub page numbers\n");
+    printf("\tdefault-colors=true|false\tDisable all custom coloring. Including link colors\n");
+    printf("\t\t\t\t\tUse colors based on the console theme instead\n");
     printf("\tbg-color=<hex>\t\t\tBackground color hex value (000000)\n");
     printf("\ttext-color=<hex>\t\tText color hex value (ffffff)\n");
     printf("\tlink-color=<hex>\t\tLink highlight color hex value (ffffff)\n");
