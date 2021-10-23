@@ -13,7 +13,7 @@ static void print_usage(char* name)
     printf("Options:\n");
     printf("\t-h,--help\t\tPrint this\n");
     printf("\t-t,--text-only\t\tPrint teletext to stdout instead using ncurses\n");
-    printf("\t--config-help\t\tPrint config file options\n");
+    printf("\t--help-config\t\tPrint config file options\n");
     printf("\t--version\t\tPrint program version\n");
     printf("\t--config <path>\t\tPath to config file. (Default: ~/.config/tekstitv/tekstitv.conf\n");
     printf("\t--bg-color <hex>\tBackground color hex value (000000)\n");

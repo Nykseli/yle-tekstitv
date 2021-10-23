@@ -134,8 +134,8 @@ print_usage() {
     printf '\t--enable-debug\t\tenable debugging (Default: disbled)\n'
     printf '\t--disable-utf8\t\tdisable utf-8 support from parser library (Default enabled)\n'
     printf '\t--disable-lib-build\tdo not build any libraries (Default enabled)\n'
-    printf '\t--disable-static-build\tdo not build static libraries (Default enabled)\n'
-    printf '\t--disable-shared-build\tdo not build shared libraries (Default enabled)\n'
+    printf '\t--disable-static-lib\tdo not build static libraries (Default enabled)\n'
+    printf '\t--disable-shared-lib\tdo not build shared libraries (Default enabled)\n'
     printf '\t--disable-executable\tdo not build the tekstitv executable (Default enabled)\n'
     exit 0
 }
