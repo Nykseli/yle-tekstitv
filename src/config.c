@@ -56,6 +56,7 @@ config global_config = {
     .no_title = false,
     .no_middle = false,
     .no_sub_page = false,
+    .default_colors = false,
     .bg_rgb = { -1, -1, -1 },
     .text_rgb = { -1, -1, -1 },
     .link_rgb = { -1, -1, -1 },
@@ -188,6 +189,8 @@ static void long_option()
         parse_color_argument(COLOR_LINK);
     } else if (strcmp(CURRENT, "--help-config") == 0) {
         global_config.help_config = true;
+    } else if (strcmp(CURRENT, "--default-colors") == 0) {
+        global_config.default_colors = true;
     } else if (strcmp(CURRENT, "--config") == 0) {
         // --config option is handled earlier so here we can just consume
         // the parameter and continue
@@ -302,6 +305,8 @@ static bool set_config_option(config_line line)
         success = set_boolean_option(&global_config.no_middle, line.parameter.start, parameter_len);
     } else if (strncmp(line.option.start, "no-sub-page", option_len) == 0) {
         success = set_boolean_option(&global_config.no_sub_page, line.parameter.start, parameter_len);
+    } else if (strncmp(line.option.start, "default-colors", option_len) == 0) {
+        success = set_boolean_option(&global_config.default_colors, line.parameter.start, parameter_len);
     } else {
         return config_parse_error("Unknown option.");
     }
@@ -312,7 +317,6 @@ static bool set_config_option(config_line line)
 static bool parse_config_file(char* file_data)
 {
     config_line line;
-    //for (; *file_data != '\0'; file_data++) {
     for (;;) {
         // First skip white space
         skip_white_space(&file_data);

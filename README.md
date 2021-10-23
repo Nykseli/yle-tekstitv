@@ -63,6 +63,19 @@ or with `--config` option.
 You can see all the options valiable with `--help-config` option.
 
 
+## Color theme and customization
+
+From version `0.10`
+
+By default background and text color is defined by the console theme
+and the link color is blue (defined by ncurses `COLOR_BLUE`)
+
+All of these colors can be customized by the colors cli options or the .config options.
+See `tekstitv --help`, `tekstitv --help-config` and [example config](tekstitv.conf.example)
+
+If you want to disable all color customizations (including links) you can use the
+`--default-colors` cli option or `default-colors` .config option.
+
 ## Installing debian packages
 
 You can find prebuild debian packages [here](https://github.com/Nykseli/yle-tekstitv/releases)

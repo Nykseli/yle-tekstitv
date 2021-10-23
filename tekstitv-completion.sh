@@ -18,6 +18,8 @@ OPTION_LIST="
 --no-bottom-nav
 --no-title
 --no-middle
+--no-sub-page
+--default-colors
 "
 
 # Is _filedir declared
