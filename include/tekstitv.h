@@ -3,8 +3,8 @@
 #define _TEKSTITV
 
 #define TEKSTITV_MAJOR_VERSION 0
-#define TEKSTITV_MINOR_VERSION 9
-#define TEKSTITV_STR_VERSION "0.9"
+#define TEKSTITV_MINOR_VERSION 10
+#define TEKSTITV_STR_VERSION "0.10"
 
 #include <stdbool.h>
 #include <stddef.h>
