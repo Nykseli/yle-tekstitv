@@ -16,6 +16,8 @@
 #define MIDDLE_HTML_ROWS_MAX 32
 #define TOP_NAVIGATION_SIZE 4
 #define BOTTOM_NAVIGATION_SIZE 6
+// The middle texts are always maximum of 39 characters
+#define MIDDLE_TEXT_MAX_LEN 39
 // All links parsed from html document are 12 characters
 #define HTML_LINK_SIZE 12
 

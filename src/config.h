@@ -3,6 +3,13 @@
 
 #include <stdbool.h>
 
+/** Formated time based on the configured time format */
+typedef struct {
+    /** Time refers to a internal buffer so it should not be modified */
+    const char* time;
+    size_t time_len;
+} fmt_time;
+
 typedef struct {
     int page;
     int subpage;
@@ -22,6 +29,7 @@ typedef struct {
     short bg_rgb[3];
     short link_rgb[3];
     short text_rgb[3];
+    const char* time_fmt;
 } config;
 
 #define BG_RGB(i) (global_config.bg_rgb[i])
@@ -29,6 +37,8 @@ typedef struct {
 #define TEXT_RGB(i) (global_config.text_rgb[i])
 
 void init_config(int argc, char** argv);
+void free_config(config* conf);
+fmt_time current_time();
 
 extern config global_config;
 

@@ -2,22 +2,30 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <pwd.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <tekstitv.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "config.h"
 
 #define CURRENT (args.argv[args.current])
 #define PREVIOUS (args.argv[args.current - 1])
+#define PEEK(amount) (args.argv[args.current + (amount)])
 
 // Helpers for parsing hex values
 #define IS_DIGIT(c) ((c) >= '0' && (c) <= '9')
 #define IS_LOWERCASE(c) ((c) >= 'a' && (c) <= 'f')
 #define IS_UPPERCASE(c) ((c) >= 'A' && (c) <= 'F')
+
+// Example 15.09. 10:05
+#define DEFAULT_TIME_FMT "%d.%m. %H:%M"
+#define TIME_BUFFER_SIZE 256
+static char time_buffer[TIME_BUFFER_SIZE];
 
 typedef struct {
     int argc;
@@ -60,6 +68,7 @@ config global_config = {
     .bg_rgb = { -1, -1, -1 },
     .text_rgb = { -1, -1, -1 },
     .link_rgb = { -1, -1, -1 },
+    .time_fmt = NULL
 };
 
 arguments args;
@@ -157,6 +166,46 @@ static void parse_color_argument(color_type color)
         color_parameter_error(false);
 }
 
+/**
+ * random string is a optional parameter, if argument is not set
+ * (no args or next one starts with '-'), the default_option is used.
+ * This cannot fail so it will always return true
+ */
+static bool parse_default_option(char** option, const char* default_option)
+{
+    size_t arg_len;
+    char* opt_copy;
+    // Make sure that there is no douple allocs
+    if (*option != NULL) {
+        free(*option);
+    }
+
+    if (args.current + 1 >= args.argc) {
+        goto use_default;
+    }
+
+    const char* next_arg = PEEK(1);
+    if (next_arg[0] == '-') {
+        goto use_default;
+    }
+
+    args.current++;
+    arg_len = strlen(next_arg);
+    opt_copy = (char*)malloc(arg_len + 1);
+    strcpy(opt_copy, next_arg);
+    opt_copy[arg_len] = '\0';
+    *option = opt_copy;
+    return true;
+
+use_default:
+    arg_len = strlen(default_option);
+    opt_copy = (char*)malloc(arg_len + 1);
+    strcpy(opt_copy, default_option);
+    opt_copy[arg_len] = '\0';
+    *option = opt_copy;
+    return true;
+}
+
 static void long_option()
 {
     if (strcmp(CURRENT, "--text-only") == 0) {
@@ -191,6 +240,8 @@ static void long_option()
         global_config.help_config = true;
     } else if (strcmp(CURRENT, "--default-colors") == 0) {
         global_config.default_colors = true;
+    } else if (strcmp(CURRENT, "--show-time") == 0) {
+        parse_default_option((char**)&global_config.time_fmt, DEFAULT_TIME_FMT);
     } else if (strcmp(CURRENT, "--config") == 0) {
         // --config option is handled earlier so here we can just consume
         // the parameter and continue
@@ -212,17 +263,23 @@ static void short_option()
     }
 }
 
-static bool config_parse_error(const char* message)
+static bool config_parse_error(const char* format, ...)
 {
-
+    va_list argptr;
+    va_start(argptr, format);
     fprintf(stderr, "Error parsing config file:\n");
-    fprintf(stderr, "[line %d] %s\n", config_file_num, message);
+    fprintf(stderr, "[line %d] ", config_file_num);
+    vfprintf(stderr, format, argptr);
+    fprintf(stderr, "\n");
+    va_end(argptr);
+
     return false;
 }
 
 static bool valid_config_char(char c)
 {
-    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '-';
+    // Since we now support random strings (like format, we can just check for all ascii chars)
+    return (c >= '!' && c <= '~');
 }
 
 static bool is_white_space(char c)
@@ -279,6 +336,36 @@ fail:
     return config_parse_error("Invalid hex color parameter.");
 }
 
+/**
+ * "true" | "false" | "random string"
+ * true sets the option to a the default string
+ * false sets the option to NULL
+ */
+static bool set_default_option(char** option, char* param, int param_len, const char* default_option)
+{
+    // Make sure that there is no douple allocs
+    if (*option != NULL) {
+        free(*option);
+    }
+
+    if (strncmp(param, "true", param_len) == 0) {
+        size_t opt_len = strlen(default_option);
+        char* opt_copy = (char*)malloc(opt_len + 1);
+        strncpy(opt_copy, default_option, opt_len);
+        opt_copy[opt_len] = '\0';
+        *option = opt_copy;
+    } else if (strncmp(param, "false", param_len) == 0) {
+        *option = NULL;
+    } else {
+        char* opt_copy = (char*)malloc(param_len + 1);
+        strncpy(opt_copy, param, param_len);
+        opt_copy[param_len] = '\0';
+        *option = opt_copy;
+    }
+
+    return true;
+}
+
 static bool set_config_option(config_line line)
 {
     int option_len = line.option.end - line.option.start;
@@ -307,8 +394,11 @@ static bool set_config_option(config_line line)
         success = set_boolean_option(&global_config.no_sub_page, line.parameter.start, parameter_len);
     } else if (strncmp(line.option.start, "default-colors", option_len) == 0) {
         success = set_boolean_option(&global_config.default_colors, line.parameter.start, parameter_len);
+    } else if (strncmp(line.option.start, "show-time", option_len) == 0) {
+        success = set_default_option((char**)&global_config.time_fmt, line.parameter.start, parameter_len, DEFAULT_TIME_FMT);
     } else {
-        return config_parse_error("Unknown option.");
+        line.option.start[option_len] = '\0';
+        return config_parse_error("Unknown option: '%s'", line.option.start);
     }
 
     return success;
@@ -341,7 +431,7 @@ static bool parse_config_file(char* file_data)
                 break;
 
             if (!valid_config_char(*file_data))
-                return config_parse_error("Invalid character in option.");
+                return config_parse_error("Invalid character in option: '%c'", *file_data);
         }
         line.option.end = file_data;
 
@@ -371,7 +461,7 @@ static bool parse_config_file(char* file_data)
                 return config_parse_error("Expected only one parameter.");
 
             if (!valid_config_char(*file_data))
-                return config_parse_error("Invalid character in parameter.");
+                return config_parse_error("Invalid character in parameter: '%c'", *file_data);
         }
         line.parameter.end = file_data;
 
@@ -519,4 +609,29 @@ void init_config(int argc, char** argv)
             }
         }
     }
+}
+
+void free_config(config* conf)
+{
+    if (conf->time_fmt != NULL)
+        free((char*)conf->time_fmt);
+}
+
+fmt_time current_time()
+{
+    fmt_time ctime;
+
+    if (global_config.time_fmt == NULL) {
+        ctime.time = "";
+        ctime.time_len = 0;
+        return ctime;
+    }
+
+    time_t ctimestamp = time(NULL);
+    struct tm* current_time = localtime(&ctimestamp);
+    size_t time_len = strftime(time_buffer, TIME_BUFFER_SIZE, global_config.time_fmt, current_time);
+
+    ctime.time = time_buffer;
+    ctime.time_len = time_len;
+    return ctime;
 }

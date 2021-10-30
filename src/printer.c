@@ -4,12 +4,31 @@
 #include "config.h"
 #include "printer.h"
 
-void print_title(html_parser* parser)
+void print_time(int pre_padding)
 {
-    if (global_config.no_title)
+    if (global_config.time_fmt == NULL)
         return;
 
-    printf("  %s\n", parser->title.text);
+    fmt_time ctime = current_time();
+
+    // +4 because the middle prints get 4 spaces for padding
+    size_t padding_len = MIDDLE_TEXT_MAX_LEN - pre_padding - ctime.time_len + 4;
+    for (size_t ii = 0; ii < padding_len; ii++) {
+        putc(' ', stdout);
+    }
+
+    printf("%s\n", ctime.time);
+}
+
+void print_title(html_parser* parser)
+{
+    if (global_config.no_title) {
+        // Take the prepadding from the title print into account
+        print_time(-2);
+    } else {
+        printf("  %s", parser->title.text);
+        print_time(parser->title.size);
+    }
 }
 
 void print_middle(html_parser* parser)

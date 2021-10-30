@@ -297,7 +297,7 @@ static int handle_getch(drawer* drawer, html_parser* parser)
  *
  * // TODO: combine this with escape_text or find otherwise smarter way to do this
  */
-static int find_utfs(char* src, size_t src_len)
+static int find_utfs(const char* src, size_t src_len)
 {
     int utfs = 0;
     for (size_t i = 0; i < src_len; i++) {
@@ -307,7 +307,7 @@ static int find_utfs(char* src, size_t src_len)
     return utfs;
 }
 
-static void escape_text(char* src, char* target, size_t src_len)
+static void escape_text(const char* src, char* target, size_t src_len)
 {
     size_t srci = 0;
     size_t targeti = 0;
@@ -323,7 +323,7 @@ static void escape_text(char* src, char* target, size_t src_len)
     target[targeti] = '\0';
 }
 
-static void draw_to_drawer(drawer* drawer, char* text)
+static void draw_to_drawer(drawer* drawer, const char* text)
 {
     char escape_buf[256];
     int utfs = find_utfs(text, strlen(text));
@@ -383,14 +383,36 @@ static void draw_to_info_window(drawer* drawer, const char* text)
     wrefresh(drawer->info_window);
 }
 
+/**
+ * Draw title and current time
+ */
 static void draw_title(drawer* drawer, html_parser* parser)
 {
-    if (global_config.no_title)
+    bool draw_title = !global_config.no_title;
+    bool draw_time = global_config.time_fmt != NULL;
+
+    if (!draw_title && !draw_time)
         return;
 
-    drawer->current_x = centerx(parser->title.size);
+    fmt_time ctime = current_time();
+
+    size_t text_len = 0;
+    if (draw_title)
+        text_len += parser->title.size;
+
+    if (draw_time)
+        text_len += ctime.time_len;
+
+    drawer->current_x = centerx(text_len);
     drawer->current_y++;
-    draw_to_drawer(drawer, parser->title.text);
+
+    if (draw_title) {
+        draw_to_drawer(drawer, parser->title.text);
+        drawer->current_x += parser->title.size + 1;
+    }
+
+    if (draw_time)
+        draw_to_drawer(drawer, ctime.time);
 }
 
 static void draw_top_navigation(drawer* drawer, html_parser* parser)

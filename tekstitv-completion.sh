@@ -20,6 +20,7 @@ OPTION_LIST="
 --no-middle
 --no-sub-page
 --default-colors
+--show-time
 "
 
 # Is _filedir declared
