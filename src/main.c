@@ -29,6 +29,7 @@ static void print_usage(char* name)
     printf("\t--no-sub-page\t\tDisable list of sub page numbers\n");
     printf("\t--default-colors\tDisable all custom coloring. Including custom link colors\n");
     printf("\t\t\t\tUse colors based on the console theme instead\n");
+    printf("\t--show-time <format>\tShow time. Optional strftime format as argument.\n");
     exit(0);
 }
 
@@ -46,6 +47,8 @@ static void print_config_options()
     printf("\tbg-color=<hex>\t\t\tBackground color hex value (000000)\n");
     printf("\ttext-color=<hex>\t\tText color hex value (ffffff)\n");
     printf("\tlink-color=<hex>\t\tLink highlight color hex value (ffffff)\n");
+    printf("\tshow-time=false|true|format\tShow time. True is default format,\n");
+    printf("\t\t\t\t\tformat arg is custom strftime format\n");
     exit(0);
 }
 
@@ -153,6 +156,7 @@ int main(int argc, char** argv)
         free_drawer(&drawer);
     }
 
+    free_config(&global_config);
     free_html_parser(&parser);
     return 0;
 }
