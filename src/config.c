@@ -368,8 +368,10 @@ static bool set_default_option(char** option, char* param, int param_len, const 
 
 static bool set_config_option(config_line line)
 {
-    int option_len = line.option.end - line.option.start;
-    int parameter_len = line.parameter.end - line.parameter.start;
+    // +1 because the counting starts from 0, so string with 2 chars would be for example
+    // 1-0 = 1, even thouh it has 2 characters
+    int option_len = line.option.end - line.option.start + 1;
+    int parameter_len = line.parameter.end - line.parameter.start + 1;
     bool success = true;
 
     if (strncmp(line.option.start, "bg-color", option_len) == 0) {
@@ -423,6 +425,8 @@ static bool parse_config_file(char* file_data)
 
         // Find the config option
         line.option.start = file_data;
+        // Pointer to the last non-whitespace character
+        char* last_opt_char = file_data;
         for (;; file_data++) {
             if (*file_data == '\n') {
                 return config_parse_error("Character '=' expected after option.");
@@ -432,8 +436,11 @@ static bool parse_config_file(char* file_data)
 
             if (!valid_config_char(*file_data))
                 return config_parse_error("Invalid character in option: '%c'", *file_data);
+
+            last_opt_char = file_data;
         }
-        line.option.end = file_data;
+
+        line.option.end = last_opt_char;
 
         // Make sure that option was actually found
         if (line.option.start == line.option.end)
@@ -452,18 +459,23 @@ static bool parse_config_file(char* file_data)
 
         // Find the config option parameter
         line.parameter.start = file_data;
+        // Pointer to the last non-whitespace character
+        char* last_arg_char = file_data;
         for (;; file_data++) {
             if (*file_data == '\n') {
                 break;
             }
 
             if (*file_data == ' ' || *file_data == '\t')
-                return config_parse_error("Expected only one parameter.");
+                continue;
 
             if (!valid_config_char(*file_data))
                 return config_parse_error("Invalid character in parameter: '%c'", *file_data);
+
+            last_arg_char = file_data;
         }
-        line.parameter.end = file_data;
+
+        line.parameter.end = last_arg_char;
 
         if (line.parameter.start == line.parameter.end)
             return config_parse_error("Expected parameter after '='");
