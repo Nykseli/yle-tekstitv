@@ -50,6 +50,11 @@ typedef struct {
 } html_row;
 
 typedef struct {
+    html_item* items;
+    size_t size;
+} html_dynamic_row;
+
+typedef struct {
     char html[1024 * 32];
     size_t size;
     size_t current;
@@ -60,7 +65,7 @@ typedef struct {
     html_text title;
     html_item top_navigation[TOP_NAVIGATION_SIZE];
     html_link bottom_navigation[BOTTOM_NAVIGATION_SIZE];
-    html_row sub_pages;
+    html_dynamic_row sub_pages;
 
     // Middle part of the teksti tv seems to be only dynamic one
     html_row* middle;

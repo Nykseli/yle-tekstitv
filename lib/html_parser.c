@@ -2422,27 +2422,23 @@ static void parse_sub_pages(html_parser* parser, html_buffer* buffer)
 {
     skip_next_tag(buffer, "p", 1, false);
     while (strncmp(buffer->html + buffer->current, "</p>", 3) != 0) {
-        if (parser->sub_pages.size >= HTML_ROW_MAX)
-            break;
 
         tag_type type = get_tag_type(buffer);
+        html_item item;
+        size_t text_size = 0;
         switch (type) {
         case UNKNOWN: {
             // In this context UNKNOWN means regular text
-            size_t text_size = get_current_text_size(buffer);
-            html_item item;
+            text_size = get_current_text_size(buffer);
             item.type = HTML_TEXT;
             memcpy(html_item_as_text(item).text, buffer->html + buffer->current, text_size);
             item.item.text.size = text_size;
             item.item.text.text[item.item.text.size] = '\0';
-            parser->sub_pages.items[parser->sub_pages.size++] = item;
-            buffer->current += text_size;
         } break;
         case LINK: {
             html_item item;
             item.type = HTML_LINK;
             parse_current_link(buffer, &html_item_as_link(item), 0);
-            parser->sub_pages.items[parser->sub_pages.size++] = item;
         } break;
         case FONT: {
             skip_next_tag(buffer, "font", 4, true);
@@ -2450,6 +2446,19 @@ static void parse_sub_pages(html_parser* parser, html_buffer* buffer)
         default:
             break;
         }
+
+        if (type == FONT) {
+            continue;
+        }
+
+        if (parser->sub_pages.items == NULL) {
+            parser->sub_pages.items = malloc(sizeof(html_buffer));
+        } else {
+            parser->sub_pages.items = realloc(parser->sub_pages.items, sizeof(html_buffer) * parser->sub_pages.size + 1);
+        }
+
+        parser->sub_pages.items[parser->sub_pages.size++] = item;
+        buffer->current += text_size;
     }
 }
 
@@ -2563,7 +2572,7 @@ void init_html_parser(html_parser* parser)
     parser->middle_rows = 0;
     parser->middle = calloc(MIDDLE_HTML_ROWS_MAX, sizeof(html_row));
     parser->sub_pages.size = 0;
-    memset(parser->sub_pages.items, 0, HTML_ROW_MAX * sizeof(html_item));
+    parser->sub_pages.items = NULL;
     memset(parser->title.text, 0, HTML_TEXT_MAX);
     memset(parser->bottom_navigation, 0, sizeof(html_link) * BOTTOM_NAVIGATION_SIZE);
     memset(parser->top_navigation, 0, sizeof(html_item) * TOP_NAVIGATION_SIZE);
@@ -2574,4 +2583,6 @@ void free_html_parser(html_parser* parser)
 {
     if (parser->middle != NULL)
         free(parser->middle);
+    if (parser->sub_pages.items != NULL)
+        free(parser->sub_pages.items);
 }
