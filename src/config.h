@@ -41,5 +41,8 @@ void free_config(config* conf);
 fmt_time current_time();
 
 extern config global_config;
+// Ignores the config read from defalt path during config tests
+extern bool ignore_config_read_during_testing;
+extern int latest_config_exit_code;
 
 #endif

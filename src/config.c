@@ -13,6 +13,13 @@
 
 #include "config.h"
 
+#ifdef TESTING
+#define exit(num)                        \
+    do {                                 \
+        latest_config_exit_code = (num); \
+    } while (0)
+#endif
+
 #define CURRENT (args.argv[args.current])
 #define PREVIOUS (args.argv[args.current - 1])
 #define PEEK(amount) (args.argv[args.current + (amount)])
@@ -70,6 +77,9 @@ config global_config = {
     .link_rgb = { -1, -1, -1 },
     .time_fmt = NULL
 };
+
+bool ignore_config_read_during_testing = false;
+int latest_config_exit_code = 0;
 
 arguments args;
 
@@ -307,9 +317,9 @@ static void skip_white_space(char** data)
 
 bool set_boolean_option(bool* option, char* param, int param_len)
 {
-    if (strncmp(param, "true", param_len) == 0) {
+    if (param_len == 4 && strncmp(param, "true", param_len) == 0) {
         *option = true;
-    } else if (strncmp(param, "false", param_len) == 0) {
+    } else if (param_len == 4 && strncmp(param, "false", param_len) == 0) {
         *option = false;
     } else {
         return config_parse_error("Invalid boolean parameter.");
@@ -348,13 +358,13 @@ static bool set_default_option(char** option, char* param, int param_len, const 
         free(*option);
     }
 
-    if (strncmp(param, "true", param_len) == 0) {
+    if (param_len == 4 && strncmp(param, "true", param_len) == 0) {
         size_t opt_len = strlen(default_option);
         char* opt_copy = (char*)malloc(opt_len + 1);
         strncpy(opt_copy, default_option, opt_len);
         opt_copy[opt_len] = '\0';
         *option = opt_copy;
-    } else if (strncmp(param, "false", param_len) == 0) {
+    } else if (param_len == 5 && strncmp(param, "false", param_len) == 0) {
         *option = NULL;
     } else {
         char* opt_copy = (char*)malloc(param_len + 1);
@@ -406,8 +416,13 @@ static bool set_config_option(config_line line)
     return success;
 }
 
-static bool parse_config_file(char* file_data)
+// Don't make this static so tests can use this
+bool parse_config_file(char* file_data)
 {
+    // Make sure that the config line starts from 1
+    // This is mainly for tests to work correctly
+    config_file_num = 1;
+
     config_line line;
     for (;;) {
         // First skip white space
@@ -600,7 +615,8 @@ void init_config(int argc, char** argv)
 
     // Handle config option before other options.
     // This way the cli options override the config options.
-    handle_config();
+    if (!ignore_config_read_during_testing)
+        handle_config();
 
     for (; args.current < argc; args.current++) {
         if (argv[args.current][0] == '-') {

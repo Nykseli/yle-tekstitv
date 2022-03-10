@@ -57,9 +57,11 @@ $(LIB_BUILD)/%.o: $(LIB_DIR)/%.c $(LIB_HEADERS)
 	@ $(CC) $(TEKSTITV_INCLUDE) -c $(CFLAGS) -o $@ $<
 
 # Compile the test executables
+# Test relies on config.c being rebuilt with TESTING flag turned on
+# so make sure that the correct config version is always built
 tests/check_%: tests/check_%.c $(LIB_OBJECTS)
 	@ printf "%8s %-40s %s\n" $(CC) $<
-	@ $(CC) $(TEKSTITV_INCLUDE) $(CFLAGS) $^ -o $@.test -lcheck -lsubunit -lrt -lm -pthread
+	@ $(CC) $(TEKSTITV_INCLUDE) $(CFLAGS) -DTESTING src/config.c $^ -o $@.test -lcheck -lsubunit -lrt -lm -pthread
 
 clean:
 	@ rm -rfv build Makefile tests/*.test
