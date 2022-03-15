@@ -5,6 +5,35 @@
 #define WINDOW_WIDTH 760
 #define WINDOW_HEIGHT 800
 
+SDL_Color config_rgb_to_color(short* rgb, SDL_Color def)
+{
+#define SHORT_8BIT(s) (Uint8)(255 * (s / 1000.0f))
+
+    if (*rgb == -1 || global_config.default_colors) {
+        return def;
+    }
+
+    Uint8 r = SHORT_8BIT(rgb[0]);
+    Uint8 g = SHORT_8BIT(rgb[1]);
+    Uint8 b = SHORT_8BIT(rgb[2]);
+
+    SDL_Color color = { r, g, b, 0 };
+    return color;
+
+#undef SHORT_8BIT
+}
+
+void set_config(gui_drawer* drawer)
+{
+    SDL_Color bgColor = { 0, 0, 0, 0 };
+    SDL_Color textColor = { 255, 255, 255, 0 };
+    SDL_Color linkColor = { 17, 159, 244, 0 };
+
+    drawer->bg_color = config_rgb_to_color(global_config.bg_rgb, bgColor);
+    drawer->text_color = config_rgb_to_color(global_config.text_rgb, textColor);
+    drawer->link_color = config_rgb_to_color(global_config.link_rgb, linkColor);
+}
+
 void init_gui_drawer(gui_drawer* drawer)
 {
     // Initialise the structure
@@ -106,7 +135,6 @@ const char* check_link_click(gui_drawer* drawer)
  */
 void add_text_texture(gui_drawer* drawer, const char* text)
 {
-    SDL_Color textColor = { 255, 255, 255, 0 };
     if (drawer->texts == NULL) {
         drawer->texts = (gui_text*)malloc(sizeof(gui_text));
     } else {
@@ -116,7 +144,7 @@ void add_text_texture(gui_drawer* drawer, const char* text)
     gui_text* new_text = &drawer->texts[drawer->text_count];
     drawer->text_count++;
 
-    SDL_Surface* surface = TTF_RenderUTF8_Solid(drawer->font, text, textColor);
+    SDL_Surface* surface = TTF_RenderUTF8_Solid(drawer->font, text, drawer->text_color);
     new_text->texture = SDL_CreateTextureFromSurface(drawer->renderer, surface);
     int text_width = surface->w;
     int text_height = surface->h;
@@ -135,7 +163,6 @@ void add_text_texture(gui_drawer* drawer, const char* text)
  */
 void add_link_texture(gui_drawer* drawer, html_link* link)
 {
-    SDL_Color textColor = { 0, 0, 255, 0 };
     if (drawer->links == NULL) {
         drawer->links = (gui_link*)malloc(sizeof(gui_link));
     } else {
@@ -145,7 +172,7 @@ void add_link_texture(gui_drawer* drawer, html_link* link)
     gui_link* new_link = &drawer->links[drawer->link_count];
     drawer->link_count++;
 
-    SDL_Surface* surface = TTF_RenderUTF8_Solid(drawer->font, link->inner_text.text, textColor);
+    SDL_Surface* surface = TTF_RenderUTF8_Solid(drawer->font, link->inner_text.text, drawer->link_color);
     new_link->texture = SDL_CreateTextureFromSurface(drawer->renderer, surface);
     int text_width = surface->w;
     int text_height = surface->h;
@@ -172,11 +199,8 @@ void highlight_link_texture(gui_drawer* drawer, int link_idx)
         return;
     }
 
-    SDL_Color textColor = { 0, 0, 0, 0 };
-    SDL_Color bgColor = { 0, 0, 255, 0 };
-
     SDL_DestroyTexture(old_link->texture);
-    SDL_Surface* surface = TTF_RenderUTF8_Shaded(drawer->font, old_link->inner_text, textColor, bgColor);
+    SDL_Surface* surface = TTF_RenderUTF8_Shaded(drawer->font, old_link->inner_text, drawer->bg_color, drawer->link_color);
     old_link->texture = SDL_CreateTextureFromSurface(drawer->renderer, surface);
     SDL_FreeSurface(surface);
 
@@ -194,10 +218,8 @@ void unhighlight_link_texture(gui_drawer* drawer, int link_idx)
         return;
     }
 
-    SDL_Color textColor = { 0, 0, 255, 0 };
-
     SDL_DestroyTexture(old_link->texture);
-    SDL_Surface* surface = TTF_RenderUTF8_Solid(drawer->font, old_link->inner_text, textColor);
+    SDL_Surface* surface = TTF_RenderUTF8_Solid(drawer->font, old_link->inner_text, drawer->link_color);
     old_link->texture = SDL_CreateTextureFromSurface(drawer->renderer, surface);
     SDL_FreeSurface(surface);
 
@@ -206,6 +228,9 @@ void unhighlight_link_texture(gui_drawer* drawer, int link_idx)
 
 void add_title_to_drawer(gui_drawer* drawer, html_text title)
 {
+    if (global_config.no_title)
+        return;
+
     // Leave some empty space to have some breathing room
     drawer->current_y = drawer->line_height;
     drawer->current_x = calc_middle_x(drawer, title.size);
@@ -214,6 +239,9 @@ void add_title_to_drawer(gui_drawer* drawer, html_text title)
 
 void add_top_navigation_to_drawer(gui_drawer* drawer, html_item* top_navigation)
 {
+    if (global_config.no_nav || global_config.no_top_nav)
+        return;
+
     // Start length with adding sizes of " | " separators
     size_t links_len = (TOP_NAVIGATION_SIZE - 1) * 3;
     for (size_t i = 0; i < TOP_NAVIGATION_SIZE; i++) {
@@ -238,6 +266,9 @@ void add_top_navigation_to_drawer(gui_drawer* drawer, html_item* top_navigation)
 
 void add_middle_to_drawer(gui_drawer* drawer, html_parser* parser)
 {
+    if (global_config.no_middle)
+        return;
+
     html_item_type last_type = HTML_TEXT;
     int mid_start_x = calc_middle_x(drawer, MIDDLE_TEXT_MAX_LEN);
 
@@ -264,6 +295,9 @@ void add_middle_to_drawer(gui_drawer* drawer, html_parser* parser)
 
 void add_subpages_to_drawer(gui_drawer* drawer, html_parser* parser)
 {
+    if (global_config.no_sub_page)
+        return;
+
     drawer->current_x = calc_middle_x(drawer, MIDDLE_TEXT_MAX_LEN);
     drawer->current_y += drawer->line_height;
     for (size_t i = 0; i < parser->sub_pages.size; i++) {
@@ -278,6 +312,9 @@ void add_subpages_to_drawer(gui_drawer* drawer, html_parser* parser)
 
 void add_bottom_navigation_to_drawer(gui_drawer* drawer, html_parser* parser)
 {
+    if (global_config.no_nav || global_config.no_bottom_nav)
+        return;
+
     // first row is identical to top navigation
     add_top_navigation_to_drawer(drawer, parser->top_navigation);
 
@@ -347,6 +384,8 @@ void set_render_texts(gui_drawer* drawer, html_parser* parser)
 {
     // Just to be sure
     free_render_texts(drawer);
+    // update config in realtime
+    set_config(drawer);
     get_font_dimensions(drawer);
     add_title_to_drawer(drawer, parser->title);
     add_top_navigation_to_drawer(drawer, parser->top_navigation);
@@ -399,7 +438,11 @@ int display_gui(html_parser* parser)
             }
         }
 
-        SDL_SetRenderDrawColor(main_drawer.renderer, 0, 0, 0, 0);
+        // TODO: only rerender when something has changed
+        Uint8 r = main_drawer.bg_color.r;
+        Uint8 g = main_drawer.bg_color.g;
+        Uint8 b = main_drawer.bg_color.b;
+        SDL_SetRenderDrawColor(main_drawer.renderer, r, g, b, 0);
         SDL_RenderClear(main_drawer.renderer);
         render_drawer_texts(&main_drawer);
         SDL_RenderPresent(main_drawer.renderer);

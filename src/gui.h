@@ -10,6 +10,8 @@ extern "C" {
 #include <SDL2/SDL_ttf.h>
 #include <tekstitv.h>
 
+#include "config.h"
+
 /**
  * gui_text contains data for each visible text object on the window
  */
@@ -53,6 +55,10 @@ typedef struct gui_drawer {
     int w_height;
     int current_x;
     int current_y;
+
+    SDL_Color bg_color;
+    SDL_Color text_color;
+    SDL_Color link_color;
 } gui_drawer;
 
 int display_gui(html_parser* parser);
