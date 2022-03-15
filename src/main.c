@@ -7,6 +7,10 @@
 #include "drawer.h"
 #include "printer.h"
 
+#ifdef ENABLE_GUI
+#include "gui.h"
+#endif
+
 static void print_usage(char* name)
 {
     printf("Usage: %s [page] [sub page] [options]\n", name);
@@ -147,6 +151,10 @@ int main(int argc, char** argv)
     load_page(&parser);
     parse_html(&parser);
 
+// TODO: should we use a --show-gui argument?
+#ifdef ENABLE_GUI
+    display_gui(&parser);
+#else
     if (global_config.text_only) {
         print_parser(&parser);
     } else {
@@ -155,6 +163,7 @@ int main(int argc, char** argv)
         draw_parser(&drawer, &parser);
         free_drawer(&drawer);
     }
+#endif
 
     free_config(&global_config);
     free_html_parser(&parser);

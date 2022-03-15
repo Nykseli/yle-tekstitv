@@ -11,12 +11,14 @@ build_static=true
 build_shared=true
 build_executable=true
 termux_build=false
+enable_gui=false
 
 NAME="tekstitv"
 MAJOR_VERSION=`awk '/TEKSTITV_MAJOR_VERSION/{print $3}' include/tekstitv.h`
 MINOR_VERSION=`awk '/TEKSTITV_MINOR_VERSION/{print $3}' include/tekstitv.h`
 BIN_LINKS="-lcurl"
 CFLAGS="-std=c99 -Wall -Wextra -Werror -Wno-unused-parameter -Wformat-security -Wno-unused-result -pedantic -fPIC"
+CXXFLAGS="-std=c++11 -Wall -Wextra -Werror -Wno-unused-parameter -Wformat-security -Wno-unused-result -pedantic -fPIC"
 TARGETS=""
 INSTALLS=""
 UNINSTALLS=""
@@ -101,6 +103,7 @@ print_config() {
 
     printf "\nconfiguration:\n"
     print_use "using utf-8... " $utf8
+    print_use "using SDL2 gui... " $enable_gui
     print_use "using debugging... " $debugsym
     print_use "building for termux... " $termux_build
     print_use "building executable... " $build_executable
@@ -182,6 +185,9 @@ for arg in "$@"; do
     --disable-utf8)
         utf8=false
         ;;
+    --enable-gui)
+        enable_gui=true
+        ;;
     --help)
         print_usage
         ;;
@@ -244,12 +250,20 @@ fi
 
 if $debugsym; then
     CFLAGS="$CFLAGS -g -DDEBUG"
+    CXXFLAGS="$CXXFLAGS -g -DDEBUG"
 else
     CFLAGS="$CFLAGS -O3 -flto"
+    CXXFLAGS="$CXXFLAGS -O3"
 fi
 
 if ! $utf8; then
     CFLAGS="$CFLAGS -DDISABLE_UTF_8"
+fi
+
+if $enable_gui; then
+    BIN_LINKS="$BIN_LINKS -lSDL2 -lSDL2_ttf"
+    CFLAGS="$CFLAGS -DENABLE_GUI"
+    CXXFLAGS="$CXXFLAGS -DENABLE_GUI"
 fi
 
 # Print configuration so user can see possible config errors easier
@@ -265,10 +279,12 @@ echo "BINDIR = $bindir" >> Makefile
 echo "COMPLETIONDIR = $completiondir" >> Makefile
 echo "INCLUDEDIR = $includedir" >> Makefile
 echo "CFLAGS = $CFLAGS" >> Makefile
+echo "CXXFLAGS = $CXXFLAGS" >> Makefile
 echo "BIN_LINKS = $BIN_LINKS" >> Makefile
 echo "TARGETS = $TARGETS" >> Makefile
 echo "INSTALLS = $INSTALLS" >> Makefile
 echo "UNINSTALLS = $UNINSTALLS" >> Makefile
+echo "GUI_ENABLED = $enable_gui" >> Makefile
 
 cat Makefile.in >> Makefile
 echo 'Configuration complete, type make to build.'
