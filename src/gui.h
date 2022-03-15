@@ -18,6 +18,24 @@ typedef struct gui_text {
     SDL_Texture* texture;
 } gui_text;
 
+/**
+ * gui_link contains data for each visible link object on the window
+ * and short link to teletext so it can be easily loaded
+ */
+typedef struct gui_link {
+    SDL_Rect rect;
+    SDL_Texture* texture;
+    /**
+     * short link to the link from parser, should not be modified
+     */
+    const char* short_link;
+    /**
+     * save inner_text so it can be easily rerendered
+     */
+    const char* inner_text;
+    bool highlighted;
+} gui_link;
+
 typedef struct gui_drawer {
     SDL_Window* window;
     SDL_Renderer* renderer;
@@ -27,6 +45,9 @@ typedef struct gui_drawer {
 
     gui_text* texts;
     int text_count;
+
+    gui_link* links;
+    int link_count;
 
     int w_width;
     int w_height;

@@ -11,10 +11,12 @@ void init_gui_drawer(gui_drawer* drawer)
     drawer->window = NULL;
     drawer->renderer = NULL;
     drawer->texts = NULL;
+    drawer->links = NULL;
     drawer->font = NULL;
     drawer->char_width = 0;
     drawer->line_height = 0;
     drawer->text_count = 0;
+    drawer->link_count = 0;
     drawer->w_width = 0;
     drawer->w_height = 0;
     drawer->current_x = 0;
@@ -33,14 +35,23 @@ void free_render_texts(gui_drawer* drawer)
         free(drawer->texts);
     }
 
+    if (drawer->links != NULL) {
+        for (int ii = 0; ii < drawer->link_count; ii++) {
+            SDL_DestroyTexture(drawer->links[ii].texture);
+        }
+        free(drawer->links);
+    }
+
     drawer->char_width = 0;
     drawer->line_height = 0;
     drawer->text_count = 0;
+    drawer->link_count = 0;
     drawer->w_width = 0;
     drawer->w_height = 0;
     drawer->current_x = 0;
     drawer->current_y = 0;
     drawer->texts = NULL;
+    drawer->links = NULL;
 }
 
 void free_gui_drawer(gui_drawer* drawer)
@@ -67,6 +78,26 @@ int calc_middle_x(gui_drawer* drawer, int text_length)
     // TODO: Can we use floats somehow?
     // we need to multiple with char_widht to get the pixel count
     return window_w / 2 - (text_length * drawer->char_width) / 2;
+}
+
+const char* check_link_click(gui_drawer* drawer)
+{
+    int mx, my;
+    SDL_GetMouseState(&mx, &my);
+    for (int ii = 0; ii < drawer->link_count; ii++) {
+        gui_link link = drawer->links[ii];
+        int lx = link.rect.x;
+        int ly = link.rect.y;
+        int lw = link.rect.w;
+        int lh = link.rect.h;
+
+        // is mouse on top of the link rectangle
+        if (mx >= lx && mx <= lx + lw && my >= ly && my <= ly + lh) {
+            return link.short_link;
+        }
+    }
+
+    return NULL;
 }
 
 /**
@@ -98,6 +129,81 @@ void add_text_texture(gui_drawer* drawer, const char* text)
     drawer->current_x += text_width;
 }
 
+/**
+ * Add a new text texture, texture will be added to the current rectangle
+ * of the drawer and the current x pos is updated to the end of the text
+ */
+void add_link_texture(gui_drawer* drawer, html_link* link)
+{
+    SDL_Color textColor = { 0, 0, 255, 0 };
+    if (drawer->links == NULL) {
+        drawer->links = (gui_link*)malloc(sizeof(gui_link));
+    } else {
+        drawer->links = (gui_link*)realloc(drawer->links, sizeof(gui_link) * (drawer->link_count + 1));
+    }
+
+    gui_link* new_link = &drawer->links[drawer->link_count];
+    drawer->link_count++;
+
+    SDL_Surface* surface = TTF_RenderUTF8_Solid(drawer->font, link->inner_text.text, textColor);
+    new_link->texture = SDL_CreateTextureFromSurface(drawer->renderer, surface);
+    int text_width = surface->w;
+    int text_height = surface->h;
+    SDL_FreeSurface(surface);
+    new_link->rect.x = drawer->current_x;
+    new_link->rect.y = drawer->current_y;
+    new_link->rect.w = text_width;
+    new_link->rect.h = text_height;
+    new_link->short_link = link->url.text;
+    new_link->inner_text = link->inner_text.text;
+    new_link->highlighted = false;
+
+    drawer->current_x += text_width;
+}
+
+/**
+ * Destroy old link texture and create new, highlighed one
+ */
+void highlight_link_texture(gui_drawer* drawer, int link_idx)
+{
+    gui_link* old_link = &drawer->links[link_idx];
+
+    if (old_link->highlighted) {
+        return;
+    }
+
+    SDL_Color textColor = { 0, 0, 0, 0 };
+    SDL_Color bgColor = { 0, 0, 255, 0 };
+
+    SDL_DestroyTexture(old_link->texture);
+    SDL_Surface* surface = TTF_RenderUTF8_Shaded(drawer->font, old_link->inner_text, textColor, bgColor);
+    old_link->texture = SDL_CreateTextureFromSurface(drawer->renderer, surface);
+    SDL_FreeSurface(surface);
+
+    old_link->highlighted = true;
+}
+
+/**
+ * Destroy old link texture and create new, unhighlighed one
+ */
+void unhighlight_link_texture(gui_drawer* drawer, int link_idx)
+{
+    gui_link* old_link = &drawer->links[link_idx];
+
+    if (!old_link->highlighted) {
+        return;
+    }
+
+    SDL_Color textColor = { 0, 0, 255, 0 };
+
+    SDL_DestroyTexture(old_link->texture);
+    SDL_Surface* surface = TTF_RenderUTF8_Solid(drawer->font, old_link->inner_text, textColor);
+    old_link->texture = SDL_CreateTextureFromSurface(drawer->renderer, surface);
+    SDL_FreeSurface(surface);
+
+    old_link->highlighted = false;
+}
+
 void add_title_to_drawer(gui_drawer* drawer, html_text title)
 {
     // Leave some empty space to have some breathing room
@@ -119,8 +225,7 @@ void add_top_navigation_to_drawer(gui_drawer* drawer, html_item* top_navigation)
     drawer->current_x = calc_middle_x(drawer, links_len);
     for (size_t i = 0; i < TOP_NAVIGATION_SIZE; i++) {
         if (top_navigation[i].type == HTML_LINK) {
-            // TODO: add link texture
-            add_text_texture(drawer, html_item_as_link(top_navigation[i]).inner_text.text);
+            add_link_texture(drawer, &html_item_as_link(top_navigation[i]));
         } else {
             add_text_texture(drawer, html_item_as_text(top_navigation[i]).text);
         }
@@ -140,18 +245,17 @@ void add_middle_to_drawer(gui_drawer* drawer, html_parser* parser)
         drawer->current_x = mid_start_x;
         drawer->current_y += drawer->line_height;
         for (size_t j = 0; j < parser->middle[i].size; j++) {
-            html_item item = parser->middle[i].items[j];
-            if (item.type == HTML_LINK) {
+            html_item* item = &parser->middle[i].items[j];
+            if (item->type == HTML_LINK) {
                 if (last_type == HTML_LINK) {
                     add_text_texture(drawer, "-");
                     drawer->current_x += 1;
                 }
 
-                // TODO: add link texture
-                add_text_texture(drawer, html_item_as_link(item).inner_text.text);
+                add_link_texture(drawer, &item->item.link);
                 last_type = HTML_LINK;
-            } else if (item.type == HTML_TEXT) {
-                add_text_texture(drawer, html_item_as_text(item).text);
+            } else if (item->type == HTML_TEXT) {
+                add_text_texture(drawer, item->item.text.text);
                 last_type = HTML_TEXT;
             }
         }
@@ -163,12 +267,11 @@ void add_subpages_to_drawer(gui_drawer* drawer, html_parser* parser)
     drawer->current_x = calc_middle_x(drawer, MIDDLE_TEXT_MAX_LEN);
     drawer->current_y += drawer->line_height;
     for (size_t i = 0; i < parser->sub_pages.size; i++) {
-        html_item item = parser->sub_pages.items[i];
-        if (item.type == HTML_LINK) {
-            // TODO: add link texture
-            add_text_texture(drawer, html_item_as_link(item).inner_text.text);
-        } else if (item.type == HTML_TEXT) {
-            add_text_texture(drawer, html_item_as_text(item).text);
+        html_item* item = &parser->sub_pages.items[i];
+        if (item->type == HTML_LINK) {
+            add_link_texture(drawer, &item->item.link);
+        } else if (item->type == HTML_TEXT) {
+            add_text_texture(drawer, item->item.text.text);
         }
     }
 }
@@ -190,8 +293,7 @@ void add_bottom_navigation_to_drawer(gui_drawer* drawer, html_parser* parser)
     drawer->current_y += drawer->line_height;
     drawer->current_x = calc_middle_x(drawer, links_len);
     for (size_t i = 0; i < BOTTOM_NAVIGATION_SIZE; i++) {
-        // TODO: add link texture
-        add_text_texture(drawer, links[i].inner_text.text);
+        add_link_texture(drawer, &links[i]);
 
         if (i < BOTTOM_NAVIGATION_SIZE - 1) {
             add_text_texture(drawer, " | ");
@@ -204,6 +306,25 @@ void render_drawer_texts(gui_drawer* drawer)
     for (int ii = 0; ii < drawer->text_count; ii++) {
         gui_text text = drawer->texts[ii];
         SDL_RenderCopy(drawer->renderer, text.texture, NULL, &text.rect);
+    }
+
+    int mx, my;
+    SDL_GetMouseState(&mx, &my);
+    for (int ii = 0; ii < drawer->link_count; ii++) {
+        gui_link link = drawer->links[ii];
+        int lx = link.rect.x;
+        int ly = link.rect.y;
+        int lw = link.rect.w;
+        int lh = link.rect.h;
+
+        // is mouse on top of the link rectangle
+        if (mx >= lx && mx <= lx + lw && my >= ly && my <= ly + lh) {
+            highlight_link_texture(drawer, ii);
+        } else {
+            unhighlight_link_texture(drawer, ii);
+        }
+
+        SDL_RenderCopy(drawer->renderer, link.texture, NULL, &link.rect);
     }
 }
 
@@ -263,6 +384,16 @@ int display_gui(html_parser* parser)
                 quit = 1;
             } else if (event.type == SDL_WINDOWEVENT) {
                 if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED || event.window.event == SDL_WINDOWEVENT_RESIZED) {
+                    set_render_texts(&main_drawer, parser);
+                }
+            } else if (event.type == SDL_MOUSEBUTTONUP) {
+                const char* link = check_link_click(&main_drawer);
+                if (link != NULL) {
+                    link_from_short_link(parser, (char*)link);
+                    free_html_parser(parser);
+                    init_html_parser(parser);
+                    load_page(parser);
+                    parse_html(parser);
                     set_render_texts(&main_drawer, parser);
                 }
             }
