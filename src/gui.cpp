@@ -189,14 +189,15 @@ void add_link_texture(gui_drawer* drawer, html_link* link)
 }
 
 /**
- * Destroy old link texture and create new, highlighed one
+ * Destroy old link texture and create new, highlighed one.
+ * Returns true if texture actually changed.
  */
-void highlight_link_texture(gui_drawer* drawer, int link_idx)
+bool highlight_link_texture(gui_drawer* drawer, int link_idx)
 {
     gui_link* old_link = &drawer->links[link_idx];
 
     if (old_link->highlighted) {
-        return;
+        return false;
     }
 
     SDL_DestroyTexture(old_link->texture);
@@ -205,17 +206,19 @@ void highlight_link_texture(gui_drawer* drawer, int link_idx)
     SDL_FreeSurface(surface);
 
     old_link->highlighted = true;
+    return true;
 }
 
 /**
  * Destroy old link texture and create new, unhighlighed one
+ * Returns true if texture actually changed
  */
-void unhighlight_link_texture(gui_drawer* drawer, int link_idx)
+bool unhighlight_link_texture(gui_drawer* drawer, int link_idx)
 {
     gui_link* old_link = &drawer->links[link_idx];
 
     if (!old_link->highlighted) {
-        return;
+        return false;
     }
 
     SDL_DestroyTexture(old_link->texture);
@@ -224,6 +227,7 @@ void unhighlight_link_texture(gui_drawer* drawer, int link_idx)
     SDL_FreeSurface(surface);
 
     old_link->highlighted = false;
+    return true;
 }
 
 void add_title_to_drawer(gui_drawer* drawer, html_text title)
@@ -345,6 +349,18 @@ void render_drawer_texts(gui_drawer* drawer)
         SDL_RenderCopy(drawer->renderer, text.texture, NULL, &text.rect);
     }
 
+    for (int ii = 0; ii < drawer->link_count; ii++) {
+        gui_link link = drawer->links[ii];
+        SDL_RenderCopy(drawer->renderer, link.texture, NULL, &link.rect);
+    }
+}
+
+/**
+ * returns true if mouse hover requires a rerender
+ */
+bool check_mouse_hover(gui_drawer* drawer)
+{
+    bool rerender = false;
     int mx, my;
     SDL_GetMouseState(&mx, &my);
     for (int ii = 0; ii < drawer->link_count; ii++) {
@@ -356,13 +372,17 @@ void render_drawer_texts(gui_drawer* drawer)
 
         // is mouse on top of the link rectangle
         if (mx >= lx && mx <= lx + lw && my >= ly && my <= ly + lh) {
-            highlight_link_texture(drawer, ii);
+            if (highlight_link_texture(drawer, ii)) {
+                rerender = true;
+            }
         } else {
-            unhighlight_link_texture(drawer, ii);
+            if (unhighlight_link_texture(drawer, ii)) {
+                rerender = true;
+            }
         }
-
-        SDL_RenderCopy(drawer->renderer, link.texture, NULL, &link.rect);
     }
+
+    return rerender;
 }
 
 /**
@@ -417,6 +437,7 @@ int display_gui(html_parser* parser)
     set_render_texts(&main_drawer, parser);
 
     int quit = 0;
+    bool redraw = true;
     while (!quit) {
         while (SDL_PollEvent(&event) == 1) {
             if (event.type == SDL_QUIT) {
@@ -424,6 +445,7 @@ int display_gui(html_parser* parser)
             } else if (event.type == SDL_WINDOWEVENT) {
                 if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED || event.window.event == SDL_WINDOWEVENT_RESIZED) {
                     set_render_texts(&main_drawer, parser);
+                    redraw = true;
                 }
             } else if (event.type == SDL_MOUSEBUTTONUP) {
                 const char* link = check_link_click(&main_drawer);
@@ -434,20 +456,28 @@ int display_gui(html_parser* parser)
                     load_page(parser);
                     parse_html(parser);
                     set_render_texts(&main_drawer, parser);
+                    redraw = true;
                 }
             }
         }
 
-        // TODO: only rerender when something has changed
-        Uint8 r = main_drawer.bg_color.r;
-        Uint8 g = main_drawer.bg_color.g;
-        Uint8 b = main_drawer.bg_color.b;
-        SDL_SetRenderDrawColor(main_drawer.renderer, r, g, b, 0);
-        SDL_RenderClear(main_drawer.renderer);
-        render_drawer_texts(&main_drawer);
-        SDL_RenderPresent(main_drawer.renderer);
-        // 40ms is 25 fps
-        SDL_Delay(40);
+        if (check_mouse_hover(&main_drawer)) {
+            redraw = true;
+        }
+
+        if (redraw) {
+            Uint8 r = main_drawer.bg_color.r;
+            Uint8 g = main_drawer.bg_color.g;
+            Uint8 b = main_drawer.bg_color.b;
+            SDL_SetRenderDrawColor(main_drawer.renderer, r, g, b, 0);
+            SDL_RenderClear(main_drawer.renderer);
+            render_drawer_texts(&main_drawer);
+            SDL_RenderPresent(main_drawer.renderer);
+        }
+
+        redraw = false;
+        // 16ms is roughly fps
+        SDL_Delay(16);
     }
 
     free_gui_drawer(&main_drawer);
