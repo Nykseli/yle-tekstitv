@@ -1,9 +1,13 @@
 #include <stdlib.h>
+#include <string.h>
 
 #include "gui.h"
 
 #define WINDOW_WIDTH 760
 #define WINDOW_HEIGHT 800
+// milliseconds between redraws
+// 16ms is roughly 60 fps
+#define REDRW_DELAY 16
 
 SDL_Color config_rgb_to_color(short* rgb, SDL_Color def)
 {
@@ -34,6 +38,13 @@ void set_config(gui_drawer* drawer)
     drawer->link_color = config_rgb_to_color(global_config.link_rgb, linkColor);
 }
 
+void set_gui_time_fmt(char** fmt_target)
+{
+#define GUI_TIME_FMT "%d.%m. %H:%M:%S"
+    *fmt_target = (char*)malloc(strlen(GUI_TIME_FMT) + 1);
+    strcpy(*fmt_target, GUI_TIME_FMT);
+}
+
 void init_gui_drawer(gui_drawer* drawer)
 {
     // Initialise the structure
@@ -50,6 +61,15 @@ void init_gui_drawer(gui_drawer* drawer)
     drawer->w_height = 0;
     drawer->current_x = 0;
     drawer->current_y = 0;
+    sprintf(drawer->current_page, "%d", global_config.page);
+    // Always display time when in gui mode
+    if (global_config.time_fmt == NULL) {
+        set_gui_time_fmt((char**)&global_config.time_fmt);
+    }
+
+    for (int ii = 0; ii < 3; ii++) {
+        drawer->title[ii].texture = NULL;
+    }
 
     // Initialize SDL
     SDL_CreateWindowAndRenderer(WINDOW_WIDTH, WINDOW_HEIGHT, 0, &drawer->window, &drawer->renderer);
@@ -129,6 +149,21 @@ const char* check_link_click(gui_drawer* drawer)
     return NULL;
 }
 
+int set_gui_text_texture(gui_drawer* drawer, gui_text* new_text, const char* text)
+{
+    SDL_Surface* surface = TTF_RenderUTF8_Solid(drawer->font, text, drawer->text_color);
+    new_text->texture = SDL_CreateTextureFromSurface(drawer->renderer, surface);
+    int text_width = surface->w;
+    int text_height = surface->h;
+    SDL_FreeSurface(surface);
+    new_text->rect.x = drawer->current_x;
+    new_text->rect.y = drawer->current_y;
+    new_text->rect.w = text_width;
+    new_text->rect.h = text_height;
+
+    return text_width;
+}
+
 /**
  * Add a new text texture, texture will be added to the current rectangle
  * of the drawer and the current x pos is updated to the end of the text
@@ -144,17 +179,7 @@ void add_text_texture(gui_drawer* drawer, const char* text)
     gui_text* new_text = &drawer->texts[drawer->text_count];
     drawer->text_count++;
 
-    SDL_Surface* surface = TTF_RenderUTF8_Solid(drawer->font, text, drawer->text_color);
-    new_text->texture = SDL_CreateTextureFromSurface(drawer->renderer, surface);
-    int text_width = surface->w;
-    int text_height = surface->h;
-    SDL_FreeSurface(surface);
-    new_text->rect.x = drawer->current_x;
-    new_text->rect.y = drawer->current_y;
-    new_text->rect.w = text_width;
-    new_text->rect.h = text_height;
-
-    drawer->current_x += text_width;
+    drawer->current_x += set_gui_text_texture(drawer, new_text, text);
 }
 
 /**
@@ -230,15 +255,50 @@ bool unhighlight_link_texture(gui_drawer* drawer, int link_idx)
     return true;
 }
 
-void add_title_to_drawer(gui_drawer* drawer, html_text title)
+void add_title_to_drawer(gui_drawer* drawer, html_parser* parser)
 {
     if (global_config.no_title)
         return;
 
     // Leave some empty space to have some breathing room
     drawer->current_y = drawer->line_height;
-    drawer->current_x = calc_middle_x(drawer, title.size);
-    add_text_texture(drawer, title.text);
+
+    // Calc the size of html items so we can align information based of them
+    // Start length with adding sizes of " | " separators
+    size_t links_len = (TOP_NAVIGATION_SIZE - 1) * 3;
+    for (size_t i = 0; i < TOP_NAVIGATION_SIZE; i++) {
+        links_len += html_item_text_size(parser->top_navigation[i]);
+    }
+
+    int links_start = calc_middle_x(drawer, links_len);
+    drawer->current_x = links_start;
+    char page[5] = { 'P', 0, 0, 0, '\0' };
+    memcpy(page + 1, drawer->current_page, 3);
+    set_gui_text_texture(drawer, &drawer->title[0], page);
+
+    fmt_time time = current_time();
+    // Don't try to show time if there's no time to be shown
+    if (time.time_len > 0) {
+        // Set x so the last character is aligned with the last character of the nav links
+        drawer->current_x = links_start + ((links_len - time.time_len) * drawer->char_width);
+        set_gui_text_texture(drawer, &drawer->title[2], time.time);
+    } else {
+        drawer->title[2].texture = NULL;
+    }
+
+    drawer->current_x = calc_middle_x(drawer, parser->title.size);
+    set_gui_text_texture(drawer, &drawer->title[1], parser->title.text);
+}
+
+void update_title_to_drawer(gui_drawer* drawer, html_parser* parser)
+{
+    for (int ii = 0; ii < 3; ii++) {
+        if (drawer->title[ii].texture != NULL) {
+            SDL_DestroyTexture(drawer->title[ii].texture);
+        }
+    }
+
+    add_title_to_drawer(drawer, parser);
 }
 
 void add_top_navigation_to_drawer(gui_drawer* drawer, html_item* top_navigation)
@@ -353,6 +413,13 @@ void render_drawer_texts(gui_drawer* drawer)
         gui_link link = drawer->links[ii];
         SDL_RenderCopy(drawer->renderer, link.texture, NULL, &link.rect);
     }
+
+    for (int ii = 0; ii < 3; ii++) {
+        gui_text title = drawer->title[ii];
+        if (title.texture != NULL) {
+            SDL_RenderCopy(drawer->renderer, title.texture, NULL, &title.rect);
+        }
+    }
 }
 
 /**
@@ -407,11 +474,26 @@ void set_render_texts(gui_drawer* drawer, html_parser* parser)
     // update config in realtime
     set_config(drawer);
     get_font_dimensions(drawer);
-    add_title_to_drawer(drawer, parser->title);
+    add_title_to_drawer(drawer, parser);
     add_top_navigation_to_drawer(drawer, parser->top_navigation);
     add_middle_to_drawer(drawer, parser);
     add_subpages_to_drawer(drawer, parser);
     add_bottom_navigation_to_drawer(drawer, parser);
+}
+
+/**
+ * Load a new page.
+ * Note that the new page has to be set in the parser before calling this
+ */
+void load_new_page(gui_drawer* drawer, html_parser* parser)
+{
+    // Copy the new page to the current page info
+    memcpy(drawer->current_page, parser->link, 3);
+    free_html_parser(parser);
+    init_html_parser(parser);
+    load_page(parser);
+    parse_html(parser);
+    set_render_texts(drawer, parser);
 }
 
 int display_gui(html_parser* parser)
@@ -437,6 +519,8 @@ int display_gui(html_parser* parser)
     set_render_texts(&main_drawer, parser);
 
     int quit = 0;
+    int redraw_timer = 0;
+    int input_idx = 0;
     bool redraw = true;
     while (!quit) {
         while (SDL_PollEvent(&event) == 1) {
@@ -451,11 +535,28 @@ int display_gui(html_parser* parser)
                 const char* link = check_link_click(&main_drawer);
                 if (link != NULL) {
                     link_from_short_link(parser, (char*)link);
-                    free_html_parser(parser);
-                    init_html_parser(parser);
-                    load_page(parser);
-                    parse_html(parser);
-                    set_render_texts(&main_drawer, parser);
+                    load_new_page(&main_drawer, parser);
+                    redraw = true;
+                    input_idx = 0;
+                }
+            } else if (event.type == SDL_KEYUP) {
+                int sym = event.key.keysym.sym;
+                if (sym >= SDLK_0 && sym <= SDLK_9) {
+                    main_drawer.current_page[input_idx] = (char)sym;
+                    input_idx++;
+                    if (input_idx >= 3) {
+                        input_idx = 0;
+                        // TODO: error if num == -1
+                        int num = page_number(main_drawer.current_page);
+                        link_from_ints(parser, num, 1);
+                        load_new_page(&main_drawer, parser);
+                    } else {
+                        for (int idx = input_idx; idx < 3; idx++) {
+                            main_drawer.current_page[idx] = '-';
+                        }
+                        update_title_to_drawer(&main_drawer, parser);
+                    }
+
                     redraw = true;
                 }
             }
@@ -463,6 +564,13 @@ int display_gui(html_parser* parser)
 
         if (check_mouse_hover(&main_drawer)) {
             redraw = true;
+        }
+
+        // redraw every 1000 milliseconds (1 second) to update the time
+        if (redraw_timer >= 1000) {
+            redraw_timer = 0;
+            redraw = true;
+            update_title_to_drawer(&main_drawer, parser);
         }
 
         if (redraw) {
@@ -476,8 +584,8 @@ int display_gui(html_parser* parser)
         }
 
         redraw = false;
-        // 16ms is roughly fps
-        SDL_Delay(16);
+        SDL_Delay(REDRW_DELAY);
+        redraw_timer += REDRW_DELAY;
     }
 
     free_gui_drawer(&main_drawer);

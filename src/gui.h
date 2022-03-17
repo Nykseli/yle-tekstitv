@@ -45,6 +45,9 @@ typedef struct gui_drawer {
     int line_height; // height of a single character
     int char_width; // width of a single character
 
+    // title is: page, title and time
+    gui_text title[3];
+
     gui_text* texts;
     int text_count;
 
@@ -59,6 +62,8 @@ typedef struct gui_drawer {
     SDL_Color bg_color;
     SDL_Color text_color;
     SDL_Color link_color;
+
+    char current_page[4];
 } gui_drawer;
 
 int display_gui(html_parser* parser);
