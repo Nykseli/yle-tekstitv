@@ -15,6 +15,8 @@
 // How many html_rows the can be in the middle
 #define MIDDLE_HTML_ROWS_MAX 32
 #define TOP_NAVIGATION_SIZE 4
+// The TOP navigation size is constant so we don't ened to calculate it
+#define TOP_NAVIGATION_STRING_LENGTH 69
 #define BOTTOM_NAVIGATION_SIZE 6
 // The middle texts are always maximum of 39 characters
 #define MIDDLE_TEXT_MAX_LEN 39

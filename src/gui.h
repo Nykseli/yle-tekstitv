@@ -48,6 +48,9 @@ typedef struct gui_drawer {
     // title is: page, title and time
     gui_text title[3];
 
+    // if error texture is not null, error has happened
+    gui_text error;
+
     gui_text* texts;
     int text_count;
 

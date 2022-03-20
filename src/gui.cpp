@@ -61,6 +61,7 @@ void init_gui_drawer(gui_drawer* drawer)
     drawer->w_height = 0;
     drawer->current_x = 0;
     drawer->current_y = 0;
+    drawer->error.texture = NULL;
     sprintf(drawer->current_page, "%d", global_config.page);
     // Always display time when in gui mode
     if (global_config.time_fmt == NULL) {
@@ -89,6 +90,18 @@ void free_render_texts(gui_drawer* drawer)
             SDL_DestroyTexture(drawer->links[ii].texture);
         }
         free(drawer->links);
+    }
+
+    if (drawer->error.texture != NULL) {
+        SDL_DestroyTexture(drawer->error.texture);
+        drawer->error.texture = NULL;
+    }
+
+    for (int ii = 0; ii < 3; ii++) {
+        if (drawer->title[ii].texture != NULL) {
+            SDL_DestroyTexture(drawer->title[ii].texture);
+            drawer->title[ii].texture = NULL;
+        }
     }
 
     drawer->char_width = 0;
@@ -162,6 +175,17 @@ int set_gui_text_texture(gui_drawer* drawer, gui_text* new_text, const char* tex
     new_text->rect.h = text_height;
 
     return text_width;
+}
+
+void add_error_message(gui_drawer* drawer, const char* text)
+{
+    int text_length = strlen(text);
+    // Set the message in the middle of the window
+    int window_w, window_h;
+    SDL_GetWindowSize(drawer->window, &window_w, &window_h);
+    drawer->current_x = window_w / 2 - (text_length * drawer->char_width) / 2;
+    drawer->current_y = window_h / 2 - drawer->line_height / 2;
+    set_gui_text_texture(drawer, &drawer->error, text);
 }
 
 /**
@@ -263,14 +287,7 @@ void add_title_to_drawer(gui_drawer* drawer, html_parser* parser)
     // Leave some empty space to have some breathing room
     drawer->current_y = drawer->line_height;
 
-    // Calc the size of html items so we can align information based of them
-    // Start length with adding sizes of " | " separators
-    size_t links_len = (TOP_NAVIGATION_SIZE - 1) * 3;
-    for (size_t i = 0; i < TOP_NAVIGATION_SIZE; i++) {
-        links_len += html_item_text_size(parser->top_navigation[i]);
-    }
-
-    int links_start = calc_middle_x(drawer, links_len);
+    int links_start = calc_middle_x(drawer, TOP_NAVIGATION_STRING_LENGTH);
     drawer->current_x = links_start;
     char page[5] = { 'P', 0, 0, 0, '\0' };
     memcpy(page + 1, drawer->current_page, 3);
@@ -280,14 +297,17 @@ void add_title_to_drawer(gui_drawer* drawer, html_parser* parser)
     // Don't try to show time if there's no time to be shown
     if (time.time_len > 0) {
         // Set x so the last character is aligned with the last character of the nav links
-        drawer->current_x = links_start + ((links_len - time.time_len) * drawer->char_width);
+        drawer->current_x = links_start + ((TOP_NAVIGATION_STRING_LENGTH - time.time_len) * drawer->char_width);
         set_gui_text_texture(drawer, &drawer->title[2], time.time);
     } else {
         drawer->title[2].texture = NULL;
     }
 
-    drawer->current_x = calc_middle_x(drawer, parser->title.size);
-    set_gui_text_texture(drawer, &drawer->title[1], parser->title.text);
+    // The actual title doesn't exsist if curl load failed
+    if (!parser->curl_load_error) {
+        drawer->current_x = calc_middle_x(drawer, parser->title.size);
+        set_gui_text_texture(drawer, &drawer->title[1], parser->title.text);
+    }
 }
 
 void update_title_to_drawer(gui_drawer* drawer, html_parser* parser)
@@ -306,15 +326,9 @@ void add_top_navigation_to_drawer(gui_drawer* drawer, html_item* top_navigation)
     if (global_config.no_nav || global_config.no_top_nav)
         return;
 
-    // Start length with adding sizes of " | " separators
-    size_t links_len = (TOP_NAVIGATION_SIZE - 1) * 3;
-    for (size_t i = 0; i < TOP_NAVIGATION_SIZE; i++) {
-        links_len += html_item_text_size(top_navigation[i]);
-    }
-
     // Add nav textures
     drawer->current_y += 2 * drawer->line_height;
-    drawer->current_x = calc_middle_x(drawer, links_len);
+    drawer->current_x = calc_middle_x(drawer, TOP_NAVIGATION_STRING_LENGTH);
     for (size_t i = 0; i < TOP_NAVIGATION_SIZE; i++) {
         if (top_navigation[i].type == HTML_LINK) {
             add_link_texture(drawer, &html_item_as_link(top_navigation[i]));
@@ -404,6 +418,14 @@ void add_bottom_navigation_to_drawer(gui_drawer* drawer, html_parser* parser)
 
 void render_drawer_texts(gui_drawer* drawer)
 {
+    // If there's error to be shown, show it, page and time
+    if (drawer->error.texture != NULL) {
+        SDL_RenderCopy(drawer->renderer, drawer->title[0].texture, NULL, &drawer->title[0].rect);
+        SDL_RenderCopy(drawer->renderer, drawer->title[2].texture, NULL, &drawer->title[2].rect);
+        SDL_RenderCopy(drawer->renderer, drawer->error.texture, NULL, &drawer->error.rect);
+        return;
+    }
+
     for (int ii = 0; ii < drawer->text_count; ii++) {
         gui_text text = drawer->texts[ii];
         SDL_RenderCopy(drawer->renderer, text.texture, NULL, &text.rect);
@@ -475,6 +497,12 @@ void set_render_texts(gui_drawer* drawer, html_parser* parser)
     set_config(drawer);
     get_font_dimensions(drawer);
     add_title_to_drawer(drawer, parser);
+
+    if (parser->curl_load_error) {
+        add_error_message(drawer, "Couldn't load the page. Try again.");
+        return;
+    }
+
     add_top_navigation_to_drawer(drawer, parser->top_navigation);
     add_middle_to_drawer(drawer, parser);
     add_subpages_to_drawer(drawer, parser);
