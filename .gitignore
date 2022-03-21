@@ -17,3 +17,11 @@ DEBIAN/control
 # Test files
 tests/*.test
 !tests/**/*.htm
+
+# windows specific items
+winlib
+libcurl.dll
+SDL2_ttf.dll
+SDL2.dll
+tekstitv.exe
+cacert.pem

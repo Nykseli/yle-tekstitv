@@ -1,7 +1,9 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#ifndef _WIN32
 #include <pwd.h>
+#endif
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -509,6 +511,8 @@ bool parse_config_file(char* file_data)
  */
 static void load_config(char* filepath)
 {
+// TODO: support default config path on windows
+#ifndef _WIN32
     // Don't report missing file when trying to load the file from default path.
     bool default_config = false;
     char tmp_dir[1024];
@@ -572,6 +576,7 @@ static void load_config(char* filepath)
     close(fd);
     if (!success)
         exit(1);
+#endif
 }
 
 /**
