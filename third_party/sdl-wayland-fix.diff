@@ -1,0 +1,45 @@
+diff --git a/src/video/wayland/SDL_waylanddyn.h b/src/video/wayland/SDL_waylanddyn.h
+index c867ec001df..3d8d973ccd4 100644
+--- a/src/video/wayland/SDL_waylanddyn.h
++++ b/src/video/wayland/SDL_waylanddyn.h
+@@ -52,6 +52,14 @@ enum libdecor_window_state;
+ #include "xkbcommon/xkbcommon.h"
+ #include "xkbcommon/xkbcommon-compose.h"
+
++/* Must be included before our #defines, see Bugzilla #4957 */
++#include "wayland-client-core.h"
++
++#define SDL_WAYLAND_CHECK_VERSION(x, y, z) \
++  (WAYLAND_VERSION_MAJOR > x || \
++   (WAYLAND_VERSION_MAJOR == x && WAYLAND_VERSION_MINOR > y) || \
++   (WAYLAND_VERSION_MAJOR == x && WAYLAND_VERSION_MINOR == y && WAYLAND_VERSION_MICRO >= z))
++
+ #ifdef __cplusplus
+ extern "C"
+ {
+@@ -71,9 +79,6 @@ void SDL_WAYLAND_UnloadSymbols(void);
+ }
+ #endif
+
+-/* Must be included before our #defines, see Bugzilla #4957 */
+-#include "wayland-client-core.h"
+-
+ #ifdef SDL_VIDEO_DRIVER_WAYLAND_DYNAMIC
+
+ #if defined(_WAYLAND_CLIENT_H) || defined(WAYLAND_CLIENT_H)
+diff --git a/src/video/wayland/SDL_waylandsym.h b/src/video/wayland/SDL_waylandsym.h
+index fa29bedb102..7d315319c4a 100644
+--- a/src/video/wayland/SDL_waylandsym.h
++++ b/src/video/wayland/SDL_waylandsym.h
+@@ -84,9 +84,11 @@ SDL_WAYLAND_MODULE(WAYLAND_CLIENT_1_18)
+ SDL_WAYLAND_SYM(void, wl_proxy_set_tag, (struct wl_proxy *, const char * const *))
+ SDL_WAYLAND_SYM(const char * const *, wl_proxy_get_tag, (struct wl_proxy *))
+
++#if SDL_WAYLAND_CHECK_VERSION(1, 20, 0)
+ SDL_WAYLAND_MODULE(WAYLAND_CLIENT_1_20)
+ SDL_WAYLAND_SYM(struct wl_proxy*, wl_proxy_marshal_flags, (struct wl_proxy *proxy, uint32_t opcode, const struct wl_interface *interfac, uint32_t version, uint32_t flags, ...))
+ SDL_WAYLAND_SYM(struct wl_proxy*, wl_proxy_marshal_array_flags, (struct wl_proxy *proxy, uint32_t opcode, const struct wl_interface *interface, uint32_t version,  uint32_t flags, union wl_argument *args))
++#endif
+
+ SDL_WAYLAND_INTERFACE(wl_seat_interface)
+ SDL_WAYLAND_INTERFACE(wl_surface_interface)

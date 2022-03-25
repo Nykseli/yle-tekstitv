@@ -18,7 +18,7 @@ MAJOR_VERSION=`awk '/TEKSTITV_MAJOR_VERSION/{print $3}' include/tekstitv.h`
 MINOR_VERSION=`awk '/TEKSTITV_MINOR_VERSION/{print $3}' include/tekstitv.h`
 BIN_LINKS="-lcurl"
 CFLAGS="-std=c99 -Wall -Wextra -Werror -Wno-unused-parameter -Wformat-security -Wno-unused-result -pedantic -fPIC"
-CXXFLAGS="-std=c++11 -Wall -Wextra -Werror -Wno-unused-parameter -Wformat-security -Wno-unused-result -pedantic -fPIC"
+CXXFLAGS="-std=c++11 -Wall -Wextra -Werror -Wno-unused-parameter -Wformat-security -Wno-unused-result -pedantic -fPIC -fno-threadsafe-statics"
 TARGETS=""
 INSTALLS=""
 UNINSTALLS=""
@@ -261,7 +261,7 @@ if ! $utf8; then
 fi
 
 if $enable_gui; then
-    BIN_LINKS="$BIN_LINKS -lSDL2 -lSDL2_ttf"
+    BIN_LINKS="$BIN_LINKS -lasound -lm -ldl -lpulse -lX11 -lXext -lXcursor -lXinerama -lXi -lXfixes -lXrandr -lXss -lXxf86vm -lwayland-egl -lwayland-client -lwayland-cursor -lpthread -lxcb -lXrender -lffi -lrt -lXau -lXdmcp -llzma -lnsl -lvorbis -lvorbisenc -logg -lresolv -ltirpc -lfreetype -lxkbcommon"
     CFLAGS="$CFLAGS -DENABLE_GUI"
     CXXFLAGS="$CXXFLAGS -DENABLE_GUI"
 fi

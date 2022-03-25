@@ -14,6 +14,13 @@ Makefile
 # Generated .deb control file
 DEBIAN/control
 
+# Third party
+third_party/SDL
+third_party/SDL_ttf
+
+# ini file created by imgui
+imgui.ini
+
 # Test files
 tests/*.test
 !tests/**/*.htm
