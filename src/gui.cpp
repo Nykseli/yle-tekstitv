@@ -1,13 +1,101 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <SDL.h>
+#include <SDL_ttf.h>
+#include <imgui.h>
+#include <imgui/backends/imgui_impl_sdl.h>
+#include <imgui/backends/imgui_impl_sdlrenderer.h>
+
 #include "gui.h"
+
+extern "C" {
+#include "config.h"
+}
+
+typedef struct imgui_settings {
+    // We need float vectors so we can edit the colors with imgui controls
+    ImVec4 ebg_color;
+    ImVec4 etext_color;
+    ImVec4 elink_color;
+
+    bool show_settings;
+} imgui_settings;
+
+/**
+ * gui_text contains data for each visible text object on the window
+ */
+typedef struct gui_text {
+    SDL_Rect rect;
+    SDL_Texture* texture;
+} gui_text;
+
+/**
+ * gui_link contains data for each visible link object on the window
+ * and short link to teletext so it can be easily loaded
+ */
+typedef struct gui_link {
+    SDL_Rect rect;
+    SDL_Texture* texture;
+    /**
+     * short link to the link from parser, should not be modified
+     */
+    const char* short_link;
+    /**
+     * save inner_text so it can be easily rerendered
+     */
+    const char* inner_text;
+    bool highlighted;
+} gui_link;
+
+typedef struct gui_drawer {
+    SDL_Window* window;
+    SDL_Renderer* renderer;
+    TTF_Font* font;
+    int line_height; // height of a single character
+    int char_width; // width of a single character
+
+    // title is: page, title and time
+    gui_text title[3];
+
+    // if error texture is not null, error has happened
+    gui_text error;
+
+    gui_text* texts;
+    int text_count;
+
+    gui_link* links;
+    int link_count;
+
+    int w_width;
+    int w_height;
+    int current_x;
+    int current_y;
+
+    SDL_Color bg_color;
+    SDL_Color text_color;
+    SDL_Color link_color;
+
+    char current_page[4];
+
+    // settings for imgui specific things
+    imgui_settings imgui;
+} gui_drawer;
 
 #define WINDOW_WIDTH 760
 #define WINDOW_HEIGHT 800
 // milliseconds between redraws
 // 16ms is roughly 60 fps
 #define REDRW_DELAY 16
+
+ImVec4 sdl_color_to_imvec4(SDL_Color* src)
+{
+
+    Uint8 r = src->r;
+    Uint8 g = src->g;
+    Uint8 b = src->b;
+    return ImVec4(r / 255.0f, g / 255.0f, b / 255.0f, 1.00f);
+}
 
 SDL_Color config_rgb_to_color(short* rgb, SDL_Color def)
 {
@@ -36,6 +124,11 @@ void set_config(gui_drawer* drawer)
     drawer->bg_color = config_rgb_to_color(global_config.bg_rgb, bgColor);
     drawer->text_color = config_rgb_to_color(global_config.text_rgb, textColor);
     drawer->link_color = config_rgb_to_color(global_config.link_rgb, linkColor);
+
+    drawer->imgui.ebg_color = sdl_color_to_imvec4(&drawer->bg_color);
+    drawer->imgui.etext_color = sdl_color_to_imvec4(&drawer->text_color);
+    drawer->imgui.elink_color = sdl_color_to_imvec4(&drawer->link_color);
+    drawer->imgui.show_settings = false;
 }
 
 void set_gui_time_fmt(char** fmt_target)
@@ -71,6 +164,8 @@ void init_gui_drawer(gui_drawer* drawer)
     for (int ii = 0; ii < 3; ii++) {
         drawer->title[ii].texture = NULL;
     }
+
+    set_config(drawer);
 
     // Initialize SDL
     SDL_CreateWindowAndRenderer(WINDOW_WIDTH, WINDOW_HEIGHT, 0, &drawer->window, &drawer->renderer);
@@ -493,8 +588,8 @@ void set_render_texts(gui_drawer* drawer, html_parser* parser)
 {
     // Just to be sure
     free_render_texts(drawer);
-    // update config in realtime
-    set_config(drawer);
+    // TODO: update config in realtime. now this function breaks imgui settigns editing
+    // set_config(drawer);
     get_font_dimensions(drawer);
     add_title_to_drawer(drawer, parser);
 
@@ -507,6 +602,58 @@ void set_render_texts(gui_drawer* drawer, html_parser* parser)
     add_middle_to_drawer(drawer, parser);
     add_subpages_to_drawer(drawer, parser);
     add_bottom_navigation_to_drawer(drawer, parser);
+}
+
+bool imgui_color_edit_line(const char* text, ImVec4* source, SDL_Color* target)
+{
+    if (ImGui::ColorEdit3(text, (float*)source)) {
+        target->r = source->x * 255;
+        target->g = source->y * 255;
+        target->b = source->z * 255;
+        return true;
+    }
+
+    return false;
+}
+
+bool imgui_settings_window(gui_drawer* drawer)
+{
+    bool edited = false;
+    bool* show_window = &drawer->imgui.show_settings;
+    if (ImGui::Begin("Background color setting", show_window)) {
+        if (imgui_color_edit_line("Link color", &drawer->imgui.elink_color, &drawer->link_color)) {
+            edited = true;
+        }
+        if (imgui_color_edit_line("Text color", &drawer->imgui.etext_color, &drawer->text_color)) {
+            edited = true;
+        }
+        if (imgui_color_edit_line("Background color", &drawer->imgui.ebg_color, &drawer->bg_color)) {
+            edited = true;
+        }
+    }
+    ImGui::End();
+    return edited;
+}
+
+void imgui_menu_bar(gui_drawer* drawer)
+{
+    if (ImGui::BeginMainMenuBar()) {
+        if (ImGui::BeginMenu("Settings")) {
+            if (ImGui::MenuItem("Color", NULL, drawer->imgui.show_settings)) {
+                drawer->imgui.show_settings = !drawer->imgui.show_settings;
+            }
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Help")) {
+            if (ImGui::MenuItem("Controls")) {
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem("About")) {
+            }
+            ImGui::EndMenu();
+        }
+        ImGui::EndMainMenuBar();
+    }
 }
 
 /**
@@ -524,6 +671,15 @@ void load_new_page(gui_drawer* drawer, html_parser* parser)
     set_render_texts(drawer, parser);
 }
 
+void init_imgui(gui_drawer* drawer)
+{
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGui::StyleColorsDark();
+    ImGui_ImplSDL2_InitForSDLRenderer(drawer->window, drawer->renderer);
+    ImGui_ImplSDLRenderer_Init(drawer->renderer);
+}
+
 int display_gui(html_parser* parser)
 {
     // TODO: how to bundle up the font to the binary?
@@ -531,12 +687,13 @@ int display_gui(html_parser* parser)
 
     gui_drawer main_drawer;
     SDL_Event event;
-    SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO);
+    SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER);
     // init drawers
     init_gui_drawer(&main_drawer);
     // window settings need to be set after the creation
     SDL_SetWindowResizable(main_drawer.window, SDL_TRUE);
     TTF_Init();
+    init_imgui(&main_drawer);
 
     main_drawer.font = TTF_OpenFont(font_path, 16);
     if (main_drawer.font == NULL) {
@@ -552,6 +709,13 @@ int display_gui(html_parser* parser)
     bool redraw = true;
     while (!quit) {
         while (SDL_PollEvent(&event) == 1) {
+            // If imgui uses the event, don't pass it to the teletext gui
+            if (ImGui_ImplSDL2_ProcessEvent(&event)) {
+                // TODO: separate render events for imgui and teletext renders?
+                redraw = true;
+                continue;
+            }
+
             if (event.type == SDL_QUIT) {
                 quit = 1;
             } else if (event.type == SDL_WINDOWEVENT) {
@@ -601,6 +765,21 @@ int display_gui(html_parser* parser)
             update_title_to_drawer(&main_drawer, parser);
         }
 
+        // Start the Dear ImGui frame
+        ImGui_ImplSDLRenderer_NewFrame();
+        ImGui_ImplSDL2_NewFrame();
+        ImGui::NewFrame();
+
+        imgui_menu_bar(&main_drawer);
+
+        if (main_drawer.imgui.show_settings) {
+            if (imgui_settings_window(&main_drawer)) {
+                set_render_texts(&main_drawer, parser);
+                redraw = true;
+            }
+        }
+
+        ImGui::Render();
         if (redraw) {
             Uint8 r = main_drawer.bg_color.r;
             Uint8 g = main_drawer.bg_color.g;
@@ -608,6 +787,7 @@ int display_gui(html_parser* parser)
             SDL_SetRenderDrawColor(main_drawer.renderer, r, g, b, 0);
             SDL_RenderClear(main_drawer.renderer);
             render_drawer_texts(&main_drawer);
+            ImGui_ImplSDLRenderer_RenderDrawData(ImGui::GetDrawData());
             SDL_RenderPresent(main_drawer.renderer);
         }
 
@@ -616,6 +796,9 @@ int display_gui(html_parser* parser)
         redraw_timer += REDRW_DELAY;
     }
 
+    ImGui_ImplSDLRenderer_Shutdown();
+    ImGui_ImplSDL2_Shutdown();
+    ImGui::DestroyContext();
     free_gui_drawer(&main_drawer);
 
     // Remember to destroy SDL stuff to avoid memleaks

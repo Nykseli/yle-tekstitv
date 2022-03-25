@@ -6,68 +6,7 @@
 extern "C" {
 #endif
 
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_ttf.h>
 #include <tekstitv.h>
-
-#include "config.h"
-
-/**
- * gui_text contains data for each visible text object on the window
- */
-typedef struct gui_text {
-    SDL_Rect rect;
-    SDL_Texture* texture;
-} gui_text;
-
-/**
- * gui_link contains data for each visible link object on the window
- * and short link to teletext so it can be easily loaded
- */
-typedef struct gui_link {
-    SDL_Rect rect;
-    SDL_Texture* texture;
-    /**
-     * short link to the link from parser, should not be modified
-     */
-    const char* short_link;
-    /**
-     * save inner_text so it can be easily rerendered
-     */
-    const char* inner_text;
-    bool highlighted;
-} gui_link;
-
-typedef struct gui_drawer {
-    SDL_Window* window;
-    SDL_Renderer* renderer;
-    TTF_Font* font;
-    int line_height; // height of a single character
-    int char_width; // width of a single character
-
-    // title is: page, title and time
-    gui_text title[3];
-
-    // if error texture is not null, error has happened
-    gui_text error;
-
-    gui_text* texts;
-    int text_count;
-
-    gui_link* links;
-    int link_count;
-
-    int w_width;
-    int w_height;
-    int current_x;
-    int current_y;
-
-    SDL_Color bg_color;
-    SDL_Color text_color;
-    SDL_Color link_color;
-
-    char current_page[4];
-} gui_drawer;
 
 int display_gui(html_parser* parser);
 
