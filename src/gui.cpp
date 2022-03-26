@@ -72,6 +72,7 @@ typedef struct gui_drawer {
     int current_x;
     int current_y;
 
+    int font_size;
     SDL_Color bg_color;
     SDL_Color text_color;
     SDL_Color link_color;
@@ -87,6 +88,9 @@ typedef struct gui_drawer {
 // milliseconds between redraws
 // 16ms is roughly 60 fps
 #define REDRW_DELAY 16
+
+// TODO: how to bundle up the font to the binary?
+const char* font_path = "assets/test_font.ttf";
 
 ImVec4 sdl_color_to_imvec4(SDL_Color* src)
 {
@@ -129,6 +133,10 @@ void set_config(gui_drawer* drawer)
     drawer->imgui.etext_color = sdl_color_to_imvec4(&drawer->text_color);
     drawer->imgui.elink_color = sdl_color_to_imvec4(&drawer->link_color);
     drawer->imgui.show_settings = false;
+    // TODO: get these from settings
+    drawer->font_size = 16;
+    drawer->w_width = WINDOW_WIDTH;
+    drawer->w_height = WINDOW_HEIGHT;
 }
 
 void set_gui_time_fmt(char** fmt_target)
@@ -136,6 +144,19 @@ void set_gui_time_fmt(char** fmt_target)
 #define GUI_TIME_FMT "%d.%m. %H:%M:%S"
     *fmt_target = (char*)malloc(strlen(GUI_TIME_FMT) + 1);
     strcpy(*fmt_target, GUI_TIME_FMT);
+}
+
+void set_font(gui_drawer* drawer)
+{
+    if (drawer->font != NULL) {
+        TTF_CloseFont(drawer->font);
+    }
+
+    drawer->font = TTF_OpenFont(font_path, drawer->font_size);
+    if (drawer->font == NULL) {
+        fprintf(stderr, "error: font not found\n");
+        exit(EXIT_FAILURE);
+    }
 }
 
 void init_gui_drawer(gui_drawer* drawer)
@@ -203,8 +224,6 @@ void free_render_texts(gui_drawer* drawer)
     drawer->line_height = 0;
     drawer->text_count = 0;
     drawer->link_count = 0;
-    drawer->w_width = 0;
-    drawer->w_height = 0;
     drawer->current_x = 0;
     drawer->current_y = 0;
     drawer->texts = NULL;
@@ -618,42 +637,57 @@ bool imgui_color_edit_line(const char* text, ImVec4* source, SDL_Color* target)
 
 bool imgui_settings_window(gui_drawer* drawer)
 {
+#define edit(fn)       \
+    if (fn) {          \
+        edited = true; \
+    }
+
+#define font_edit(fn)     \
+    if (fn) {             \
+        set_font(drawer); \
+        edited = true;    \
+    }
+
     bool edited = false;
     bool* show_window = &drawer->imgui.show_settings;
     if (ImGui::Begin("Background color setting", show_window)) {
-        if (imgui_color_edit_line("Link color", &drawer->imgui.elink_color, &drawer->link_color)) {
-            edited = true;
-        }
-        if (imgui_color_edit_line("Text color", &drawer->imgui.etext_color, &drawer->text_color)) {
-            edited = true;
-        }
-        if (imgui_color_edit_line("Background color", &drawer->imgui.ebg_color, &drawer->bg_color)) {
-            edited = true;
-        }
+        edit(imgui_color_edit_line("Link color", &drawer->imgui.elink_color, &drawer->link_color));
+        edit(imgui_color_edit_line("Text color", &drawer->imgui.etext_color, &drawer->text_color));
+        edit(imgui_color_edit_line("Background color", &drawer->imgui.ebg_color, &drawer->bg_color));
+        ImGui::Separator();
+        font_edit(ImGui::DragInt("Font size", &drawer->font_size, 1, 8, 80));
     }
     ImGui::End();
     return edited;
+
+#undef edit
+#undef font_edit
 }
 
-void imgui_menu_bar(gui_drawer* drawer)
+bool imgui_menu_bar(gui_drawer* drawer)
 {
+    bool open_window = false;
+
     if (ImGui::BeginMainMenuBar()) {
-        if (ImGui::BeginMenu("Settings")) {
-            if (ImGui::MenuItem("Color", NULL, drawer->imgui.show_settings)) {
+        if (ImGui::BeginMenu("Edit")) {
+            if (ImGui::MenuItem("Settings", NULL, drawer->imgui.show_settings)) {
                 drawer->imgui.show_settings = !drawer->imgui.show_settings;
+                open_window = true;
             }
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Help")) {
-            if (ImGui::MenuItem("Controls")) {
+            if (ImGui::MenuItem("Controls", NULL, false, false)) {
             }
             ImGui::Separator();
-            if (ImGui::MenuItem("About")) {
+            if (ImGui::MenuItem("About", NULL, false, false)) {
             }
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
     }
+
+    return open_window;
 }
 
 /**
@@ -682,9 +716,6 @@ void init_imgui(gui_drawer* drawer)
 
 int display_gui(html_parser* parser)
 {
-    // TODO: how to bundle up the font to the binary?
-    const char* font_path = "assets/test_font.ttf";
-
     gui_drawer main_drawer;
     SDL_Event event;
     SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER);
@@ -695,12 +726,7 @@ int display_gui(html_parser* parser)
     TTF_Init();
     init_imgui(&main_drawer);
 
-    main_drawer.font = TTF_OpenFont(font_path, 16);
-    if (main_drawer.font == NULL) {
-        fprintf(stderr, "error: font not found\n");
-        exit(EXIT_FAILURE);
-    }
-
+    set_font(&main_drawer);
     set_render_texts(&main_drawer, parser);
 
     int quit = 0;
@@ -770,7 +796,9 @@ int display_gui(html_parser* parser)
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
 
-        imgui_menu_bar(&main_drawer);
+        if (imgui_menu_bar(&main_drawer)) {
+            redraw = true;
+        }
 
         if (main_drawer.imgui.show_settings) {
             if (imgui_settings_window(&main_drawer)) {
