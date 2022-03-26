@@ -561,9 +561,21 @@ void render_drawer_texts(gui_drawer* drawer)
 /**
  * returns true if mouse hover requires a rerender
  */
-bool check_mouse_hover(gui_drawer* drawer)
+bool check_mouse_hover(gui_drawer* drawer, bool mouse_on_imgui)
 {
     bool rerender = false;
+
+    // If mouse is caputured by imgui, we want to reset all the higlights
+    if (mouse_on_imgui) {
+        for (int ii = 0; ii < drawer->link_count; ii++) {
+            if (unhighlight_link_texture(drawer, ii)) {
+                rerender = true;
+            }
+        }
+
+        return rerender;
+    }
+
     int mx, my;
     SDL_GetMouseState(&mx, &my);
     for (int ii = 0; ii < drawer->link_count; ii++) {
@@ -729,6 +741,8 @@ int display_gui(html_parser* parser)
     set_font(&main_drawer);
     set_render_texts(&main_drawer, parser);
 
+    ImGuiIO& io = ImGui::GetIO();
+
     int quit = 0;
     int redraw_timer = 0;
     int input_idx = 0;
@@ -739,7 +753,6 @@ int display_gui(html_parser* parser)
             if (ImGui_ImplSDL2_ProcessEvent(&event)) {
                 // TODO: separate render events for imgui and teletext renders?
                 redraw = true;
-                continue;
             }
 
             if (event.type == SDL_QUIT) {
@@ -749,7 +762,7 @@ int display_gui(html_parser* parser)
                     set_render_texts(&main_drawer, parser);
                     redraw = true;
                 }
-            } else if (event.type == SDL_MOUSEBUTTONUP) {
+            } else if (!io.WantCaptureMouse && event.type == SDL_MOUSEBUTTONUP) {
                 const char* link = check_link_click(&main_drawer);
                 if (link != NULL) {
                     link_from_short_link(parser, (char*)link);
@@ -757,7 +770,7 @@ int display_gui(html_parser* parser)
                     redraw = true;
                     input_idx = 0;
                 }
-            } else if (event.type == SDL_KEYUP) {
+            } else if (!io.WantCaptureKeyboard && event.type == SDL_KEYUP) {
                 int sym = event.key.keysym.sym;
                 if (sym >= SDLK_0 && sym <= SDLK_9) {
                     main_drawer.current_page[input_idx] = (char)sym;
@@ -780,7 +793,7 @@ int display_gui(html_parser* parser)
             }
         }
 
-        if (check_mouse_hover(&main_drawer)) {
+        if (check_mouse_hover(&main_drawer, io.WantCaptureMouse)) {
             redraw = true;
         }
 
