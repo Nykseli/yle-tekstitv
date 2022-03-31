@@ -83,8 +83,6 @@ typedef struct gui_drawer {
     imgui_settings imgui;
 } gui_drawer;
 
-#define WINDOW_WIDTH 760
-#define WINDOW_HEIGHT 800
 // milliseconds between redraws
 // 16ms is roughly 60 fps
 #define REDRW_DELAY 16
@@ -134,9 +132,9 @@ void set_config(gui_drawer* drawer)
     drawer->imgui.elink_color = sdl_color_to_imvec4(&drawer->link_color);
     drawer->imgui.show_settings = false;
     // TODO: get these from settings
-    drawer->font_size = 16;
-    drawer->w_width = WINDOW_WIDTH;
-    drawer->w_height = WINDOW_HEIGHT;
+    drawer->font_size = global_config.font_size;
+    drawer->w_width = global_config.w_width;
+    drawer->w_height = global_config.w_height;
 }
 
 void set_gui_time_fmt(char** fmt_target)
@@ -189,7 +187,7 @@ void init_gui_drawer(gui_drawer* drawer)
     set_config(drawer);
 
     // Initialize SDL
-    SDL_CreateWindowAndRenderer(WINDOW_WIDTH, WINDOW_HEIGHT, 0, &drawer->window, &drawer->renderer);
+    SDL_CreateWindowAndRenderer(drawer->w_width, drawer->w_height, 0, &drawer->window, &drawer->renderer);
 }
 
 void free_render_texts(gui_drawer* drawer)
@@ -724,6 +722,9 @@ void init_imgui(gui_drawer* drawer)
     ImGui::StyleColorsDark();
     ImGui_ImplSDL2_InitForSDLRenderer(drawer->window, drawer->renderer);
     ImGui_ImplSDLRenderer_Init(drawer->renderer);
+    ImGuiIO& io = ImGui::GetIO();
+    // Don't use the ini file to save window information
+    io.IniFilename = NULL;
 }
 
 int display_gui(html_parser* parser)

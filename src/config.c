@@ -32,6 +32,8 @@
 // Example 15.09. 10:05
 #define DEFAULT_TIME_FMT "%d.%m. %H:%M"
 #define TIME_BUFFER_SIZE 256
+#define GUI_WINDOW_WIDTH 760
+#define GUI_WINDOW_HEIGHT 800
 static char time_buffer[TIME_BUFFER_SIZE];
 
 typedef struct {
@@ -75,7 +77,10 @@ config global_config = {
     .bg_rgb = { -1, -1, -1 },
     .text_rgb = { -1, -1, -1 },
     .link_rgb = { -1, -1, -1 },
-    .time_fmt = NULL
+    .time_fmt = NULL,
+    .font_size = 16,
+    .w_width = GUI_WINDOW_WIDTH,
+    .w_height = GUI_WINDOW_HEIGHT,
 };
 
 bool ignore_config_read_during_testing = false;
@@ -319,7 +324,7 @@ bool set_boolean_option(bool* option, char* param, int param_len)
 {
     if (param_len == 4 && strncmp(param, "true", param_len) == 0) {
         *option = true;
-    } else if (param_len == 4 && strncmp(param, "false", param_len) == 0) {
+    } else if (param_len == 5 && strncmp(param, "false", param_len) == 0) {
         *option = false;
     } else {
         return config_parse_error("Invalid boolean parameter.");
@@ -344,6 +349,35 @@ bool set_rbg_option(short* rgb, char* param, int param_len)
 
 fail:
     return config_parse_error("Invalid hex color parameter.");
+}
+
+bool set_int_option(int* target, int min, int max, char* param, int param_len)
+{
+    int pint = 0;
+    int sign = 1;
+    int idx = 0;
+    // Support negative values
+    if (param[0] == '-') {
+        sign = -1;
+        idx++;
+    }
+
+    for (; idx < param_len; idx++) {
+        if (param[idx] < '0' || param[idx] > '9') {
+            return config_parse_error("Invalid integer parameter.");
+        }
+
+        pint = pint * 10 + param[idx] - '0';
+    }
+
+    pint *= sign;
+
+    if (pint < min || pint > max) {
+        return config_parse_error("Expected integer between %d and %d. Was %d", min, max, pint);
+    }
+
+    *target = pint;
+    return true;
 }
 
 /**
@@ -408,6 +442,12 @@ static bool set_config_option(config_line line)
         success = set_boolean_option(&global_config.default_colors, line.parameter.start, parameter_len);
     } else if (strncmp(line.option.start, "show-time", option_len) == 0) {
         success = set_default_option((char**)&global_config.time_fmt, line.parameter.start, parameter_len, DEFAULT_TIME_FMT);
+    } else if (strncmp(line.option.start, "font-size", option_len) == 0) {
+        success = set_int_option(&global_config.font_size, 8, 80, line.parameter.start, parameter_len);
+    } else if (strncmp(line.option.start, "window-width", option_len) == 0) {
+        success = set_int_option(&global_config.w_width, 640, 4096, line.parameter.start, parameter_len);
+    } else if (strncmp(line.option.start, "window-height", option_len) == 0) {
+        success = set_int_option(&global_config.w_height, 640, 4096, line.parameter.start, parameter_len);
     } else {
         line.option.start[option_len] = '\0';
         return config_parse_error("Unknown option: '%s'", line.option.start);

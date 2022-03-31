@@ -1,6 +1,10 @@
 #ifndef _CONFIG_H_
 #define _CONFIG_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdbool.h>
 
 /** Formated time based on the configured time format */
@@ -30,6 +34,11 @@ typedef struct {
     short link_rgb[3];
     short text_rgb[3];
     const char* time_fmt;
+
+    // gui-only options
+    int font_size;
+    int w_width;
+    int w_height;
 } config;
 
 #define BG_RGB(i) (global_config.bg_rgb[i])
@@ -44,5 +53,9 @@ extern config global_config;
 // Ignores the config read from defalt path during config tests
 extern bool ignore_config_read_during_testing;
 extern int latest_config_exit_code;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
