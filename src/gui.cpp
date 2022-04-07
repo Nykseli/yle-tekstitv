@@ -90,6 +90,11 @@ typedef struct gui_drawer {
 // TODO: how to bundle up the font to the binary?
 const char* font_path = "assets/test_font.ttf";
 
+bool is_sdl_colors_equal(SDL_Color a, SDL_Color b)
+{
+    return a.r == b.r && a.g == b.g && a.b == b.b;
+}
+
 ImVec4 sdl_color_to_imvec4(SDL_Color* src)
 {
 
@@ -99,13 +104,9 @@ ImVec4 sdl_color_to_imvec4(SDL_Color* src)
     return ImVec4(r / 255.0f, g / 255.0f, b / 255.0f, 1.00f);
 }
 
-SDL_Color config_rgb_to_color(short* rgb, SDL_Color def)
+SDL_Color config_rgb_to_color(short* rgb)
 {
 #define SHORT_8BIT(s) (Uint8)(255 * (s / 1000.0f))
-
-    if (*rgb == -1 || global_config.default_colors) {
-        return def;
-    }
 
     Uint8 r = SHORT_8BIT(rgb[0]);
     Uint8 g = SHORT_8BIT(rgb[1]);
@@ -117,21 +118,58 @@ SDL_Color config_rgb_to_color(short* rgb, SDL_Color def)
 #undef SHORT_8BIT
 }
 
+SDL_Color config_rgb_to_def_color(short* rgb, SDL_Color def)
+{
+    if (*rgb == -1 || global_config.default_colors) {
+        return def;
+    }
+
+    return config_rgb_to_color(rgb);
+}
+
+/**
+ * This we want to save to the config file
+ */
+void set_gui_options_to_be_saved(gui_drawer* drawer)
+{
+    if (drawer->font_size != global_config.font_size)
+        update_int_option("font-size", drawer->font_size);
+
+    int window_w, window_h;
+    SDL_GetWindowSize(drawer->window, &window_w, &window_h);
+    if (window_h != global_config.w_height)
+        update_int_option("window-height", window_h);
+    if (window_w != global_config.w_width)
+        update_int_option("window-width", window_w);
+
+#define _m_update_color(name, c) update_rgb_option(name, c.r, c.g, c.b)
+    if (!is_sdl_colors_equal(drawer->bg_color, config_rgb_to_color(global_config.bg_rgb))) {
+        _m_update_color("bg-color", drawer->bg_color);
+    }
+    if (!is_sdl_colors_equal(drawer->text_color, config_rgb_to_color(global_config.text_rgb))) {
+        _m_update_color("text-color", drawer->text_color);
+    }
+    if (!is_sdl_colors_equal(drawer->link_color, config_rgb_to_color(global_config.link_rgb))) {
+        _m_update_color("link-color", drawer->link_color);
+    }
+#undef _m_update_color
+}
+
 void set_config(gui_drawer* drawer)
 {
     SDL_Color bgColor = { 0, 0, 0, 0 };
     SDL_Color textColor = { 255, 255, 255, 0 };
     SDL_Color linkColor = { 17, 159, 244, 0 };
 
-    drawer->bg_color = config_rgb_to_color(global_config.bg_rgb, bgColor);
-    drawer->text_color = config_rgb_to_color(global_config.text_rgb, textColor);
-    drawer->link_color = config_rgb_to_color(global_config.link_rgb, linkColor);
+    drawer->bg_color = config_rgb_to_def_color(global_config.bg_rgb, bgColor);
+    drawer->text_color = config_rgb_to_def_color(global_config.text_rgb, textColor);
+    drawer->link_color = config_rgb_to_def_color(global_config.link_rgb, linkColor);
 
     drawer->imgui.ebg_color = sdl_color_to_imvec4(&drawer->bg_color);
     drawer->imgui.etext_color = sdl_color_to_imvec4(&drawer->text_color);
     drawer->imgui.elink_color = sdl_color_to_imvec4(&drawer->link_color);
     drawer->imgui.show_settings = false;
-    // TODO: get these from settings
+
     drawer->font_size = global_config.font_size;
     drawer->w_width = global_config.w_width;
     drawer->w_height = global_config.w_height;
@@ -736,6 +774,7 @@ int display_gui(html_parser* parser)
     init_gui_drawer(&main_drawer);
     // window settings need to be set after the creation
     SDL_SetWindowResizable(main_drawer.window, SDL_TRUE);
+    SDL_SetWindowMinimumSize(main_drawer.window, 640, 640);
     TTF_Init();
     init_imgui(&main_drawer);
 
@@ -841,6 +880,7 @@ int display_gui(html_parser* parser)
     ImGui_ImplSDLRenderer_Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
+    set_gui_options_to_be_saved(&main_drawer);
     free_gui_drawer(&main_drawer);
 
     // Remember to destroy SDL stuff to avoid memleaks
@@ -852,6 +892,8 @@ int display_gui(html_parser* parser)
     if (SDL_WasInit(0)) {
         SDL_Quit();
     }
+
+    save_config();
 
     return 0;
 }

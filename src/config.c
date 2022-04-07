@@ -1,4 +1,5 @@
 
+#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <pwd.h>
@@ -58,6 +59,23 @@ typedef enum {
     COLOR_TEXT,
 } color_type;
 
+typedef struct {
+    // If item is a comment, option is NULL and the comment is in `value`
+    bool is_comment;
+    int line_num;
+    char* option;
+    size_t option_len;
+    char* value;
+    size_t value_len;
+} config_file_item;
+
+typedef struct {
+    config_file_item* items;
+    size_t item_count;
+    bool config_changed;
+    char* config_file;
+} config_file_items;
+
 config global_config = {
     .page = 100,
     .subpage = 1,
@@ -87,9 +105,193 @@ bool ignore_config_read_during_testing = false;
 int latest_config_exit_code = 0;
 
 arguments args;
+config_file_items config_items = {
+    .items = NULL,
+    .item_count = 0,
+    .config_file = NULL,
+    .config_changed = false,
+};
 
 // What line are we currenlty parsing in the config file
 int config_file_num = 1;
+
+static void add_config_op_value(char* option, char* value);
+
+config_file_item* find_config_item(const char* name)
+{
+    for (size_t ii = 0; ii < config_items.item_count; ii++) {
+        config_file_item* item = config_items.items + ii;
+        if (!item->is_comment && strcmp(item->option, name) == 0) {
+            return item;
+        }
+    }
+
+    return NULL;
+}
+
+void update_int_option(const char* name, int value)
+{
+    // There's always at least one number
+    size_t int_size = 1;
+    int v_copy = value;
+    // Add size for '-' character
+    if (value < 0)
+        int_size++;
+
+    while (true) {
+        v_copy = v_copy / 10;
+        if (v_copy != 0)
+            int_size++;
+        else
+            break;
+    }
+
+    char* new_value = malloc(int_size + 1);
+    sprintf(new_value, "%d", value);
+
+    config_file_item* item = find_config_item(name);
+
+    if (item == NULL) {
+        add_config_op_value((char*)name, new_value);
+        free(new_value);
+    } else {
+        free(item->value);
+        item->value = new_value;
+        item->value_len = int_size;
+    }
+
+    config_items.config_changed = true;
+}
+
+void update_bool_option(const char* name, bool value)
+{
+    assert(false && "update_bool_option() is not implemented");
+    config_items.config_changed = true;
+}
+
+void update_rgb_option(const char* name, uint8_t r, uint8_t g, uint8_t b)
+{
+    char* hex = malloc(7);
+    sprintf(hex, "%02x", r);
+    sprintf(hex + 2, "%02x", g);
+    sprintf(hex + 4, "%02x", b);
+    hex[6] = '\0';
+
+    config_file_item* item = find_config_item(name);
+
+    if (item == NULL) {
+        add_config_op_value((char*)name, hex);
+        free(hex);
+    } else {
+        free(item->value);
+        item->value = hex;
+        item->value_len = 6;
+    }
+
+    config_items.config_changed = true;
+}
+
+void free_config_items()
+{
+    for (size_t ii = 0; ii < config_items.item_count; ii++) {
+        config_file_item* item = config_items.items + ii;
+        free(item->value);
+        if (!item->is_comment) {
+            free(item->option);
+        }
+    }
+
+    if (config_items.items != NULL) {
+        free(config_items.items);
+    }
+
+    if (config_items.config_file != NULL) {
+        free(config_items.config_file);
+    }
+
+    config_items.items = NULL;
+    config_items.item_count = 0;
+}
+
+void add_config_op_value(char* option, char* value)
+{
+    if (config_items.item_count == 0) {
+        config_items.items = malloc(sizeof(config_file_item));
+    } else {
+        config_items.items = realloc(config_items.items, sizeof(config_file_item) * (config_items.item_count + 1));
+    }
+
+    config_file_item new_item;
+    new_item.is_comment = false;
+    int next_line = 1;
+    if (config_items.item_count > 0) {
+        next_line = config_items.items[config_items.item_count - 1].line_num + 1;
+    }
+    new_item.line_num = next_line;
+
+    size_t option_len = strlen(option);
+    new_item.option = malloc(option_len + 1);
+    strcpy(new_item.option, option);
+    new_item.option_len = option_len;
+
+    size_t value_len = strlen(value);
+    new_item.value = malloc(value_len + 1);
+    strcpy(new_item.value, value);
+    new_item.value_len = value_len;
+
+    config_items.items[config_items.item_count] = new_item;
+    config_items.item_count++;
+}
+
+void add_config_line_item(config_line line)
+{
+    if (config_items.item_count == 0) {
+        config_items.items = malloc(sizeof(config_file_item));
+    } else {
+        config_items.items = realloc(config_items.items, sizeof(config_file_item) * (config_items.item_count + 1));
+    }
+
+    config_file_item new_item;
+    new_item.is_comment = false;
+    new_item.line_num = config_file_num;
+
+    size_t option_len = line.option.end - line.option.start + 1;
+    new_item.option = malloc(option_len + 1);
+    memcpy(new_item.option, line.option.start, option_len);
+    new_item.option[option_len] = '\0';
+    new_item.option_len = option_len;
+
+    size_t value_len = line.parameter.end - line.parameter.start + 1;
+    new_item.value = malloc(value_len + 1);
+    memcpy(new_item.value, line.parameter.start, value_len);
+    new_item.value[value_len] = '\0';
+    new_item.value_len = value_len;
+
+    config_items.items[config_items.item_count] = new_item;
+    config_items.item_count++;
+}
+
+void add_config_line_comment(char* start, char* end)
+{
+    if (config_items.item_count == 0) {
+        config_items.items = malloc(sizeof(config_file_item));
+    } else {
+        config_items.items = realloc(config_items.items, sizeof(config_file_item) * (config_items.item_count + 1));
+    }
+
+    config_file_item new_item;
+    new_item.is_comment = true;
+    new_item.line_num = config_file_num;
+
+    size_t value_len = end - start + 1;
+    new_item.value = malloc(value_len + 1);
+    memcpy(new_item.value, start, value_len);
+    new_item.value[value_len] = '\0';
+    new_item.value_len = value_len;
+
+    config_items.items[config_items.item_count] = new_item;
+    config_items.item_count++;
+}
 
 static void option_error()
 {
@@ -288,6 +490,7 @@ static bool config_parse_error(const char* format, ...)
     fprintf(stderr, "\n");
     va_end(argptr);
 
+    free_config_items();
     return false;
 }
 
@@ -473,8 +676,10 @@ bool parse_config_file(char* file_data)
 
         // Make sure that the line is not commented out
         if (*file_data == '#') {
+            char* comment_start = file_data;
             for (; *file_data != '\n'; file_data++)
                 ;
+            add_config_line_comment(comment_start, file_data - 1);
             continue;
         }
 
@@ -532,13 +737,15 @@ bool parse_config_file(char* file_data)
 
         line.parameter.end = last_arg_char;
 
-        if (line.parameter.start == line.parameter.end)
+        if (line.parameter.start == line.parameter.end + 1)
             return config_parse_error("Expected parameter after '='");
 
         // Finally try to set the config option
         bool success = set_config_option(line);
         if (!success)
             return false;
+
+        add_config_line_item(line);
     }
 
     return true;
@@ -574,6 +781,11 @@ static void load_config(char* filepath)
         filepath = tmp_dir;
         default_config = true;
     }
+
+    // save the filepath for later use
+    size_t path_size = strlen(filepath) + 1;
+    config_items.config_file = malloc(path_size);
+    strcpy(config_items.config_file, filepath);
 
     int fd = open(filepath, O_RDONLY);
     if (fd == -1) {
@@ -683,6 +895,8 @@ void free_config(config* conf)
 {
     if (conf->time_fmt != NULL)
         free((char*)conf->time_fmt);
+
+    free_config_items();
 }
 
 fmt_time current_time()
@@ -702,4 +916,60 @@ fmt_time current_time()
     ctime.time = time_buffer;
     ctime.time_len = time_len;
     return ctime;
+}
+
+void save_config()
+{
+    if (!config_items.config_changed) {
+        return;
+    }
+
+    // No config has been set
+    if (config_items.item_count == 0) {
+        return;
+    }
+
+    int c_line = 0;
+    size_t sbuffer_size = 0;
+    char* save_buffer = malloc(1); // Space for '\0'
+    save_buffer[sbuffer_size] = '\0';
+
+    for (size_t ii = 0; ii < config_items.item_count; ii++) {
+        config_file_item* item = config_items.items + ii;
+        int line_diff = item->line_num - c_line - 1;
+
+        if (line_diff > 0) {
+            save_buffer = realloc(save_buffer, sbuffer_size + line_diff);
+            for (int jj = 0; jj < line_diff; jj++) {
+                save_buffer[sbuffer_size] = '\n';
+                sbuffer_size++;
+            }
+        }
+
+        if (!item->is_comment) {
+            // +4 for two spaces, '\n' and '=' characters
+            size_t lsize = item->option_len + item->value_len + 4;
+            save_buffer = realloc(save_buffer, sbuffer_size + lsize);
+            snprintf(save_buffer + sbuffer_size, lsize, "%s = %s", item->option, item->value);
+            sbuffer_size += lsize;
+            save_buffer[sbuffer_size - 1] = '\n';
+        } else {
+            size_t lsize = item->value_len + 1;
+            save_buffer = realloc(save_buffer, sbuffer_size + lsize);
+            snprintf(save_buffer + sbuffer_size, lsize, "%s", item->value);
+            sbuffer_size += lsize;
+            save_buffer[sbuffer_size - 1] = '\n';
+        }
+
+        c_line = item->line_num;
+    }
+
+    int fd = open(config_items.config_file, O_WRONLY | O_TRUNC);
+    if (fd != -1) {
+        // don't write null
+        write(fd, save_buffer, sbuffer_size);
+    }
+
+    free(save_buffer);
+    config_items.config_changed = false;
 }

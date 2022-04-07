@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 #include <stdbool.h>
+#include <stdint.h>
 
 /** Formated time based on the configured time format */
 typedef struct {
@@ -47,7 +48,15 @@ typedef struct {
 
 void init_config(int argc, char** argv);
 void free_config(config* conf);
+void save_config();
 fmt_time current_time();
+
+/**
+ * `name` in upadte functions refers to the option name in the config file
+ */
+void update_int_option(const char* name, int value);
+void update_bool_option(const char* name, bool value);
+void update_rgb_option(const char* name, uint8_t r, uint8_t g, uint8_t b);
 
 extern config global_config;
 // Ignores the config read from defalt path during config tests
