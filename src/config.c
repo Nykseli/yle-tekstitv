@@ -737,7 +737,7 @@ bool parse_config_file(char* file_data)
 
         line.parameter.end = last_arg_char;
 
-        if (line.parameter.start == line.parameter.end + 1)
+        if (line.parameter.start == line.parameter.end)
             return config_parse_error("Expected parameter after '='");
 
         // Finally try to set the config option
