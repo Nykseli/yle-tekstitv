@@ -4,7 +4,9 @@
 #include <tekstitv.h>
 
 #include "config.h"
+#ifndef _WIN32
 #include "drawer.h"
+#endif
 #include "printer.h"
 
 #ifdef ENABLE_GUI

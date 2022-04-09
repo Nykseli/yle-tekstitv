@@ -1,5 +1,10 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 #include <SDL.h>
 #include <SDL_ttf.h>
@@ -767,6 +772,12 @@ void init_imgui(gui_drawer* drawer)
 
 int display_gui(html_parser* parser)
 {
+// Hide the terminal before opening the GUI on windows
+#ifdef _WIN32
+    HWND windowHandle = GetConsoleWindow();
+    ShowWindow(windowHandle, SW_HIDE);
+#endif
+
     gui_drawer main_drawer;
     SDL_Event event;
     SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER);

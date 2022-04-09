@@ -36,6 +36,11 @@ void load_page(html_parser* parser)
     /* curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L); */
     /* curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L); */
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_to_buffer);
+// On windows, we need to provide our own perm file from  from https://curl.se/docs/caextract.html
+#ifdef _WIN32
+    curl_easy_setopt(curl, CURLOPT_SSLCERTTYPE, "PEM");
+    curl_easy_setopt(curl, CURLOPT_CAINFO, "assets/cacert.pem");
+#endif
 
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &parser->_curl_buffer);
     err = curl_easy_perform(curl);

@@ -2,7 +2,9 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#ifndef _WIN32
 #include <pwd.h>
+#endif
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -364,7 +366,7 @@ static void parse_color_argument(color_type color)
     if (args.current >= args.argc)
         color_parameter_error(true);
 
-    bool success;
+    bool success = false;
     switch (color) {
     case COLOR_BG:
         success = hex_to_rgb(CURRENT, global_config.bg_rgb);
@@ -756,6 +758,8 @@ bool parse_config_file(char* file_data)
  */
 static void load_config(char* filepath)
 {
+// TODO: in the actual release, support appdata directory on windows
+#ifndef _WIN32
     // Don't report missing file when trying to load the file from default path.
     bool default_config = false;
     char tmp_dir[1024];
@@ -781,6 +785,11 @@ static void load_config(char* filepath)
         filepath = tmp_dir;
         default_config = true;
     }
+#else
+    // Don't support variable config paths for windows
+    bool default_config = true;
+    filepath = "tekstitv.conf";
+#endif
 
     // save the filepath for later use
     size_t path_size = strlen(filepath) + 1;
@@ -964,7 +973,8 @@ void save_config()
         c_line = item->line_num;
     }
 
-    int fd = open(config_items.config_file, O_WRONLY | O_TRUNC);
+    // Use binary more so windows doesn't try to add extra \r characters
+    int fd = open(config_items.config_file, O_RDWR | O_TRUNC | O_CREAT | O_BINARY);
     if (fd != -1) {
         // don't write null
         write(fd, save_buffer, sbuffer_size);
