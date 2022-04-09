@@ -7,6 +7,11 @@
 
 # Build folder
 build/
+*.o
+
+# Bundle files
+tekstitv
+tekstitv.zip
 
 # Generated makefile
 Makefile
@@ -15,6 +20,7 @@ Makefile
 DEBIAN/control
 
 # Third party
+third_party/curl
 third_party/SDL
 third_party/SDL_ttf
 
