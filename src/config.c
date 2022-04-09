@@ -973,8 +973,12 @@ void save_config()
         c_line = item->line_num;
     }
 
+#ifdef _WIN32
     // Use binary more so windows doesn't try to add extra \r characters
     int fd = open(config_items.config_file, O_RDWR | O_TRUNC | O_CREAT | O_BINARY);
+#else
+    int fd = open(config_items.config_file, O_RDWR | O_TRUNC | O_CREAT);
+#endif
     if (fd != -1) {
         // don't write null
         write(fd, save_buffer, sbuffer_size);
