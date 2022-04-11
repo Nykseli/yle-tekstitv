@@ -8,7 +8,9 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <tekstitv.h>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 
 typedef enum {
     UNKNOWN,

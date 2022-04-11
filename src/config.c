@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #ifndef _WIN32
 #include <pwd.h>
+#include <unistd.h>
 #endif
 #include <stdarg.h>
 #include <stdio.h>
@@ -12,7 +13,6 @@
 #include <sys/stat.h>
 #include <tekstitv.h>
 #include <time.h>
-#include <unistd.h>
 
 #include "config.h"
 
