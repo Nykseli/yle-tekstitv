@@ -101,6 +101,8 @@ config global_config = {
     .font_size = 16,
     .w_width = GUI_WINDOW_WIDTH,
     .w_height = GUI_WINDOW_HEIGHT,
+    .auto_refresh = false,
+    .refresh_interval = 60
 };
 
 bool ignore_config_read_during_testing = false;
@@ -167,7 +169,22 @@ void update_int_option(const char* name, int value)
 
 void update_bool_option(const char* name, bool value)
 {
-    assert(false && "update_bool_option() is not implemented");
+    config_file_item* item = find_config_item(name);
+
+    char* target_value = value ? "true" : "false";
+    char* bool_val = malloc(strlen(target_value) + 1);
+    strcpy(bool_val, target_value);
+
+    if (item == NULL) {
+        add_config_op_value((char*)name, bool_val);
+        free(bool_val);
+    } else {
+        free(item->value);
+        item->value = bool_val;
+        item->value_len = strlen(bool_val);
+    }
+
+    config_items.config_changed = true;
     config_items.config_changed = true;
 }
 
@@ -653,6 +670,10 @@ static bool set_config_option(config_line line)
         success = set_int_option(&global_config.w_width, 640, 4096, line.parameter.start, parameter_len);
     } else if (strncmp(line.option.start, "window-height", option_len) == 0) {
         success = set_int_option(&global_config.w_height, 640, 4096, line.parameter.start, parameter_len);
+    } else if (strncmp(line.option.start, "auto-refresh", option_len) == 0) {
+        success = set_boolean_option(&global_config.auto_refresh, line.parameter.start, parameter_len);
+    } else if (strncmp(line.option.start, "refresh-interval", option_len) == 0) {
+        success = set_int_option(&global_config.refresh_interval, 10, 365 * 24 * 60 * 60, line.parameter.start, parameter_len);
     } else {
         line.option.start[option_len] = '\0';
         return config_parse_error("Unknown option: '%s'", line.option.start);

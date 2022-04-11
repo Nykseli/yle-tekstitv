@@ -40,6 +40,8 @@ typedef struct {
     int font_size;
     int w_width;
     int w_height;
+    bool auto_refresh;
+    int refresh_interval;
 } config;
 
 #define BG_RGB(i) (global_config.bg_rgb[i])

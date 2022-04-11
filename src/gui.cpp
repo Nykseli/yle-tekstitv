@@ -82,6 +82,11 @@ typedef struct gui_drawer {
     SDL_Color text_color;
     SDL_Color link_color;
 
+    bool auto_refresh;
+    int refresh_interval;
+    // keep track how much time has passed since last refresh
+    int refresh_timer;
+
     char current_page[4];
 
     // settings for imgui specific things
@@ -158,6 +163,11 @@ void set_gui_options_to_be_saved(gui_drawer* drawer)
         _m_update_color("link-color", drawer->link_color);
     }
 #undef _m_update_color
+
+    if (drawer->auto_refresh != global_config.auto_refresh)
+        update_bool_option("auto-refresh", drawer->auto_refresh);
+    if (drawer->refresh_interval != global_config.refresh_interval)
+        update_int_option("refresh-interval", drawer->refresh_interval);
 }
 
 void set_config(gui_drawer* drawer)
@@ -178,6 +188,10 @@ void set_config(gui_drawer* drawer)
     drawer->font_size = global_config.font_size;
     drawer->w_width = global_config.w_width;
     drawer->w_height = global_config.w_height;
+
+    drawer->auto_refresh = global_config.auto_refresh;
+    drawer->refresh_interval = global_config.refresh_interval;
+    drawer->refresh_timer = 0;
 }
 
 void set_gui_time_fmt(char** fmt_target)
@@ -709,6 +723,13 @@ bool imgui_settings_window(gui_drawer* drawer)
         edit(imgui_color_edit_line("Background color", &drawer->imgui.ebg_color, &drawer->bg_color));
         ImGui::Separator();
         font_edit(ImGui::DragInt("Font size", &drawer->font_size, 1, 8, 80));
+        ImGui::Separator();
+        ImGui::Checkbox("Auto refresh", &drawer->auto_refresh);
+        if (drawer->auto_refresh) {
+            if (ImGui::DragInt("Auto refresh timer", &drawer->refresh_interval, 1, 10, 99999)) {
+                drawer->refresh_timer = 0;
+            }
+        }
     }
     ImGui::End();
     return edited;
@@ -855,6 +876,15 @@ int display_gui(html_parser* parser)
             update_title_to_drawer(&main_drawer, parser);
         }
 
+        // refresh_interval is in seconds, refresh timer is in milliseconds
+        if (main_drawer.refresh_timer >= main_drawer.refresh_interval * 1000) {
+            main_drawer.refresh_timer = 0;
+            if (main_drawer.auto_refresh) {
+                load_new_page(&main_drawer, parser);
+                redraw = true;
+            }
+        }
+
         // Start the Dear ImGui frame
         ImGui_ImplSDLRenderer_NewFrame();
         ImGui_ImplSDL2_NewFrame();
@@ -886,6 +916,7 @@ int display_gui(html_parser* parser)
         redraw = false;
         SDL_Delay(REDRW_DELAY);
         redraw_timer += REDRW_DELAY;
+        main_drawer.refresh_timer += REDRW_DELAY;
     }
 
     ImGui_ImplSDLRenderer_Shutdown();
