@@ -45,5 +45,5 @@ if not exist tekstitv (
 )
 
 g++ %INCLUDES% %CXXFLAGS% -mwindows %CXX_FILES% -c -o src/gui.o
-g++ -v %INCLUDES% %CFLAGS% %imgui_o_files% %C_O_FILES% src/gui.o %SDL_LINKS% %CURL_LINKS% -o tekstitv/tekstitv.exe
+g++ %INCLUDES% %CFLAGS% %imgui_o_files% %C_O_FILES% src/gui.o -static-libgcc -static-libstdc++ %SDL_LINKS% %CURL_LINKS% -o tekstitv/tekstitv.exe
 
