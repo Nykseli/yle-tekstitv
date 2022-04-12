@@ -152,6 +152,13 @@ void set_gui_options_to_be_saved(gui_drawer* drawer)
     if (window_w != global_config.w_width)
         update_int_option("window-width", window_w);
 
+    int window_x, window_y;
+    SDL_GetWindowPosition(drawer->window, &window_x, &window_y);
+    if (window_y != global_config.w_x)
+        update_int_option("window-x", window_x);
+    if (window_x != global_config.w_y)
+        update_int_option("window-y", window_y);
+
 #define _m_update_color(name, c) update_rgb_option(name, c.r, c.g, c.b)
     if (!is_sdl_colors_equal(drawer->bg_color, config_rgb_to_color(global_config.bg_rgb))) {
         _m_update_color("bg-color", drawer->bg_color);
@@ -244,7 +251,10 @@ void init_gui_drawer(gui_drawer* drawer)
     set_config(drawer);
 
     // Initialize SDL
-    SDL_CreateWindowAndRenderer(drawer->w_width, drawer->w_height, 0, &drawer->window, &drawer->renderer);
+    int x = global_config.w_x != -1 ? global_config.w_x : SDL_WINDOWPOS_UNDEFINED;
+    int y = global_config.w_y != -1 ? global_config.w_y : SDL_WINDOWPOS_UNDEFINED;
+    drawer->window = SDL_CreateWindow(NULL, x, y, drawer->w_width, drawer->w_height, 0);
+    drawer->renderer = SDL_CreateRenderer(drawer->window, -1, 0);
 }
 
 void free_render_texts(gui_drawer* drawer)

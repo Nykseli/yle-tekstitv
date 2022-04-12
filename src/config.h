@@ -40,6 +40,8 @@ typedef struct {
     int font_size;
     int w_width;
     int w_height;
+    int w_x;
+    int w_y;
     bool auto_refresh;
     int refresh_interval;
 } config;
