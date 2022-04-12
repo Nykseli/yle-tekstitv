@@ -2438,7 +2438,6 @@ static void parse_sub_pages(html_parser* parser, html_buffer* buffer)
             item.item.text.text[item.item.text.size] = '\0';
         } break;
         case LINK: {
-            html_item item;
             item.type = HTML_LINK;
             parse_current_link(buffer, &html_item_as_link(item), 0);
         } break;
