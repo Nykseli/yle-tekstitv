@@ -839,7 +839,7 @@ static void load_config(char* filepath)
                 exit(1);
             }
         } else {
-            fprintf(stderr, "Unknown error while opening file: %s.\n", filepath);
+            fprintf(stderr, "Unknown error while opening file: %s (%s).\n", filepath, strerror(errno));
             exit(1);
         }
         return;
@@ -1016,4 +1016,10 @@ void save_config()
 
     free(save_buffer);
     config_items.config_changed = false;
+
+#ifdef _WIN32
+    // For some reason the file gets created in read-only mode so make sure
+    // that reads and writes are always permitted
+    _chmod(config_items.config_file, _S_IREAD | _S_IWRITE);
+#endif
 }
