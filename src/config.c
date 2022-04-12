@@ -14,6 +14,15 @@
 #include <tekstitv.h>
 #include <time.h>
 
+#ifdef _WIN32
+#include <io.h>
+
+#define open(_filename, _flags) _open(_filename, _flags)
+#define read(_fd, _dst, _count) _read(_fd, _dst, _count)
+#define write(_fd, _buf, _count) _write(_fd, _buf, _count)
+#define close(_fd) _close(_fd)
+#endif
+
 #include "config.h"
 
 #ifdef TESTING
