@@ -333,7 +333,7 @@ const char* check_link_click(gui_drawer* drawer)
 
 int set_gui_text_texture(gui_drawer* drawer, gui_text* new_text, const char* text)
 {
-    SDL_Surface* surface = TTF_RenderUTF8_Solid(drawer->font, text, drawer->text_color);
+    SDL_Surface* surface = TTF_RenderUTF8_Shaded(drawer->font, text, drawer->text_color, drawer->bg_color);
     new_text->texture = SDL_CreateTextureFromSurface(drawer->renderer, surface);
     int text_width = surface->w;
     int text_height = surface->h;
@@ -390,7 +390,7 @@ void add_link_texture(gui_drawer* drawer, html_link* link)
     gui_link* new_link = &drawer->links[drawer->link_count];
     drawer->link_count++;
 
-    SDL_Surface* surface = TTF_RenderUTF8_Solid(drawer->font, link->inner_text.text, drawer->link_color);
+    SDL_Surface* surface = TTF_RenderUTF8_Shaded(drawer->font, link->inner_text.text, drawer->link_color, drawer->bg_color);
     new_link->texture = SDL_CreateTextureFromSurface(drawer->renderer, surface);
     int text_width = surface->w;
     int text_height = surface->h;
@@ -440,7 +440,7 @@ bool unhighlight_link_texture(gui_drawer* drawer, int link_idx)
     }
 
     SDL_DestroyTexture(old_link->texture);
-    SDL_Surface* surface = TTF_RenderUTF8_Solid(drawer->font, old_link->inner_text, drawer->link_color);
+    SDL_Surface* surface = TTF_RenderUTF8_Shaded(drawer->font, old_link->inner_text, drawer->link_color, drawer->bg_color);
     old_link->texture = SDL_CreateTextureFromSurface(drawer->renderer, surface);
     SDL_FreeSurface(surface);
 
