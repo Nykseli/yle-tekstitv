@@ -251,8 +251,8 @@ void init_gui_drawer(gui_drawer* drawer)
     set_config(drawer);
 
     // Initialize SDL
-    int x = global_config.w_x != -1 ? global_config.w_x : SDL_WINDOWPOS_UNDEFINED;
-    int y = global_config.w_y != -1 ? global_config.w_y : SDL_WINDOWPOS_UNDEFINED;
+    int x = global_config.w_x != INT32_MIN ? global_config.w_x : SDL_WINDOWPOS_UNDEFINED;
+    int y = global_config.w_y != INT32_MIN ? global_config.w_y : SDL_WINDOWPOS_UNDEFINED;
     drawer->window = SDL_CreateWindow(NULL, x, y, drawer->w_width, drawer->w_height, 0);
     drawer->renderer = SDL_CreateRenderer(drawer->window, -1, 0);
 }

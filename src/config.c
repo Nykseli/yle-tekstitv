@@ -110,8 +110,8 @@ config global_config = {
     .font_size = 16,
     .w_width = GUI_WINDOW_WIDTH,
     .w_height = GUI_WINDOW_HEIGHT,
-    .w_x = -1,
-    .w_y = -1,
+    .w_x = INT32_MIN,
+    .w_y = INT32_MIN,
     .auto_refresh = false,
     .refresh_interval = 60
 };
@@ -682,9 +682,9 @@ static bool set_config_option(config_line line)
     } else if (strncmp(line.option.start, "window-height", option_len) == 0) {
         success = set_int_option(&global_config.w_height, 640, 4096, line.parameter.start, parameter_len);
     } else if (strncmp(line.option.start, "window-x", option_len) == 0) {
-        success = set_int_option(&global_config.w_x, 0, 999999, line.parameter.start, parameter_len);
+        success = set_int_option(&global_config.w_x, -999999, 999999, line.parameter.start, parameter_len);
     } else if (strncmp(line.option.start, "window-y", option_len) == 0) {
-        success = set_int_option(&global_config.w_y, 0, 999999, line.parameter.start, parameter_len);
+        success = set_int_option(&global_config.w_y, -999999, 999999, line.parameter.start, parameter_len);
     } else if (strncmp(line.option.start, "auto-refresh", option_len) == 0) {
         success = set_boolean_option(&global_config.auto_refresh, line.parameter.start, parameter_len);
     } else if (strncmp(line.option.start, "refresh-interval", option_len) == 0) {
