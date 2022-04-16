@@ -678,9 +678,9 @@ static bool set_config_option(config_line line)
     } else if (strncmp(line.option.start, "font-size", option_len) == 0) {
         success = set_int_option(&global_config.font_size, 8, 80, line.parameter.start, parameter_len);
     } else if (strncmp(line.option.start, "window-width", option_len) == 0) {
-        success = set_int_option(&global_config.w_width, 640, 4096, line.parameter.start, parameter_len);
+        success = set_int_option(&global_config.w_width, 40, 4096, line.parameter.start, parameter_len);
     } else if (strncmp(line.option.start, "window-height", option_len) == 0) {
-        success = set_int_option(&global_config.w_height, 640, 4096, line.parameter.start, parameter_len);
+        success = set_int_option(&global_config.w_height, 40, 4096, line.parameter.start, parameter_len);
     } else if (strncmp(line.option.start, "window-x", option_len) == 0) {
         success = set_int_option(&global_config.w_x, -999999, 999999, line.parameter.start, parameter_len);
     } else if (strncmp(line.option.start, "window-y", option_len) == 0) {

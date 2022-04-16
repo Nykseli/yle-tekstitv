@@ -816,7 +816,7 @@ int display_gui(html_parser* parser)
     init_gui_drawer(&main_drawer);
     // window settings need to be set after the creation
     SDL_SetWindowResizable(main_drawer.window, SDL_TRUE);
-    SDL_SetWindowMinimumSize(main_drawer.window, 640, 640);
+    SDL_SetWindowMinimumSize(main_drawer.window, 40, 40);
     TTF_Init();
     init_imgui(&main_drawer);
 
