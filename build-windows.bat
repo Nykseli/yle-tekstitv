@@ -14,7 +14,7 @@ set CFLAGS=-std=c99 -O3 -Wall -Wextra -Werror -Wno-unused-parameter -Wformat-sec
 set CXXFLAGS=-std=c++11 -O3 -Wall -Wextra -Werror -Wno-unused-parameter -Wformat-security -Wno-unused-result -pedantic -DENABLE_GUI -D_CRT_SECURE_NO_WARNINGS
 set SDL_LINKS=-Lthird_party/SDL/lib/x86 -lSDL2main -lSDL2 -Lthird_party/SDL_ttf/lib/x86 -lSDL2_ttf
 set CURL_LINKS=-Lthird_party/curl/builds/libcurl/lib -llibcurl
-set INCLUDES=-Iinclude -Ithird_party -Ithird_party/imgui -Ithird_party/SDL/include -Ithird_party/curl/builds/libcurl/include
+set INCLUDES=-Iinclude -Iassets -Ithird_party -Ithird_party/imgui -Ithird_party/SDL/include -Ithird_party/curl/builds/libcurl/include
 
 
 (for %%f in (%imgui_files%) do (
