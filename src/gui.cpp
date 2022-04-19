@@ -14,6 +14,10 @@
 
 #include "gui.h"
 
+#include <arrow_icon.h>
+#include <home_icon.h>
+#include <icon_struct.h>
+
 extern "C" {
 #include "config.h"
 }
@@ -33,6 +37,11 @@ typedef struct imgui_settings {
 typedef struct gui_text {
     SDL_Rect rect;
     SDL_Texture* texture;
+    /**
+     * gui text can be an icon when the icon doesn't contain a link
+     */
+    double icon_angle;
+    bool is_icon;
 } gui_text;
 
 /**
@@ -51,6 +60,11 @@ typedef struct gui_link {
      */
     const char* inner_text;
     bool highlighted;
+    bool is_icon;
+    /**
+     * Optional angle for rotating the texture if we're using icon
+     */
+    double icon_angle;
 } gui_link;
 
 typedef struct gui_drawer {
@@ -105,6 +119,11 @@ bool is_sdl_colors_equal(SDL_Color a, SDL_Color b)
     return a.r == b.r && a.g == b.g && a.b == b.b;
 }
 
+int icon_size(gui_drawer* drawer)
+{
+    return drawer->font_size * 1.5;
+}
+
 ImVec4 sdl_color_to_imvec4(SDL_Color* src)
 {
 
@@ -135,6 +154,68 @@ SDL_Color config_rgb_to_def_color(short* rgb, SDL_Color def)
     }
 
     return config_rgb_to_color(rgb);
+}
+
+SDL_Surface* create_icon_surface(gui_drawer* drawer, gui_icon_data* icon, bool link, bool highlight = false)
+{
+
+    Uint32 rmask, gmask, bmask, amask;
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+#error "BIG_ENDIAN is not supported"
+    rmask = 0xff000000;
+    gmask = 0x00ff0000;
+    bmask = 0x0000ff00;
+    amask = 0x000000ff;
+#else
+    rmask = 0x000000ff;
+    gmask = 0x0000ff00;
+    bmask = 0x00ff0000;
+    amask = 0xff000000;
+#endif
+
+    // The icon data is read-only so we need to create a local copy of it
+    uint32_t data_size = icon->bytes_per_pixel * icon->width * icon->height + 1;
+    uint8_t pixel_copy[GUI_ICON_DATA_MAX];
+    memcpy(pixel_copy, icon->pixel_data, data_size);
+
+    SDL_Color icon_color = drawer->link_color;
+    SDL_Color icon_bg = drawer->bg_color;
+
+    if (!link) {
+        icon_color = drawer->text_color;
+    } else if (highlight) {
+        icon_color = drawer->bg_color;
+        icon_bg = drawer->link_color;
+    }
+
+    for (uint32_t ii = 0; ii < data_size; ii += 4) {
+        uint8_t* pixel = pixel_copy + ii;
+        // 4th pixel is always the alpha
+        // TODO: does this work on a big endian machine?
+        if (pixel[3] > 0) {
+            pixel[0] = icon_color.r;
+            pixel[1] = icon_color.g;
+            pixel[2] = icon_color.b;
+        } else {
+            pixel[0] = icon_bg.r;
+            pixel[1] = icon_bg.g;
+            pixel[2] = icon_bg.b;
+            pixel[3] = UINT8_MAX;
+        }
+    }
+
+    SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(
+        (void*)pixel_copy,
+        icon->width,
+        icon->height,
+        icon->bytes_per_pixel * 8,
+        icon->bytes_per_pixel * icon->width,
+        rmask,
+        gmask,
+        bmask,
+        amask);
+
+    return surface;
 }
 
 /**
@@ -341,17 +422,30 @@ const char* check_link_click(gui_drawer* drawer)
     return NULL;
 }
 
-int set_gui_text_texture(gui_drawer* drawer, gui_text* new_text, const char* text)
+int set_gui_text_texture(gui_drawer* drawer, gui_text* new_text, const char* text, gui_icon_data* icon = NULL, double angle = 0.0)
 {
-    SDL_Surface* surface = TTF_RenderUTF8_Shaded(drawer->font, text, drawer->text_color, drawer->bg_color);
+    SDL_Surface* surface;
+    int text_width;
+    int text_height;
+
+    if (icon == NULL) {
+        surface = TTF_RenderUTF8_Shaded(drawer->font, text, drawer->text_color, drawer->bg_color);
+        text_width = surface->w;
+        text_height = surface->h;
+    } else {
+        surface = create_icon_surface(drawer, icon, false);
+        text_width = icon_size(drawer);
+        text_height = icon_size(drawer);
+    }
+
     new_text->texture = SDL_CreateTextureFromSurface(drawer->renderer, surface);
-    int text_width = surface->w;
-    int text_height = surface->h;
     SDL_FreeSurface(surface);
     new_text->rect.x = drawer->current_x;
     new_text->rect.y = drawer->current_y;
     new_text->rect.w = text_width;
     new_text->rect.h = text_height;
+    new_text->is_icon = icon != NULL;
+    new_text->icon_angle = angle;
 
     return text_width;
 }
@@ -371,7 +465,7 @@ void add_error_message(gui_drawer* drawer, const char* text)
  * Add a new text texture, texture will be added to the current rectangle
  * of the drawer and the current x pos is updated to the end of the text
  */
-void add_text_texture(gui_drawer* drawer, const char* text)
+void add_text_texture(gui_drawer* drawer, const char* text, gui_icon_data* icon = NULL, double angle = 0.0)
 {
     if (drawer->texts == NULL) {
         drawer->texts = (gui_text*)malloc(sizeof(gui_text));
@@ -382,14 +476,15 @@ void add_text_texture(gui_drawer* drawer, const char* text)
     gui_text* new_text = &drawer->texts[drawer->text_count];
     drawer->text_count++;
 
-    drawer->current_x += set_gui_text_texture(drawer, new_text, text);
+    drawer->current_x += set_gui_text_texture(drawer, new_text, text, icon, angle);
 }
 
 /**
- * Add a new text texture, texture will be added to the current rectangle
- * of the drawer and the current x pos is updated to the end of the text
+ * Add a new text or icon link texture, texture will be added to the current rectangle
+ * of the drawer and the current x pos is updated to the end of the text.
+ * If icon is not NULL, the texture surface is created from the icon
  */
-void add_link_texture(gui_drawer* drawer, html_link* link)
+void add_clickable_texture(gui_drawer* drawer, html_link* link, gui_icon_data* icon, double icon_angle)
 {
     if (drawer->links == NULL) {
         drawer->links = (gui_link*)malloc(sizeof(gui_link));
@@ -400,10 +495,20 @@ void add_link_texture(gui_drawer* drawer, html_link* link)
     gui_link* new_link = &drawer->links[drawer->link_count];
     drawer->link_count++;
 
-    SDL_Surface* surface = TTF_RenderUTF8_Shaded(drawer->font, link->inner_text.text, drawer->link_color, drawer->bg_color);
+    SDL_Surface* surface;
+    int text_width;
+    int text_height;
+    if (icon == NULL) {
+        surface = TTF_RenderUTF8_Shaded(drawer->font, link->inner_text.text, drawer->link_color, drawer->bg_color);
+        text_width = surface->w;
+        text_height = surface->h;
+    } else {
+        surface = create_icon_surface(drawer, icon, true);
+        text_width = icon_size(drawer);
+        text_height = icon_size(drawer);
+    }
+
     new_link->texture = SDL_CreateTextureFromSurface(drawer->renderer, surface);
-    int text_width = surface->w;
-    int text_height = surface->h;
     SDL_FreeSurface(surface);
     new_link->rect.x = drawer->current_x;
     new_link->rect.y = drawer->current_y;
@@ -412,9 +517,13 @@ void add_link_texture(gui_drawer* drawer, html_link* link)
     new_link->short_link = link->url.text;
     new_link->inner_text = link->inner_text.text;
     new_link->highlighted = false;
+    new_link->icon_angle = icon_angle;
+    new_link->is_icon = icon != NULL;
 
     drawer->current_x += text_width;
 }
+
+#define add_link_texture(drawer, link) add_clickable_texture(drawer, link, NULL, 0.0)
 
 /**
  * Destroy old link texture and create new, highlighed one.
@@ -429,7 +538,14 @@ bool highlight_link_texture(gui_drawer* drawer, int link_idx)
     }
 
     SDL_DestroyTexture(old_link->texture);
-    SDL_Surface* surface = TTF_RenderUTF8_Shaded(drawer->font, old_link->inner_text, drawer->bg_color, drawer->link_color);
+
+    SDL_Surface* surface;
+    if (!old_link->is_icon) {
+        surface = TTF_RenderUTF8_Shaded(drawer->font, old_link->inner_text, drawer->bg_color, drawer->link_color);
+    } else {
+        surface = create_icon_surface(drawer, &arrow_icon, true, true);
+    }
+
     old_link->texture = SDL_CreateTextureFromSurface(drawer->renderer, surface);
     SDL_FreeSurface(surface);
 
@@ -450,7 +566,13 @@ bool unhighlight_link_texture(gui_drawer* drawer, int link_idx)
     }
 
     SDL_DestroyTexture(old_link->texture);
-    SDL_Surface* surface = TTF_RenderUTF8_Shaded(drawer->font, old_link->inner_text, drawer->link_color, drawer->bg_color);
+    SDL_Surface* surface;
+    if (!old_link->is_icon) {
+        surface = TTF_RenderUTF8_Shaded(drawer->font, old_link->inner_text, drawer->link_color, drawer->bg_color);
+    } else {
+        surface = create_icon_surface(drawer, &arrow_icon, true, false);
+    }
+
     old_link->texture = SDL_CreateTextureFromSurface(drawer->renderer, surface);
     SDL_FreeSurface(surface);
 
@@ -508,11 +630,30 @@ void add_top_navigation_to_drawer(gui_drawer* drawer, html_item* top_navigation)
     // Add nav textures
     drawer->current_y += 2 * drawer->line_height;
     drawer->current_x = calc_middle_x(drawer, TOP_NAVIGATION_STRING_LENGTH);
+    bool use_icons = false;
+    if (drawer->current_x <= 10) {
+        int window_w, window_h;
+        SDL_GetWindowSize(drawer->window, &window_w, &window_h);
+        // size of icons and the " | " strings between them
+        int icons_width = (icon_size(drawer) * TOP_NAVIGATION_SIZE) + (drawer->char_width * 3 * (TOP_NAVIGATION_SIZE - 1));
+        drawer->current_x = window_w / 2 - icons_width / 2;
+        use_icons = true;
+    }
+
+    double icon_rotates[TOP_NAVIGATION_SIZE] = { 270.0, 0.0, 180.0, 90.0 };
     for (size_t i = 0; i < TOP_NAVIGATION_SIZE; i++) {
         if (top_navigation[i].type == HTML_LINK) {
-            add_link_texture(drawer, &html_item_as_link(top_navigation[i]));
+            if (!use_icons) {
+                add_link_texture(drawer, &html_item_as_link(top_navigation[i]));
+            } else {
+                add_clickable_texture(drawer, &html_item_as_link(top_navigation[i]), &arrow_icon, icon_rotates[i]);
+            }
         } else {
-            add_text_texture(drawer, html_item_as_text(top_navigation[i]).text);
+            if (!use_icons) {
+                add_text_texture(drawer, html_item_as_text(top_navigation[i]).text);
+            } else {
+                add_text_texture(drawer, html_item_as_text(top_navigation[i]).text, &arrow_icon, icon_rotates[i]);
+            }
         }
 
         if (i < TOP_NAVIGATION_SIZE - 1) {
@@ -586,11 +727,18 @@ void add_bottom_navigation_to_drawer(gui_drawer* drawer, html_parser* parser)
     // Draw second navigation row
     drawer->current_y += drawer->line_height;
     drawer->current_x = calc_middle_x(drawer, links_len);
-    for (size_t i = 0; i < BOTTOM_NAVIGATION_SIZE; i++) {
-        add_link_texture(drawer, &links[i]);
-
-        if (i < BOTTOM_NAVIGATION_SIZE - 1) {
-            add_text_texture(drawer, " | ");
+    if (drawer->current_x <= 10) {
+        // TODO: support more icons/links
+        int window_w, window_h;
+        SDL_GetWindowSize(drawer->window, &window_w, &window_h);
+        drawer->current_x = window_w / 2 - icon_size(drawer) / 2;
+        add_clickable_texture(drawer, &links[BOTTOM_NAVIGATION_SIZE - 1], &home_icon, 0.0);
+    } else {
+        for (size_t i = 0; i < BOTTOM_NAVIGATION_SIZE; i++) {
+            add_link_texture(drawer, &links[i]);
+            if (i < BOTTOM_NAVIGATION_SIZE - 1) {
+                add_text_texture(drawer, " | ");
+            }
         }
     }
 }
@@ -607,12 +755,20 @@ void render_drawer_texts(gui_drawer* drawer)
 
     for (int ii = 0; ii < drawer->text_count; ii++) {
         gui_text text = drawer->texts[ii];
-        SDL_RenderCopy(drawer->renderer, text.texture, NULL, &text.rect);
+        if (text.icon_angle != 0.0) {
+            SDL_RenderCopyEx(drawer->renderer, text.texture, NULL, &text.rect, text.icon_angle, NULL, SDL_FLIP_NONE);
+        } else {
+            SDL_RenderCopy(drawer->renderer, text.texture, NULL, &text.rect);
+        }
     }
 
     for (int ii = 0; ii < drawer->link_count; ii++) {
         gui_link link = drawer->links[ii];
-        SDL_RenderCopy(drawer->renderer, link.texture, NULL, &link.rect);
+        if (link.icon_angle != 0.0) {
+            SDL_RenderCopyEx(drawer->renderer, link.texture, NULL, &link.rect, link.icon_angle, NULL, SDL_FLIP_NONE);
+        } else {
+            SDL_RenderCopy(drawer->renderer, link.texture, NULL, &link.rect);
+        }
     }
 
     for (int ii = 0; ii < 3; ii++) {
