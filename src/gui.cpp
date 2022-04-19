@@ -41,7 +41,10 @@ typedef struct gui_text {
      * gui text can be an icon when the icon doesn't contain a link
      */
     double icon_angle;
-    bool is_icon;
+    /**
+     * Not null if text is a icon
+     */
+    gui_icon_data* icon;
 } gui_text;
 
 /**
@@ -60,7 +63,10 @@ typedef struct gui_link {
      */
     const char* inner_text;
     bool highlighted;
-    bool is_icon;
+    /**
+     * Not null if link is a icon
+     */
+    gui_icon_data* icon;
     /**
      * Optional angle for rotating the texture if we're using icon
      */
@@ -444,7 +450,7 @@ int set_gui_text_texture(gui_drawer* drawer, gui_text* new_text, const char* tex
     new_text->rect.y = drawer->current_y;
     new_text->rect.w = text_width;
     new_text->rect.h = text_height;
-    new_text->is_icon = icon != NULL;
+    new_text->icon = icon;
     new_text->icon_angle = angle;
 
     return text_width;
@@ -518,7 +524,7 @@ void add_clickable_texture(gui_drawer* drawer, html_link* link, gui_icon_data* i
     new_link->inner_text = link->inner_text.text;
     new_link->highlighted = false;
     new_link->icon_angle = icon_angle;
-    new_link->is_icon = icon != NULL;
+    new_link->icon = icon;
 
     drawer->current_x += text_width;
 }
@@ -540,10 +546,10 @@ bool highlight_link_texture(gui_drawer* drawer, int link_idx)
     SDL_DestroyTexture(old_link->texture);
 
     SDL_Surface* surface;
-    if (!old_link->is_icon) {
+    if (old_link->icon == NULL) {
         surface = TTF_RenderUTF8_Shaded(drawer->font, old_link->inner_text, drawer->bg_color, drawer->link_color);
     } else {
-        surface = create_icon_surface(drawer, &arrow_icon, true, true);
+        surface = create_icon_surface(drawer, old_link->icon, true, true);
     }
 
     old_link->texture = SDL_CreateTextureFromSurface(drawer->renderer, surface);
@@ -567,10 +573,10 @@ bool unhighlight_link_texture(gui_drawer* drawer, int link_idx)
 
     SDL_DestroyTexture(old_link->texture);
     SDL_Surface* surface;
-    if (!old_link->is_icon) {
+    if (old_link->icon == NULL) {
         surface = TTF_RenderUTF8_Shaded(drawer->font, old_link->inner_text, drawer->link_color, drawer->bg_color);
     } else {
-        surface = create_icon_surface(drawer, &arrow_icon, true, false);
+        surface = create_icon_surface(drawer, old_link->icon, true, false);
     }
 
     old_link->texture = SDL_CreateTextureFromSurface(drawer->renderer, surface);
