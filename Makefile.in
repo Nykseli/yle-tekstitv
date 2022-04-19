@@ -24,7 +24,7 @@ ifeq ($(GUI_ENABLED), true)
 	IMGUI_SOURCES = third_party/imgui/imgui.cpp third_party/imgui/imgui_draw.cpp third_party/imgui/imgui_tables.cpp third_party/imgui/imgui_widgets.cpp third_party/imgui/backends/imgui_impl_sdlrenderer.cpp third_party/imgui/backends/imgui_impl_sdl.cpp
 	IMGUI_OBJECTS = $(IMGUI_SOURCES:.cpp=.o)
 	BIN_STATICS := third_party/SDL/build/.libs/libSDL2.a third_party/SDL_ttf/.libs/libSDL2_ttf.a
-	TEKSTITV_INCLUDE += -Ithird_party -Ithird_party/imgui -Ithird_party/SDL/include
+	TEKSTITV_INCLUDE += -Ithird_party -Ithird_party/imgui -Ithird_party/SDL/include -Iassets
 	# imgui requires us to create the executable with c++ compiler
 	BIN_CC=$(CXX)
 endif
