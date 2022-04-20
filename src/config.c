@@ -1092,7 +1092,8 @@ void save_config()
 }
 
 #ifdef ENABLE_GUI
-const char* get_imgui_ini_path() {
+const char* get_imgui_ini_path()
+{
     return (const char*)config_items.imgui_ini_file;
 }
 #endif
