@@ -959,8 +959,7 @@ void init_imgui(gui_drawer* drawer)
     ImGui_ImplSDL2_InitForSDLRenderer(drawer->window, drawer->renderer);
     ImGui_ImplSDLRenderer_Init(drawer->renderer);
     ImGuiIO& io = ImGui::GetIO();
-    // Don't use the ini file to save window information
-    io.IniFilename = NULL;
+    io.IniFilename = get_imgui_ini_path();
 }
 
 int display_gui(html_parser* parser)

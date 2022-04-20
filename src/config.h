@@ -62,6 +62,10 @@ void update_int_option(const char* name, int value);
 void update_bool_option(const char* name, bool value);
 void update_rgb_option(const char* name, uint8_t r, uint8_t g, uint8_t b);
 
+#ifdef ENABLE_GUI
+const char* get_imgui_ini_path();
+#endif
+
 extern config global_config;
 // Ignores the config read from defalt path during config tests
 extern bool ignore_config_read_during_testing;

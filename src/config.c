@@ -85,6 +85,9 @@ typedef struct {
     size_t item_count;
     bool config_changed;
     char* config_file;
+#ifdef ENABLE_GUI
+    char* imgui_ini_file;
+#endif
 } config_file_items;
 
 config global_config = {
@@ -125,12 +128,61 @@ config_file_items config_items = {
     .item_count = 0,
     .config_file = NULL,
     .config_changed = false,
+#ifdef ENABLE_GUI
+    .imgui_ini_file = NULL,
+#endif
 };
 
 // What line are we currenlty parsing in the config file
 int config_file_num = 1;
 
 static void add_config_op_value(char* option, char* value);
+
+char* get_ini_config_path(const char* config_path)
+{
+    // TODO: support windows with GetCurrentDirectory
+    // https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getcurrentdirectory?redirectedfrom=MSDN
+#ifdef _WIN32
+#error "get_ini_config_path is not supported on windows"
+#endif
+
+    const char* ini_name = "tekstitv.ini";
+    size_t ini_len = strlen(ini_name);
+    char file_buff[4096] = { '\0' };
+    char* ini_path = NULL;
+    bool absolute_path = config_path[0] == '/';
+    if (!absolute_path) {
+        char* cwd = getcwd(file_buff, 4096);
+        if (cwd == NULL) {
+            return NULL;
+        }
+
+        size_t cwd_len = strlen(cwd);
+        ini_path = malloc(ini_len + cwd_len + 2);
+        memcpy(ini_path, cwd, cwd_len);
+        ini_path[cwd_len] = '/';
+        memcpy(ini_path + cwd_len + 1, ini_name, ini_len);
+        ini_path[cwd_len + ini_len + 1] = '\0';
+    } else {
+        size_t conf_length = strlen(config_path);
+        strcpy(file_buff, config_path);
+        size_t last_slash = 0;
+        for (size_t ii = 0; ii < conf_length; ii++) {
+            if (file_buff[ii] == '/') {
+                last_slash = ii;
+            }
+        }
+
+        file_buff[last_slash + 1] = '\0';
+        size_t folder_len = strlen(file_buff);
+        ini_path = malloc(folder_len + ini_len + 1);
+        memcpy(ini_path, file_buff, folder_len);
+        memcpy(ini_path + folder_len, ini_name, ini_len);
+        ini_path[ini_len + folder_len] = '\0';
+    }
+
+    return ini_path;
+}
 
 config_file_item* find_config_item(const char* name)
 {
@@ -238,6 +290,12 @@ void free_config_items()
     if (config_items.config_file != NULL) {
         free(config_items.config_file);
     }
+
+#ifdef ENABLE_GUI
+    if (config_items.imgui_ini_file != NULL) {
+        free(config_items.imgui_ini_file);
+    }
+#endif
 
     config_items.items = NULL;
     config_items.item_count = 0;
@@ -831,6 +889,9 @@ static void load_config(char* filepath)
     size_t path_size = strlen(filepath) + 1;
     config_items.config_file = malloc(path_size);
     strcpy(config_items.config_file, filepath);
+#ifdef ENABLE_GUI
+    config_items.imgui_ini_file = get_ini_config_path(config_items.config_file);
+#endif
 
     int fd = open(filepath, O_RDONLY);
     if (fd == -1) {
@@ -1029,3 +1090,9 @@ void save_config()
     _chmod(config_items.config_file, _S_IREAD | _S_IWRITE);
 #endif
 }
+
+#ifdef ENABLE_GUI
+const char* get_imgui_ini_path() {
+    return (const char*)config_items.imgui_ini_file;
+}
+#endif
