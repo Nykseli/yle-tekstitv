@@ -616,14 +616,20 @@ void add_title_to_drawer(gui_drawer* drawer, html_parser* parser)
     drawer->current_y = drawer->line_height;
 
     int links_start = calc_middle_x(drawer, TOP_NAVIGATION_STRING_LENGTH);
-    drawer->current_x = links_start;
+    if (links_start <= 10) {
+        drawer->current_x = 10;
+        links_start = 10;
+    } else {
+        drawer->current_x = links_start;
+    }
+
     char page[5] = { 'P', 0, 0, 0, '\0' };
     memcpy(page + 1, drawer->current_page, 3);
     set_gui_text_texture(drawer, &drawer->title[0], page);
 
     fmt_time time = current_time();
-    // Don't try to show time if there's no time to be shown
-    if (time.time_len > 0) {
+    // Don't try to show time if there's no time to be shown or if the screen is too small
+    if (time.time_len > 0 && links_start > 10) {
         // Set x so the last character is aligned with the last character of the nav links
         drawer->current_x = links_start + ((TOP_NAVIGATION_STRING_LENGTH - time.time_len) * drawer->char_width);
         set_gui_text_texture(drawer, &drawer->title[2], time.time);
@@ -634,6 +640,9 @@ void add_title_to_drawer(gui_drawer* drawer, html_parser* parser)
     // The actual title doesn't exsist if curl load failed
     if (!parser->curl_load_error) {
         drawer->current_x = calc_middle_x(drawer, parser->title.size);
+        if (drawer->current_x <= 10 + drawer->char_width * 5) {
+            drawer->current_x = 10 + drawer->char_width * 5;
+        }
         set_gui_text_texture(drawer, &drawer->title[1], parser->title.text);
     }
 }
