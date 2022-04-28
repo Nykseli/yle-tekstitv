@@ -115,6 +115,7 @@ config global_config = {
     .w_height = GUI_WINDOW_HEIGHT,
     .w_x = INT32_MIN,
     .w_y = INT32_MIN,
+    .fullscreen = false,
     .auto_refresh = false,
     .refresh_interval = 60
 };
@@ -745,6 +746,8 @@ static bool set_config_option(config_line line)
         success = set_int_option(&global_config.w_y, -999999, 999999, line.parameter.start, parameter_len);
     } else if (strncmp(line.option.start, "auto-refresh", option_len) == 0) {
         success = set_boolean_option(&global_config.auto_refresh, line.parameter.start, parameter_len);
+    } else if (strncmp(line.option.start, "fullscreen", option_len) == 0) {
+        success = set_boolean_option(&global_config.fullscreen, line.parameter.start, parameter_len);
     } else if (strncmp(line.option.start, "refresh-interval", option_len) == 0) {
         success = set_int_option(&global_config.refresh_interval, 10, 365 * 24 * 60 * 60, line.parameter.start, parameter_len);
     } else {
@@ -833,7 +836,7 @@ bool parse_config_file(char* file_data)
 
         line.parameter.end = last_arg_char;
 
-        if (line.parameter.start == line.parameter.end)
+        if (*line.parameter.start == '\n')
             return config_parse_error("Expected parameter after '='");
 
         // Finally try to set the config option

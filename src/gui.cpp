@@ -120,6 +120,12 @@ typedef struct gui_drawer {
 // TODO: how to bundle up the font to the binary?
 const char* font_path = "assets/test_font.ttf";
 
+bool is_window_maximized(SDL_Window* window)
+{
+    Uint32 flags = SDL_GetWindowFlags(window);
+    return (flags & SDL_WINDOW_MAXIMIZED) == SDL_WINDOW_MAXIMIZED;
+}
+
 bool is_sdl_colors_equal(SDL_Color a, SDL_Color b)
 {
     return a.r == b.r && a.g == b.g && a.b == b.b;
@@ -262,6 +268,10 @@ void set_gui_options_to_be_saved(gui_drawer* drawer)
         update_bool_option("auto-refresh", drawer->auto_refresh);
     if (drawer->refresh_interval != global_config.refresh_interval)
         update_int_option("refresh-interval", drawer->refresh_interval);
+
+    bool fullscreen = is_window_maximized(drawer->window);
+    if (fullscreen != global_config.fullscreen)
+        update_bool_option("fullscreen", fullscreen);
 }
 
 void set_config(gui_drawer* drawer)
@@ -340,8 +350,19 @@ void init_gui_drawer(gui_drawer* drawer)
     // Initialize SDL
     int x = global_config.w_x != INT32_MIN ? global_config.w_x : SDL_WINDOWPOS_UNDEFINED;
     int y = global_config.w_y != INT32_MIN ? global_config.w_y : SDL_WINDOWPOS_UNDEFINED;
-    drawer->window = SDL_CreateWindow(NULL, x, y, drawer->w_width, drawer->w_height, 0);
+
+    // set the needed flags when creating the window to make the opening
+    // of the application more smooth
+    Uint32 wflags = 0;
+    if (global_config.fullscreen)
+        wflags |= SDL_WINDOW_MAXIMIZED;
+
+    drawer->window = SDL_CreateWindow(NULL, x, y, drawer->w_width, drawer->w_height, wflags);
     drawer->renderer = SDL_CreateRenderer(drawer->window, -1, 0);
+
+    // window settings need to be set after the creation
+    SDL_SetWindowResizable(drawer->window, SDL_TRUE);
+    SDL_SetWindowMinimumSize(drawer->window, 40, 40);
 }
 
 void free_render_texts(gui_drawer* drawer)
@@ -975,9 +996,6 @@ int display_gui(html_parser* parser)
     SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER);
     // init drawers
     init_gui_drawer(&main_drawer);
-    // window settings need to be set after the creation
-    SDL_SetWindowResizable(main_drawer.window, SDL_TRUE);
-    SDL_SetWindowMinimumSize(main_drawer.window, 40, 40);
     TTF_Init();
     init_imgui(&main_drawer);
 

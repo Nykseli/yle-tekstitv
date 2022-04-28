@@ -42,6 +42,7 @@ typedef struct {
     int w_height;
     int w_x;
     int w_y;
+    bool fullscreen;
     bool auto_refresh;
     int refresh_interval;
 } config;
