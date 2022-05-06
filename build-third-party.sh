@@ -69,6 +69,10 @@ else
 fi
 
 if [ ! -f "./.libs/libSDL2_ttf.a" ]; then
+    export CFLAGS="-I../SDL/include"
+    export CPPFLAGS=$CFLAGS
+    export LDFLAGS="-L../SDL/build/.libs"
+    export SDL2_CONFIG="../SDL/sdl2-config"
     ./configure \
         --build=x86_64-linux-gnu \
         --disable-option-checking \
@@ -76,7 +80,8 @@ if [ ! -f "./.libs/libSDL2_ttf.a" ]; then
         --disable-maintainer-mode \
         --disable-dependency-tracking \
         --enable-harfbuzz \
-        --disable-freetype-builtin
+        --disable-freetype-builtin \
+        --disable-sdltest
         make -j$(nproc)
     cp SDL_ttf.h ../SDL/include
 fi
