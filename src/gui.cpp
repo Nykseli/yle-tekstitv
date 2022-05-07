@@ -13,6 +13,7 @@
 #include <imgui/backends/imgui_impl_sdlrenderer.h>
 
 #include "gui.h"
+#include "util.h"
 
 #include <arrow_icon.h>
 #include <home_icon.h>
@@ -119,6 +120,8 @@ typedef struct gui_drawer {
 
 // TODO: how to bundle up the font to the binary?
 const char* font_path = "assets/test_font.ttf";
+
+static void load_new_page(gui_drawer* drawer, html_parser* parser, bool add_history);
 
 bool is_window_maximized(SDL_Window* window)
 {
@@ -447,6 +450,36 @@ const char* check_link_click(gui_drawer* drawer)
     }
 
     return NULL;
+}
+
+bool check_mouse_click(gui_drawer* drawer, html_parser* parser, SDL_Event* event)
+{
+    const char* link = NULL;
+    bool add_history = false;
+
+    Uint8 button = event->button.button;
+    switch (button) {
+    case 1:
+        link = check_link_click(drawer);
+        add_history = true;
+        break;
+    case 4: // previous mouse button
+        link = history_prev_link();
+        break;
+    case 5: // next mouse button
+        link = history_next_link();
+        break;
+    default:
+        break;
+    }
+
+    if (link != NULL) {
+        link_from_short_link(parser, (char*)link);
+        load_new_page(drawer, parser, add_history);
+        return true;
+    }
+
+    return false;
 }
 
 int set_gui_text_texture(gui_drawer* drawer, gui_text* new_text, const char* text, gui_icon_data* icon = NULL, double angle = 0.0)
@@ -970,8 +1003,12 @@ bool imgui_menu_bar(gui_drawer* drawer)
  * Load a new page.
  * Note that the new page has to be set in the parser before calling this
  */
-void load_new_page(gui_drawer* drawer, html_parser* parser)
+void load_new_page(gui_drawer* drawer, html_parser* parser, bool add_history)
 {
+    // we don't currenlty support sub pages
+    // TODO: support sub pages
+    bool new_page = memcmp(drawer->current_page, parser->link, 3) != 0;
+
     // Copy the new page to the current page info
     memcpy(drawer->current_page, parser->link, 3);
     free_html_parser(parser);
@@ -979,6 +1016,10 @@ void load_new_page(gui_drawer* drawer, html_parser* parser)
     load_page(parser);
     parse_html(parser);
     set_render_texts(drawer, parser);
+
+    if (!parser->curl_load_error && new_page && add_history) {
+        add_history_link(parser->link);
+    }
 }
 
 void init_imgui(gui_drawer* drawer)
@@ -1011,6 +1052,10 @@ int display_gui(html_parser* parser)
     set_font(&main_drawer);
     set_render_texts(&main_drawer, parser);
 
+    if (!parser->curl_load_error) {
+        add_history_link(parser->link);
+    }
+
     ImGuiIO& io = ImGui::GetIO();
 
     int quit = 0;
@@ -1033,10 +1078,7 @@ int display_gui(html_parser* parser)
                     redraw = true;
                 }
             } else if (!io.WantCaptureMouse && event.type == SDL_MOUSEBUTTONUP) {
-                const char* link = check_link_click(&main_drawer);
-                if (link != NULL) {
-                    link_from_short_link(parser, (char*)link);
-                    load_new_page(&main_drawer, parser);
+                if (check_mouse_click(&main_drawer, parser, &event)) {
                     redraw = true;
                     input_idx = 0;
                 }
@@ -1050,7 +1092,7 @@ int display_gui(html_parser* parser)
                         // TODO: error if num == -1
                         int num = page_number(main_drawer.current_page);
                         link_from_ints(parser, num, 1);
-                        load_new_page(&main_drawer, parser);
+                        load_new_page(&main_drawer, parser, true);
                     } else {
                         for (int idx = input_idx; idx < 3; idx++) {
                             main_drawer.current_page[idx] = '-';
@@ -1078,7 +1120,7 @@ int display_gui(html_parser* parser)
         if (main_drawer.refresh_timer >= main_drawer.refresh_interval * 1000) {
             main_drawer.refresh_timer = 0;
             if (main_drawer.auto_refresh) {
-                load_new_page(&main_drawer, parser);
+                load_new_page(&main_drawer, parser, false);
                 redraw = true;
             }
         }
