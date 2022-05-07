@@ -8,6 +8,7 @@
 
 #include "config.h"
 #include "drawer.h"
+#include "util.h"
 
 #define MAX_MIDDLE_WIDTH (max_window_width() / 2)
 #define MIDDLE_STARTX (MAX_MIDDLE_WIDTH / 2)
@@ -17,26 +18,6 @@
 #define TEXT_COLOR COLOR_PAIR(TEXT_COLOR_ID)
 #define LINK_COLOR_ID 2
 #define LINK_COLOR COLOR_PAIR(LINK_COLOR_ID)
-
-#define HISTORY_CAPACITY 16
-
-#define HISTORY_NEXT(val) (((val) + 1) % HISTORY_CAPACITY)
-#define HISTORY_PREV(val) (((val) + HISTORY_CAPACITY - 1) % HISTORY_CAPACITY)
-#define HISTORY_CURRENT_LINK (history.entries[history.current])
-
-typedef struct {
-    // Storage for browser links
-    char entries[HISTORY_CAPACITY][HTML_LINK_SIZE];
-    int count; // Amount of items in the buffer
-    int start; // Start of the valid data
-    int current; // Index of the value we are currently using
-} browser_history;
-
-browser_history history = {
-    .count = 0,
-    .start = 0,
-    .current = -1,
-};
 
 typedef struct {
     char prev_page[HTML_LINK_SIZE];
@@ -77,70 +58,9 @@ static void draw_logger(const char* format, ...)
 }
 #endif // DEBUG_LOGGER
 
-static bool history_at_last_link()
-{
-    if (history.start == 0) {
-        if (history.current == history.count - 1)
-            return true;
-    } else if (history.current == history.start - 1) {
-        return true;
-    }
-
-    return false;
-}
-
-static void add_history_link(char* link)
-{
-    bool at_last = history_at_last_link();
-
-    // If history is not full and we are at the last link we can just add new link
-    if (history.count != HISTORY_CAPACITY && at_last) {
-        history.count++;
-        history.current = HISTORY_NEXT(history.current);
-        memcpy(history.entries[history.current], link, HTML_LINK_SIZE);
-        return;
-    }
-
-    // If not at the last link, "Override" the links after current
-    if (!at_last) {
-        // + 2 Because there will be atleast the current with the upcoming link
-        if (history.start == 0 || history.start < history.current) {
-            history.count = history.current - history.start + 2;
-        } else {
-            history.count = HISTORY_CAPACITY - (history.start - history.current) + 2;
-        }
-    } else {
-        history.start = HISTORY_NEXT(history.start);
-    }
-
-    history.current = HISTORY_NEXT(history.current);
-    memcpy(history.entries[history.current], link, HTML_LINK_SIZE);
-}
-
-static char* next_link()
-{
-    if (history.count == 0)
-        return NULL;
-
-    if (history_at_last_link())
-        return NULL;
-
-    history.current = HISTORY_NEXT(history.current);
-    return HISTORY_CURRENT_LINK;
-}
-
-static char* prev_link()
-{
-    if (history.count == 0 || history.current == history.start)
-        return NULL;
-
-    history.current = HISTORY_PREV(history.current);
-    return HISTORY_CURRENT_LINK;
-}
-
 static void load_next_link(drawer* drawer, html_parser* parser)
 {
-    char* link = next_link();
+    char* link = history_next_link();
     // TODO: let user know that there is no next link
     if (link != NULL) {
         link_from_short_link(parser, link);
@@ -150,7 +70,7 @@ static void load_next_link(drawer* drawer, html_parser* parser)
 
 static void load_prev_link(drawer* drawer, html_parser* parser)
 {
-    char* link = prev_link();
+    char* link = history_prev_link();
     // TODO: let user know that there is no previous link
     if (link != NULL) {
         link_from_short_link(parser, link);
@@ -180,7 +100,7 @@ static void curl_load_error(drawer* drawer, html_parser* parser)
 {
     // Kind of a hack to get history working with load errors
     if (!drawer->error_drawn) {
-        history.current = HISTORY_NEXT(history.current);
+        drawer_history_error();
         drawer->error_drawn = true;
     }
 
@@ -569,7 +489,7 @@ static void draw_middle(drawer* drawer, html_parser* parser)
             html_item item = parser->middle[i].items[j];
             if (item.type == HTML_LINK) {
                 if (last_type == HTML_LINK) {
-                    //drawer->current_x -= 1;
+                    // drawer->current_x -= 1;
                     draw_to_drawer(drawer, "-");
                     drawer->current_x += 1;
                 }
@@ -814,7 +734,7 @@ void search_mode(drawer* drawer, html_parser* parser)
             currentx--;
             mvaddch(0, currentx, ' ');
             page[page_i] = 0;
-        } else if (c == 27) { //esc
+        } else if (c == 27) { // esc
             break;
         } else {
             if (c < '0' || c > '9')
