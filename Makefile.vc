@@ -1,0 +1,83 @@
+
+CC = clang
+CXX = clang++
+TARGETS = executable
+BIN_NAME = tekstitv.exe
+CFLAGS=-std=c99 -O3 -Wall -Wextra -Werror -Wno-unused-parameter -Wformat-security -Wno-unused-result -pedantic -DENABLE_GUI -D_CRT_SECURE_NO_WARNINGS
+CXXFLAGS=-std=c++11 -O3 -Wall -Wextra -Werror -Wno-unused-parameter -Wformat-security -Wno-unused-result -pedantic -DENABLE_GUI -D_CRT_SECURE_NO_WARNINGS
+SRC_DIR = src
+LIB_DIR = lib
+GUI_DIR = gui
+IMGUI_DIR = third_party\imgui
+INCLUDE_DIR = include
+BUILD_DIR = build
+SRC_BUILD = $(SRC_DIR)
+LIB_BUILD = $(BUILD_DIR)\$(LIB_DIR)
+TEKSTITV_INCLUDE = -Iinclude
+LIB_LINKS = -lcurl
+BIN_CC=$(CC)
+
+SRC_HEADERS = src\config.h src\printer.h src\util.h src\gui.h
+SRC_SOURCES = src\config.c src\main.c src\printer.c src\util.c
+SRC_OBJECTS = src\config.o src\main.o src\printer.o src\util.o
+
+LIB_HEADERS = include\tekstitv.h
+LIB_SOURCES = lib\html_parser.c lib\page_loader.c
+LIB_OBJECTS = lib\html_parser.o lib\page_loader.o
+
+!IF "$(GUI_ENABLED)"=="true"
+GUI_SOURCES = src\gui.cpp
+GUI_OBJECTS = src\gui.o
+IMGUI_SOURCES = third_party\imgui\imgui.cpp third_party\imgui\imgui_draw.cpp third_party\imgui\imgui_tables.cpp third_party\imgui\imgui_widgets.cpp third_party\imgui\backends\imgui_impl_sdlrenderer.cpp third_party\imgui\backends\imgui_impl_sdl.cpp
+IMGUI_OBJECTS = $(IMGUI_SOURCES:.cpp=.o)
+TEKSTITV_INCLUDE = -Iinclude -Ithird_party -Ithird_party\imgui -Ithird_party\SDL\include -Iassets
+BIN_LINKS = -Lthird_party\SDL\lib\x86 -lSDL2main -lSDL2 -Lthird_party\SDL_ttf\lib\x86 -lSDL2_ttf -Lthird_party\curl\builds\libcurl/lib -llibcurl
+# imgui requires us to create the executable with c++ compiler
+BIN_CC=$(CXX)
+!ENDIF
+
+.SUFFIXES: .c .cpp .o
+
+all: $(TARGETS)
+
+executable: $(SRC_OBJECTS) $(GUI_OBJECTS) $(IMGUI_OBJECTS) $(LIB_OBJECTS)
+	@ echo $(BIN_CC) $(BIN_NAME)
+	@ $(BIN_CC) $(TEKSTITV_INCLUDE) $(CFLAGS)  $(SRC_OBJECTS) $(GUI_OBJECTS) $(IMGUI_OBJECTS) $(LIB_OBJECTS) -static $(BIN_LINKS) -o tekstitv\$(BIN_NAME)
+
+
+# Compile object files for tekstitv binary
+# $(SRC_BUILD).o: $(SRC_DIR).c $(SRC_HEADERS) $(LIB_HEADERS)
+# 	@ echo $(CC) $<
+# 	@ $(CC) $(TEKSTITV_INCLUDE) -c $(CFLAGS) -o $@ $<
+
+{$(SRC_DIR)\}.c{$(SRC_DIR)\}.o:
+	@ echo $(CC) $<
+	@ $(CC) $(TEKSTITV_INCLUDE) -c $(CFLAGS) -o $@ $<
+
+{$(LIB_DIR)\}.c{$(LIB_DIR)\}.o:
+	@ echo $(CC) $<
+	@ $(CC) $(TEKSTITV_INCLUDE) -c $(CFLAGS) -o $@ $<
+
+{$(SRC_DIR)\}.cpp{$(SRC_DIR)\}.o:
+	@ echo $(CXX) $<
+	@ $(CXX) $(TEKSTITV_INCLUDE) -c $(CXXFLAGS) -o $@ $<
+
+{$(IMGUI_DIR)\}.cpp{$(IMGUI_DIR)\}.o:
+	@ echo $(CXX) $<
+	@ $(CXX) $(TEKSTITV_INCLUDE) -c $(CXXFLAGS) -o $@ $<
+
+{$(IMGUI_DIR)\backends}.cpp{$(IMGUI_DIR)\backends}.o:
+	@ echo $(CXX) $<
+	@ $(CXX) $(TEKSTITV_INCLUDE) -c $(CXXFLAGS) -o $@ $<
+
+clean:
+	@-erase /s $(SRC_OBJECTS) $(GUI_OBJECTS) $(LIB_OBJECTS) $(IMGUI_OBJECTS) 2> NUL
+
+clean-all: clean
+	@-erase /s $(IMGUI_OBJECTS) 2> NUL
+	@ rmdir /s /q tekstitv 2> NUL
+	@ rmdir /s /q third_party\curl 2> NUL
+	@ rmdir /s /q third_party\SDL 2> NUL
+	@ rmdir /s /q third_party\SDL_ttf 2> NUL
+
+.PHONY: clean
