@@ -141,13 +141,15 @@ static void add_config_op_value(char* option, char* value);
 
 char* get_ini_config_path(const char* config_path)
 {
+
+    const char* ini_name = "tekstitv.ini";
     // TODO: support windows with GetCurrentDirectory
     // https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getcurrentdirectory?redirectedfrom=MSDN
 #ifdef _WIN32
-#error "get_ini_config_path is not supported on windows"
-#endif
-
-    const char* ini_name = "tekstitv.ini";
+    char* ini_path = malloc(13); // length of "tekstitv.ini" + '\0'
+    strcpy(ini_path, ini_name);
+    return ini_path;
+#else
     size_t ini_len = strlen(ini_name);
     char file_buff[4096] = { '\0' };
     char* ini_path = NULL;
@@ -183,6 +185,7 @@ char* get_ini_config_path(const char* config_path)
     }
 
     return ini_path;
+#endif
 }
 
 config_file_item* find_config_item(const char* name)
