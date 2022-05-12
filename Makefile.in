@@ -45,7 +45,7 @@ buildpaths:
 
 executable: $(SRC_OBJECTS) $(GUI_OBJECTS) $(IMGUI_OBJECTS) $(LIB_OBJECTS)
 	@ printf "%8s %-40s %s\n" $(CC) $(BIN_NAME)
-	@ $(BIN_CC) $(TEKSTITV_INCLUDE) $(CFLAGS) $^ $(BIN_STATICS) -o $(BUILD_DIR)/$(BIN_NAME) $(BIN_LINKS)
+	@ $(BIN_CC) $(TEKSTITV_INCLUDE) -s $(CFLAGS) $^ $(BIN_STATICS) -o $(BUILD_DIR)/$(BIN_NAME) $(BIN_LINKS)
 
 shared: $(LIB_OBJECTS)
 	@ printf "%8s %-40s %s\n" $(CC) $(SHARED_NAME)
