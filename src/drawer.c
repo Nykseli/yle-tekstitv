@@ -328,7 +328,7 @@ static void draw_to_drawer(drawer* drawer, const char* text)
     char escape_buf[256];
     int utfs = find_utfs(text, strlen(text));
     escape_text(text, escape_buf, strlen(text));
-    mvwprintw(drawer->window, drawer->current_y, drawer->current_x, escape_buf);
+    mvwprintw(drawer->window, drawer->current_y, drawer->current_x, "%s", escape_buf);
     drawer->current_x -= utfs;
 }
 
@@ -379,7 +379,7 @@ static void add_link_highlight(drawer* drawer, html_link link)
 static void draw_to_info_window(drawer* drawer, const char* text)
 {
     wclear(drawer->info_window);
-    mvwprintw(drawer->info_window, 0, 0, text);
+    mvwprintw(drawer->info_window, 0, 0, "%s", text);
     wrefresh(drawer->info_window);
 }
 
@@ -569,7 +569,7 @@ static void draw_middle(drawer* drawer, html_parser* parser)
             html_item item = parser->middle[i].items[j];
             if (item.type == HTML_LINK) {
                 if (last_type == HTML_LINK) {
-                    //drawer->current_x -= 1;
+                    // drawer->current_x -= 1;
                     draw_to_drawer(drawer, "-");
                     drawer->current_x += 1;
                 }
@@ -745,7 +745,7 @@ static void load_nav_link(drawer* drawer, html_parser* parser, nav_type type)
  */
 static void print_navigation_line(drawer* drawer, const char* line)
 {
-    mvwprintw(drawer->window, drawer->current_y, drawer->current_x, line);
+    mvwprintw(drawer->window, drawer->current_y, drawer->current_x, "%s", line);
     drawer->current_y++;
 }
 
@@ -814,7 +814,7 @@ void search_mode(drawer* drawer, html_parser* parser)
             currentx--;
             mvaddch(0, currentx, ' ');
             page[page_i] = 0;
-        } else if (c == 27) { //esc
+        } else if (c == 27) { // esc
             break;
         } else {
             if (c < '0' || c > '9')
