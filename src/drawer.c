@@ -77,7 +77,7 @@ static void draw_logger(const char* format, ...)
 }
 #endif // DEBUG_LOGGER
 
-static bool history_at_last_link()
+static bool history_at_last_link(void)
 {
     if (history.start == 0) {
         if (history.current == history.count - 1)
@@ -117,7 +117,7 @@ static void add_history_link(char* link)
     memcpy(history.entries[history.current], link, HTML_LINK_SIZE);
 }
 
-static char* next_link()
+static char* next_link(void)
 {
     if (history.count == 0)
         return NULL;
@@ -129,7 +129,7 @@ static char* next_link()
     return HISTORY_CURRENT_LINK;
 }
 
-static char* prev_link()
+static char* prev_link(void)
 {
     if (history.count == 0 || history.current == history.start)
         return NULL;
@@ -158,7 +158,7 @@ static void load_prev_link(drawer* drawer, html_parser* parser)
     }
 }
 
-static int max_window_width()
+static int max_window_width(void)
 {
     if (COLS > 80) {
         return 80;
@@ -167,7 +167,7 @@ static int max_window_width()
     return COLS;
 }
 
-static int middle_startx()
+static int middle_startx(void)
 {
     if (COLS > 80) {
         return MIDDLE_STARTX;

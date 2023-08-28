@@ -33,7 +33,7 @@ static void print_usage(char* name)
     exit(0);
 }
 
-static void print_config_options()
+static void print_config_options(void)
 {
     printf("\ttext-only=true|false\t\tPrint teletext to stdout instead using ncurses\n");
     printf("\tno-nav=true|false\t\tDisable all navigations\n");
@@ -58,7 +58,7 @@ static void print_version(char* name)
     exit(0);
 }
 
-static void print_verbose_navigation_instructions()
+static void print_verbose_navigation_instructions(void)
 {
     printf("Navigation instructions: \n\n");
     printf("|   Key   |         Action         |                         Info                        |\n");
@@ -83,7 +83,7 @@ static void print_verbose_navigation_instructions()
     exit(0);
 }
 
-static void print_navigation_instructions()
+static void print_navigation_instructions(void)
 {
     printf("Navigation instructions: \n\n");
     printf("|   Key   |         Action         |\n");

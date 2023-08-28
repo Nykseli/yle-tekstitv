@@ -38,7 +38,7 @@ typedef struct {
 
 void init_config(int argc, char** argv);
 void free_config(config* conf);
-fmt_time current_time();
+fmt_time current_time(void);
 
 extern config global_config;
 // Ignores the config read from defalt path during config tests

@@ -129,7 +129,7 @@ bool nullsafe_strcmp(const char* s1, const char* s2)
     return false;
 }
 
-config gen_default_config()
+config gen_default_config(void)
 {
     // Copied from src/config.c
     // Remember to update this everytime you update the actual config
@@ -157,7 +157,7 @@ config gen_default_config()
     return tmp;
 }
 
-void reset_global_config()
+void reset_global_config(void)
 {
     global_config = gen_default_config();
 }
@@ -357,8 +357,8 @@ START_TEST(all_cli_args_success_tests)
 }
 END_TEST
 
-bool parse_config_exit_fail();
-bool init_config_exit_fail();
+bool parse_config_exit_fail(void);
+bool init_config_exit_fail(void);
 
 START_TEST(cli_arg_errors)
 {
@@ -500,7 +500,7 @@ START_TEST(config_file_parsing_tests)
 }
 END_TEST
 
-Suite* parser_suite()
+Suite* parser_suite(void)
 {
     Suite* s;
     TCase* tc_core;
@@ -519,7 +519,7 @@ Suite* parser_suite()
     return s;
 }
 
-int main()
+int main(void)
 {
     ignore_config_read_during_testing = true;
     int number_failed;

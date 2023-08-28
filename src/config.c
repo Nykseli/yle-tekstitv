@@ -86,7 +86,7 @@ arguments args;
 // What line are we currenlty parsing in the config file
 int config_file_num = 1;
 
-static void option_error()
+static void option_error(void)
 {
     fprintf(stderr, "Unknown option: %s\n", CURRENT);
     exit(1);
@@ -216,7 +216,7 @@ use_default:
     return true;
 }
 
-static void long_option()
+static void long_option(void)
 {
     if (strcmp(CURRENT, "--text-only") == 0) {
         global_config.text_only = true;
@@ -261,7 +261,7 @@ static void long_option()
     }
 }
 
-static void short_option()
+static void short_option(void)
 {
 
     if (strcmp(CURRENT, "-t") == 0) {
@@ -578,7 +578,7 @@ static void load_config(char* filepath)
  * Find if the config option is used and handle it.
  * If config option is not found. Try ~/.config/tekstitv/tekstitv.conf
  */
-static void handle_config()
+static void handle_config(void)
 {
     int i = 1; // skip the program name
     bool config_found = false;
@@ -645,7 +645,7 @@ void free_config(config* conf)
         free((char*)conf->time_fmt);
 }
 
-fmt_time current_time()
+fmt_time current_time(void)
 {
     fmt_time ctime;
 

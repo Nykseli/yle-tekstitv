@@ -280,7 +280,7 @@ START_TEST(subpage_number_test)
 }
 END_TEST
 
-Suite* parser_suite()
+Suite* parser_suite(void)
 {
     Suite* s;
     TCase* tc_core;
@@ -299,7 +299,7 @@ Suite* parser_suite()
     return s;
 }
 
-int main()
+int main(void)
 {
     int number_failed;
     Suite* s;

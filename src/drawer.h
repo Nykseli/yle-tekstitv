@@ -44,6 +44,6 @@ typedef struct {
 void init_drawer(drawer* drawer);
 void free_drawer(drawer* drawer);
 
-void draw_parser();
+void draw_parser(drawer* drawer, html_parser* parser);
 
 #endif
