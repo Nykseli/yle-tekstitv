@@ -40,7 +40,7 @@ void load_page(html_parser* parser)
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &parser->_curl_buffer);
     err = curl_easy_perform(curl);
     if (err)
-        //fprintf(stderr, "%s\n", curl_errbuf);
+        // fprintf(stderr, "%s\n", curl_errbuf);
         parser->curl_load_error = true;
 
     /* clean-up */
