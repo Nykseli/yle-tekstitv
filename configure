@@ -16,7 +16,7 @@ NAME="tekstitv"
 MAJOR_VERSION=`awk '/TEKSTITV_MAJOR_VERSION/{print $3}' include/tekstitv.h`
 MINOR_VERSION=`awk '/TEKSTITV_MINOR_VERSION/{print $3}' include/tekstitv.h`
 BIN_LINKS="-lcurl"
-CFLAGS="-std=c99 -Wall -Wextra -Werror -Wno-unused-parameter -Wformat-security -Wno-unused-result -pedantic -fPIC"
+CFLAGS="-std=c99 -Wall -Wextra -Wno-unused-parameter -Wformat-security -Wno-unused-result -pedantic -fPIC"
 TARGETS=""
 INSTALLS=""
 UNINSTALLS=""
@@ -245,7 +245,7 @@ fi
 if $debugsym; then
     CFLAGS="$CFLAGS -g -DDEBUG"
 else
-    CFLAGS="$CFLAGS -O3 -flto"
+    CFLAGS="$CFLAGS -Werror -O3 -flto"
 fi
 
 if ! $utf8; then
