@@ -307,28 +307,10 @@ static int find_utfs(const char* src, size_t src_len)
     return utfs;
 }
 
-static void escape_text(const char* src, char* target, size_t src_len)
-{
-    size_t srci = 0;
-    size_t targeti = 0;
-    for (; srci < src_len; srci++, targeti++) {
-        if (src[srci] == '%') {
-            target[targeti] = '%';
-            target[++targeti] = '%';
-        } else {
-            target[targeti] = src[srci];
-        }
-    }
-
-    target[targeti] = '\0';
-}
-
 static void draw_to_drawer(drawer* drawer, const char* text)
 {
-    char escape_buf[256];
     int utfs = find_utfs(text, strlen(text));
-    escape_text(text, escape_buf, strlen(text));
-    mvwprintw(drawer->window, drawer->current_y, drawer->current_x, "%s", escape_buf);
+    mvwprintw(drawer->window, drawer->current_y, drawer->current_x, "%s", text);
     drawer->current_x -= utfs;
 }
 
