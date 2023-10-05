@@ -173,7 +173,13 @@ static int middle_startx(void)
         return MIDDLE_STARTX;
     }
 
-    return COLS / 5;
+    // The max length of middle text is 40 characters. Align based on it.
+    int middle = (COLS - 40) / 2;
+    if (middle < 0) {
+        middle = 0;
+    }
+
+    return middle;
 }
 
 static void curl_load_error(drawer* drawer, html_parser* parser)
