@@ -862,13 +862,13 @@ void main_draw_loop(drawer* drawer, html_parser* parser)
             update_link_highlights(drawer);
         } else if (c == 'g' || c == '\n') { // g or enter
             load_highlight_link(drawer, parser);
-        } else if (c == 'v') {
+        } else if (c == 'v' || c == KEY_PPAGE) {
             load_nav_link(drawer, parser, PREV_PAGE);
         } else if (c == 'b') {
             load_nav_link(drawer, parser, PREV_SUB_PAGE);
         } else if (c == 'n') {
             load_nav_link(drawer, parser, NEXT_SUB_PAGE);
-        } else if (c == 'm') {
+        } else if (c == 'm' || c == KEY_NPAGE) {
             load_nav_link(drawer, parser, NEXT_PAGE);
         } else if (c == 'i') {
             draw_navigation_screen(drawer, parser);
