@@ -39,7 +39,6 @@ void print_middle(html_parser* parser)
     html_item_type last_type = HTML_TEXT;
 
     for (size_t i = 0; i < parser->middle_rows; i++) {
-        printf("    ");
         for (size_t j = 0; j < parser->middle[i].size; j++) {
             html_item item = parser->middle[i].items[j];
             if (item.type == HTML_LINK) {
