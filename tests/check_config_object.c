@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <check.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -263,6 +264,7 @@ int get_configs(config_list* configs, char* file_name)
     struct stat fs;
     fstat(fd, &fs);
     file_data = malloc(fs.st_size + 1);
+    assert(file_data);
     read(fd, file_data, fs.st_size);
     file_data[fs.st_size] = '\0';
     close(fd);
