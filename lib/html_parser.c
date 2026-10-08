@@ -2403,7 +2403,7 @@ static void parse_middle(html_parser* parser, html_buffer* buffer)
         }
 
         line_buf.current--;
-        for (int i = 0; line_buf.current < line_buf.size; line_buf.current++, i++) {
+        for (; line_buf.current < line_buf.size; line_buf.current++) {
             tag_type type = get_tag_type(&line_buf);
             if (type == LINK) {
                 parse_middle_link(parser, &line_buf, pre_space);
